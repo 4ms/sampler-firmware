@@ -20,12 +20,10 @@ void run(Controls &controls) {
 	Util::flash_mainbut_until_pressed();
 
 	TestLEDs ledtester;
-	while (!ledtester.is_done())
-		ledtester.run_test();
+	ledtester.run_test();
 
 	TestButtons buttontester;
-	while (buttontester.check())
-		;
+	buttontester.run_test();
 
 	TestADCs adctester{controls};
 	adctester.run_test();

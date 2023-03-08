@@ -7,7 +7,7 @@
 // #include "looping_delay.hh"
 #include "system.hh"
 // #include "timer.hh"
-
+#include "hardware_tests/hardware_tests.hh"
 #include "test_audio.hh"
 
 namespace
@@ -48,9 +48,9 @@ void main() {
 	// params_update_task.start();
 	audio.start();
 
-	__BKPT();
+	HWTests::run(controls);
+
 	while (true) {
-		controls.test();
 		__NOP();
 	}
 }

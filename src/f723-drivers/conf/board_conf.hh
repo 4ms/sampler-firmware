@@ -51,7 +51,7 @@ constexpr std::array<AdcChannelConf, NumPots> PotAdcChans = {{
 }};
 
 constexpr std::array<AdcChannelConf, NumCVs> CVAdcChans = {{
-	{{GPIO::C, PinNum::_0}, AdcChanNum::_10, PitchCV, AdcSampTime},
+	{{GPIO::C, PinNum::_2}, AdcChanNum::_12, PitchCV, AdcSampTime},
 	{{GPIO::A, PinNum::_4}, AdcChanNum::_4, StartCV, AdcSampTime},
 	{{GPIO::A, PinNum::_1}, AdcChanNum::_1, LengthCV, AdcSampTime},
 	{{GPIO::C, PinNum::_1}, AdcChanNum::_11, SampleCV, AdcSampTime},

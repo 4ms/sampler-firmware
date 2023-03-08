@@ -2,29 +2,6 @@
 
 set(root ${CMAKE_SOURCE_DIR})
 
-set(COMMON_SOURCES
-    ${root}/lib/mdrivlib/drivers/pin.cc
-    ${root}/lib/mdrivlib/drivers/tim.cc
-    ${root}/lib/mdrivlib/drivers/timekeeper.cc
-    ${root}/lib/mdrivlib/drivers/i2c.cc
-	${root}/lib/mdrivlib/drivers/codec_PCM3060.cc
-    ${root}/lib/mdrivlib/drivers/hal_handlers.cc
-    ${root}/lib/mdrivlib/drivers/sdram.cc
-    ${root}/lib/mdrivlib/target/stm32f7xx/drivers/interrupt_handler.cc
-    ${root}/lib/mdrivlib/target/stm32f7xx/drivers/sai_tdm.cc
-    ${root}/src/libc_stub.c
-    ${root}/src/libcpp_stub.cc
-    ${root}/src/main.cc
-	${root}/src/hardware_tests/hardware_tests.cc)
-
-set(COMMON_INCLUDES
-    ${root}/src
-    ${root}/src/hardware_tests
-    ${root}/lib/CMSIS/Include
-    ${root}/lib/mdrivlib
-    ${root}/lib/mdrivlib/drivers
-    ${root}/lib/cpputil)
-
 function(set_hal_sources sources family_name)
   string(TOUPPER ${family_name} family_name_uc)
   set(${sources}
@@ -46,7 +23,7 @@ function(set_hal_sources sources family_name)
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_rcc_ex.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sai.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_tim.c
-	  ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_usart.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_usart.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_fmc.c
       PARENT_SCOPE)
@@ -69,33 +46,23 @@ function(set_bootloader_hal_sources sources family_name)
       PARENT_SCOPE)
 endfunction()
 
-set(BOOTLOADER_COMMON_SOURCES
-    ${root}/src/bootloader/bootloader.cc
-    # ${root}/src/bootloader/leds.cc ${root}/src/bootloader/animation.cc
-    # ${root}/src/bootloader/bl_utils.cc
-    # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
-    ${root}/src/libc_stub.c
-    ${root}/src/libcpp_stub.cc
-    # ${root}/src/shareddrv/flash.cc
-    ${root}/lib/mdrivlib/drivers/pin.cc
-    ${root}/lib/mdrivlib/drivers/timekeeper.cc
-    ${root}/lib/mdrivlib/drivers/tim.cc)
+# ############### Common commands #####################
 
-set(BOOTLOADER_COMMON_INCLUDES
-    ${root}/lib/CMSIS/Include
-    ${root}/src/bootloader
-    ${root}/src/bootloader/stmlib
-    ${root}/src
-    ${root}/lib/mdrivlib
-    ${root}/lib/mdrivlib/drivers
-    ${root}/lib/cpputil)
+function(create_target target)
+  message("Creating target ${target}")
 
-set(COMMON_DEFINES USE_HAL_DRIVER USE_FULL_LL_DRIVER)
+  # Create <target>_ARCH: Interface library for defs/options common to all
+  # builds on this architecture
+  add_library(${target}_ARCH INTERFACE)
+  target_compile_definitions(${target}_ARCH INTERFACE 
+    USE_HAL_DRIVER 
+    USE_FULL_LL_DRIVER
+    ${ARCH_DEFINES})
 
-set(COMMON_COMPILE_OPTIONS
-	$<$<CONFIG:Debug>:-O0 -g3>
-	$<$<CONFIG:Release>:-Ofast>
-	$<$<CONFIG:RelWithDebInfo>:-Ofast -g3>
+  target_compile_options(${target}_ARCH INTERFACE 
+    $<$<CONFIG:Debug>:-O0 -g3>
+    $<$<CONFIG:Release>:-Ofast>
+    $<$<CONFIG:RelWithDebInfo>:-Ofast -g3>
     -fdata-sections
     -ffunction-sections
     -fno-common
@@ -108,40 +75,54 @@ set(COMMON_COMPILE_OPTIONS
     -Wdouble-promotion
     -Werror=return-type
     $<$<COMPILE_LANGUAGE:CXX>:
-    -std=c++23
-	-ffold-simple-inlines
-    -fno-rtti
-    -fno-threadsafe-statics
-    -fno-exceptions
-    -Wno-register
-    -Wno-volatile
-    >)
+        -std=c++23
+        -ffold-simple-inlines
+        -fno-rtti
+        -fno-threadsafe-statics
+        -fno-exceptions
+        -Wno-register
+        -Wno-volatile
+    >
+    ${ARCH_FLAGS})
 
-set(COMMON_LINK_OPTS -Wl,--gc-sections -nostdlib -mthumb -mfloat-abi=hard)
-
-# ############### Common commands #####################
-
-function(create_target target)
-  message("Creating target ${target}")
-
-  # Create <target>_ARCH: Interface library for defs/options common to all
-  # builds on this architecture
-  add_library(${target}_ARCH INTERFACE)
-  target_compile_definitions(${target}_ARCH INTERFACE 
-	  ${COMMON_DEFINES}
-	  ${ARCH_DEFINES})
-  target_compile_options(${target}_ARCH INTERFACE 
-	  ${COMMON_COMPILE_OPTIONS} 
-	  ${ARCH_FLAGS})
-  target_link_options(${target}_ARCH INTERFACE ${COMMON_LINK_OPTS} ${ARCH_FLAGS})
+  target_link_options(${target}_ARCH INTERFACE 
+      -Wl,--gc-sections 
+      -nostdlib 
+      -mthumb 
+      -mfloat-abi=hard
+      ${ARCH_FLAGS})
 
   # Create libhwtests target
   add_subdirectory(../../lib/libhwtests ${CMAKE_CURRENT_BINARY_DIR}/libhwtests)
   target_link_libraries(libhwtests PRIVATE ${target}_ARCH)
-   
+
   # Create main app elf file target
-  add_executable(${target}.elf ${COMMON_SOURCES} ${TARGET_SOURCES} ${HAL_SOURCES})
-  target_include_directories(${target}.elf PRIVATE ${COMMON_INCLUDES} ${TARGET_INCLUDES})
+  add_executable(${target}.elf 
+    ${root}/lib/mdrivlib/drivers/pin.cc
+    ${root}/lib/mdrivlib/drivers/tim.cc
+    ${root}/lib/mdrivlib/drivers/timekeeper.cc
+    ${root}/lib/mdrivlib/drivers/i2c.cc
+    ${root}/lib/mdrivlib/drivers/codec_PCM3060.cc
+    ${root}/lib/mdrivlib/drivers/hal_handlers.cc
+    ${root}/lib/mdrivlib/drivers/sdram.cc
+    ${root}/lib/mdrivlib/target/stm32f7xx/drivers/interrupt_handler.cc
+    ${root}/lib/mdrivlib/target/stm32f7xx/drivers/sai_tdm.cc
+    ${root}/src/libc_stub.c
+    ${root}/src/libcpp_stub.cc
+    ${root}/src/main.cc
+    ${root}/src/hardware_tests/hardware_tests.cc
+    ${TARGET_SOURCES}
+    ${HAL_SOURCES}
+    )
+  target_include_directories(${target}.elf PRIVATE 
+    ${root}/src
+    ${root}/src/hardware_tests
+    ${root}/lib/CMSIS/Include
+    ${root}/lib/mdrivlib
+    ${root}/lib/mdrivlib/drivers
+    ${root}/lib/cpputil
+    ${TARGET_INCLUDES}
+    )
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
   target_link_libraries(${target}.elf PRIVATE libhwtests)
   target_link_script(${target} ${TARGET_LINK_SCRIPT})
@@ -150,10 +131,30 @@ function(create_target target)
   # Create bootloader elf file target
   add_executable(
     ${target}-bootloader.elf
-    ${BOOTLOADER_COMMON_SOURCES} 
-	${TARGET_BOOTLOADER_SOURCES}
-    ${BOOTLOADER_HAL_SOURCES})
-  target_include_directories( ${target}-bootloader.elf PRIVATE ${BOOTLOADER_COMMON_INCLUDES} ${TARGET_INCLUDES})
+    ${root}/src/bootloader/bootloader.cc
+    # ${root}/src/bootloader/leds.cc ${root}/src/bootloader/animation.cc
+    # ${root}/src/bootloader/bl_utils.cc
+    # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
+    ${root}/src/libc_stub.c
+    ${root}/src/libcpp_stub.cc
+    # ${root}/src/shareddrv/flash.cc
+    ${root}/lib/mdrivlib/drivers/pin.cc
+    ${root}/lib/mdrivlib/drivers/timekeeper.cc
+    ${root}/lib/mdrivlib/drivers/tim.cc
+    ${TARGET_BOOTLOADER_SOURCES}
+    ${BOOTLOADER_HAL_SOURCES}
+    )
+  target_include_directories( ${target}-bootloader.elf PRIVATE 
+    ${root}/lib/CMSIS/Include
+    ${root}/src/bootloader
+    ${root}/src/bootloader/stmlib
+    ${root}/src
+    ${root}/lib/mdrivlib
+    ${root}/lib/mdrivlib/drivers
+    ${root}/lib/cpputil
+    ${TARGET_INCLUDES}
+    )
+
   target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
   target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
   add_bin_hex_command(${target}-bootloader)

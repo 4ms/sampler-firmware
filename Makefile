@@ -1,11 +1,16 @@
-rebuild:
-	cmake --build build
+BUILDDIR := build
+
+rebuild: | $(BUILDDIR)
+	cmake --build $(BUILDDIR)
 
 debug:
-	cmake --build build --config Debug
+	cmake --build $(BUILDDIR) --config Debug
 
 release:
-	cmake --build build --config RelWithDebInfo
+	cmake --build $(BUILDDIR) --config RelWithDebInfo
 
-init:
-	CMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo" cmake -B build -G"Ninja Multi-Config" 
+$(BUILDDIR):
+	cmake -B $(BUILDDIR) -G"Ninja Multi-Config" 
+
+clean:
+	rm -rf $(BUILDDIR)

@@ -12,22 +12,14 @@ set(COMMON_SOURCES
     ${root}/lib/mdrivlib/drivers/sdram.cc
     ${root}/lib/mdrivlib/target/stm32f7xx/drivers/interrupt_handler.cc
     ${root}/lib/mdrivlib/target/stm32f7xx/drivers/sai_tdm.cc
-    ${root}/lib/libhwtests/src/AdcChecker.cc
-    ${root}/lib/libhwtests/src/AdcRangeChecker.cc
-    ${root}/lib/libhwtests/src/ButtonChecker.cc
-    ${root}/lib/libhwtests/src/CodecCallbacks.cc
-    ${root}/lib/libhwtests/src/GateInChecker.cc
-    ${root}/lib/libhwtests/src/GateOutChecker.cc
-    ${root}/lib/libhwtests/src/GateOutput.cc
-    ${root}/lib/libhwtests/src/LEDTester.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
-    ${root}/src/main.cc)
+    ${root}/src/main.cc
+	${root}/src/hardware_tests/hardware_tests.cc)
 
 set(COMMON_INCLUDES
     ${root}/src
     ${root}/src/hardware_tests
-    ${root}/lib/libhwtests/inc
     ${root}/lib/CMSIS/Include
     ${root}/lib/mdrivlib
     ${root}/lib/mdrivlib/drivers
@@ -101,8 +93,9 @@ set(BOOTLOADER_COMMON_INCLUDES
 set(COMMON_DEFINES USE_HAL_DRIVER USE_FULL_LL_DRIVER)
 
 set(COMMON_COMPILE_OPTIONS
-	-Ofast
-    -g3
+	$<$<CONFIG:Debug>:-O0 -g3>
+	$<$<CONFIG:Release>:-Ofast>
+	$<$<CONFIG:RelWithDebInfo>:-Ofast -g3>
     -fdata-sections
     -ffunction-sections
     -fno-common
@@ -128,6 +121,76 @@ set(COMMON_LINK_OPTS -Wl,--gc-sections -nostdlib -mthumb -mfloat-abi=hard)
 
 # ############### Common commands #####################
 
+function(create_target target)
+  message("Creating target ${target}")
+
+  # Create <target>_ARCH: Interface library for defs/options common to all
+  # builds on this architecture
+  add_library(${target}_ARCH INTERFACE)
+  target_compile_definitions(${target}_ARCH INTERFACE 
+	  ${COMMON_DEFINES}
+	  ${ARCH_DEFINES})
+  target_compile_options(${target}_ARCH INTERFACE 
+	  ${COMMON_COMPILE_OPTIONS} 
+	  ${ARCH_FLAGS})
+  target_link_options(${target}_ARCH INTERFACE ${COMMON_LINK_OPTS} ${ARCH_FLAGS})
+
+  # Create libhwtests target
+  add_subdirectory(../../lib/libhwtests ${CMAKE_CURRENT_BINARY_DIR}/libhwtests)
+  target_link_libraries(libhwtests PRIVATE ${target}_ARCH)
+   
+  # Create main app elf file target
+  add_executable(${target}.elf ${COMMON_SOURCES} ${TARGET_SOURCES} ${HAL_SOURCES})
+  target_include_directories(${target}.elf PRIVATE ${COMMON_INCLUDES} ${TARGET_INCLUDES})
+  target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
+  target_link_libraries(${target}.elf PRIVATE libhwtests)
+  target_link_script(${target} ${TARGET_LINK_SCRIPT})
+  add_bin_hex_command(${target})
+
+  # Create bootloader elf file target
+  add_executable(
+    ${target}-bootloader.elf
+    ${BOOTLOADER_COMMON_SOURCES} 
+	${TARGET_BOOTLOADER_SOURCES}
+    ${BOOTLOADER_HAL_SOURCES})
+  target_include_directories( ${target}-bootloader.elf PRIVATE ${BOOTLOADER_COMMON_INCLUDES} ${TARGET_INCLUDES})
+  target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
+  target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
+  add_bin_hex_command(${target}-bootloader)
+
+  # Create .wav file target for firmware upgrades
+  add_custom_target(
+    ${target}.wav
+    DEPENDS ${target}.elf
+    COMMAND export PYTHONPATH="${CMAKE_SOURCE_DIR}/src/bootloader" &&
+            ${WAV_ENCODE_PYTHON_CMD})
+
+  set(TARGET_BASE $<TARGET_FILE_DIR:${target}.elf>/${target})
+
+  add_custom_target(
+    ${target}-combo
+    DEPENDS ${TARGET_BASE}.hex ${TARGET_BASE}-bootloader.elf
+    COMMAND cat ${TARGET_BASE}-bootloader.hex ${TARGET_BASE}.hex | awk -f
+            ${CMAKE_SOURCE_DIR}/merge_hex.awk > ${TARGET_BASE}-combo.hex)
+  set_target_properties(${target}-combo PROPERTIES ADDITIONAL_CLEAN_FILES
+                                                   "${TARGET_BASE}-combo.hex")
+  add_custom_target(
+    ${target}-flash
+    DEPENDS ${target}-combo
+    COMMAND
+      echo
+      "/Applications/SEGGER/JLink_V770e/JFlash.app/Contents/MacOS/JFlashExe -openprj${CMAKE_SOURCE_DIR}/${target}.jflash -open${TARGET_BASE}-combo.hex -auto -exit"
+    COMMAND
+      /Applications/SEGGER/JLink_V770e/JFlash.app/Contents/MacOS/JFlashExe
+      -openprjminipeg-${target}.jflash -open${TARGET_BASE}-combo.hex -auto -exit
+    USES_TERMINAL)
+
+  # Helper for letting lsp servers know what target we're using
+  add_custom_target(
+    ${target}-compdb COMMAND ln -snf ${CMAKE_BINARY_DIR}/compile_commands.json
+                             ${CMAKE_SOURCE_DIR}/.)
+
+endfunction()
 function(target_link_script target_base link_script)
   target_link_options(
     ${target_base}.elf PRIVATE
@@ -199,70 +262,4 @@ function(set_target_sources_includes project_driver_dir mdrivlib_target_dir
       PARENT_SCOPE)
 endfunction()
 
-function(create_target target)
-  message("Creating target ${target}")
 
-  # Create <target>_ARCH: Interface library for defs/options common to all
-  # builds on this architecture
-  add_library(${target}_ARCH INTERFACE)
-  target_compile_definitions(${target}_ARCH INTERFACE ${COMMON_DEFINES}
-                                                      ${ARCH_DEFINES})
-  target_compile_options(${target}_ARCH INTERFACE ${COMMON_COMPILE_OPTIONS}
-                                                  ${ARCH_FLAGS})
-  target_link_options(${target}_ARCH INTERFACE ${COMMON_LINK_OPTS}
-                      ${ARCH_FLAGS})
-
-  # Create main app elf file build target
-  add_executable(${target}.elf ${COMMON_SOURCES} ${TARGET_SOURCES}
-                               ${HAL_SOURCES})
-  target_include_directories(${target}.elf PRIVATE ${COMMON_INCLUDES}
-                                                   ${TARGET_INCLUDES})
-  target_link_script(${target} ${TARGET_LINK_SCRIPT})
-  target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
-  add_bin_hex_command(${target})
-
-  # Create bootloader elf file build target
-  add_executable(
-    ${target}-bootloader.elf
-    ${BOOTLOADER_COMMON_SOURCES} ${TARGET_BOOTLOADER_SOURCES}
-    ${BOOTLOADER_HAL_SOURCES})
-  target_include_directories(
-    ${target}-bootloader.elf PRIVATE ${BOOTLOADER_COMMON_INCLUDES}
-                                     ${TARGET_INCLUDES})
-  target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
-  target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
-  add_bin_hex_command(${target}-bootloader)
-
-  # Create .wav file target for firmware upgrades
-  add_custom_target(
-    ${target}.wav
-    DEPENDS ${target}.elf
-    COMMAND export PYTHONPATH="${CMAKE_SOURCE_DIR}/src/bootloader" &&
-            ${WAV_ENCODE_PYTHON_CMD})
-
-  set(TARGET_BASE $<TARGET_FILE_DIR:${target}.elf>/${target})
-
-  add_custom_target(
-    ${target}-combo
-    DEPENDS ${TARGET_BASE}.hex ${TARGET_BASE}-bootloader.elf
-    COMMAND cat ${TARGET_BASE}-bootloader.hex ${TARGET_BASE}.hex | awk -f
-            ${CMAKE_SOURCE_DIR}/merge_hex.awk > ${TARGET_BASE}-combo.hex)
-  set_target_properties(${target}-combo PROPERTIES ADDITIONAL_CLEAN_FILES
-                                                   "${TARGET_BASE}-combo.hex")
-  add_custom_target(
-    ${target}-flash
-    DEPENDS ${target}-combo
-    COMMAND
-      echo
-      "/Applications/SEGGER/JLink_V770e/JFlash.app/Contents/MacOS/JFlashExe -openprj${CMAKE_SOURCE_DIR}/${target}.jflash -open${TARGET_BASE}-combo.hex -auto -exit"
-    COMMAND
-      /Applications/SEGGER/JLink_V770e/JFlash.app/Contents/MacOS/JFlashExe
-      -openprjminipeg-${target}.jflash -open${TARGET_BASE}-combo.hex -auto -exit
-    USES_TERMINAL)
-
-  # Helper for letting lsp servers know what target we're using
-  add_custom_target(
-    ${target}-compdb COMMAND ln -snf ${CMAKE_BINARY_DIR}/compile_commands.json
-                             ${CMAKE_SOURCE_DIR}/.)
-
-endfunction()

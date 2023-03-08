@@ -7,7 +7,12 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;RelWithDebInfo")
 
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build.")
 
-project(sampler-kit C CXX ASM)
+project(sampler-kit 
+	VERSION 0.1
+	DESCRIPTION "Sampler Kit"
+	LANGUAGES C CXX ASM)
+
+
 
 add_subdirectory(src/f723-drivers f723)
 

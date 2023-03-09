@@ -27,6 +27,10 @@ void main() {
 	Debug::Pin3{};
 
 	Controls controls;
+
+	controls.start();
+	HWTests::run(controls);
+
 	// Flags flags;
 	// Timer timer;
 	// Params params{controls, flags, timer};
@@ -44,11 +48,9 @@ void main() {
 	__HAL_DBGMCU_FREEZE_TIM6();
 
 	// timer.start();
-	controls.start();
+	// controls.start();
 	// params_update_task.start();
 	audio.start();
-
-	HWTests::run(controls);
 
 	while (true) {
 		__NOP();

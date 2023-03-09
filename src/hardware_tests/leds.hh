@@ -7,7 +7,7 @@ namespace SamplerKit::HWTests
 
 struct TestLEDs : ILEDTester {
 	TestLEDs()
-		: ILEDTester{9} {}
+		: ILEDTester{12} {}
 
 	void set_led(int led_id, bool turn_on) override {
 		switch (led_id) {
@@ -36,6 +36,21 @@ struct TestLEDs : ILEDTester {
 				Board::RevG::set(turn_on);
 				break;
 			case 8:
+				Board::RevB::set(turn_on);
+				break;
+			case 9:
+				Board::BankR::set(turn_on);
+				Board::BankG::set(turn_on);
+				Board::BankB::set(turn_on);
+				break;
+			case 10:
+				Board::PlayR::set(turn_on);
+				Board::PlayG::set(turn_on);
+				Board::PlayB::set(turn_on);
+				break;
+			case 11:
+				Board::RevR::set(turn_on);
+				Board::RevG::set(turn_on);
 				Board::RevB::set(turn_on);
 				break;
 		}

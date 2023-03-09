@@ -27,7 +27,7 @@ const RCC_ClkInitTypeDef clk_conf{
 };
 
 const RCC_PeriphCLKInitTypeDef rcc_periph_conf = {
-	.PeriphClockSelection = RCC_PERIPHCLK_SAI1 | RCC_PERIPHCLK_UART4,
+	.PeriphClockSelection = RCC_PERIPHCLK_SAI1 | RCC_PERIPHCLK_UART4 | RCC_PERIPHCLK_CLK48 | RCC_PERIPHCLK_SDMMC1,
 	.PLLSAI =
 		{
 			.PLLSAIN = 197,
@@ -37,6 +37,8 @@ const RCC_PeriphCLKInitTypeDef rcc_periph_conf = {
 	.PLLSAIDivQ = 2,
 	.Sai1ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI,
 	.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1,
+	.Clk48ClockSelection = RCC_CLK48SOURCE_PLL,
+	.Sdmmc1ClockSelection = RCC_SDMMC1CLKSOURCE_CLK48,
 };
 
 } // namespace SamplerKit

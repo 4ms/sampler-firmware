@@ -6,6 +6,7 @@
 #include "hardware_tests/buttons.hh"
 #include "hardware_tests/gate_ins.hh"
 #include "hardware_tests/leds.hh"
+#include "hardware_tests/sd.hh"
 #include "hardware_tests/util.hh"
 #include "libhwtests/CodecCallbacks.hh"
 #include "stm32xx.h"
@@ -91,13 +92,14 @@ void run(Controls &controls) {
 	Util::flash_mainbut_until_pressed();
 
 	// SD Card
-	// TODO
+	TestSDCard sdtest;
+	sdtest.run_test();
 
 	// RAM Test
 	controls.bank_led.set_color(Colors::white);
 	auto err = mdrivlib::SDRAMPeriph::test(Brain::SDRAMstart, Brain::SDRAMsize);
 	if (err) {
-		while(1) {
+		while (1) {
 			controls.rev_led.set_color(Colors::red);
 			controls.bank_led.set_color(Colors::red);
 			controls.play_led.set_color(Colors::red);

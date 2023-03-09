@@ -94,13 +94,4 @@ using Pin2 = mdrivlib::FPin<mdrivlib::GPIO::H, mdrivlib::PinNum::_15>;
 using Pin3 = mdrivlib::FPin<mdrivlib::GPIO::D, mdrivlib::PinNum::_3>;
 }; // namespace Debug
 
-struct Console {
-	mdrivlib::Uart<UART4_BASE> console;
-	void console_init() {
-		mdrivlib::Pin uart_tx{
-			mdrivlib::GPIO::H, mdrivlib::PinNum::_13, mdrivlib::PinMode::Alt, mdrivlib::PinAF::AltFunc8};
-		mdrivlib::Pin uart_rx{
-			mdrivlib::GPIO::H, mdrivlib::PinNum::_14, mdrivlib::PinMode::Alt, mdrivlib::PinAF::AltFunc8};
-	}
-};
 } // namespace Brain

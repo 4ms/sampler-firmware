@@ -1,5 +1,7 @@
 #include "audio_stream.hh"
 #include "conf/board_conf.hh"
+#include "conf/brain_conf.hh"
+#include "drivers/sdram.hh"
 #include "hardware_tests/adc.hh"
 #include "hardware_tests/buttons.hh"
 #include "hardware_tests/gate_ins.hh"
@@ -85,8 +87,30 @@ void run(Controls &controls) {
 	TestGateIns gateintester;
 	gateintester.run_test();
 
+	all_lights_off();
 	Util::flash_mainbut_until_pressed();
 
 	// SD Card
+	// TODO
+
+	// RAM Test
+	controls.bank_led.set_color(Colors::white);
+	auto err = mdrivlib::SDRAMPeriph::test(Brain::SDRAMstart, Brain::SDRAMsize);
+	if (err) {
+		while(1) {
+			controls.rev_led.set_color(Colors::red);
+			controls.bank_led.set_color(Colors::red);
+			controls.play_led.set_color(Colors::red);
+			HAL_Delay(200);
+			all_lights_off();
+			HAL_Delay(200);
+		}
+	}
+	controls.rev_led.set_color(Colors::white);
+	controls.bank_led.set_color(Colors::off);
+
+	Util::flash_mainbut_until_pressed();
+
+	all_lights_off();
 }
 } // namespace SamplerKit::HWTests

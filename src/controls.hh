@@ -1,6 +1,7 @@
 #pragma once
 #include "analog_in_ext.hh"
 #include "conf/board_conf.hh"
+#include "conf/brain_conf.hh"
 #include "debug.hh"
 #include "drivers/adc_builtin.hh"
 #include "drivers/debounced_switch.hh"
@@ -9,7 +10,6 @@
 
 namespace SamplerKit
 {
-namespace Brain = BrainF723;
 
 class Controls {
 	static constexpr bool debug = false;

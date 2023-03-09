@@ -1,4 +1,5 @@
 #pragma once
+#include "conf/sdram_conf.hh"
 #include "drivers/adc_builtin_conf.hh"
 #include "drivers/dma_config_struct.hh"
 #include "drivers/pin.hh"
@@ -6,7 +7,7 @@
 #include "drivers/timekeeper.hh"
 #include "drivers/uart.hh"
 
-namespace BrainF723
+namespace Brain
 {
 constexpr inline int16_t MinPotChange = 10;
 constexpr inline int16_t MinCVChange = 10;
@@ -78,6 +79,10 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 	.priority2 = 3,
 };
 
+constexpr inline uint32_t SDRAMstart = SdramBank == mdrivlib::SDRAMBank::Bank1 ? 0xC000'0000 : 0xD000'0000;
+constexpr inline uint32_t SDRAMsize = SDRAM_conf.size_bytes;
+constexpr inline uint32_t SDRAMend = SDRAMstart + SDRAMsize;
+
 namespace Debug
 {
 struct Disabled {
@@ -103,4 +108,4 @@ struct DebugConsole {
 		// 	Debug::Pin1{}.Gpio_v, Debug::Pin1{}.PinNum_v, mdrivlib::PinMode::Alt, mdrivlib::PinAF::AltFunc8};
 	}
 };
-} // namespace BrainF723
+} // namespace Brain

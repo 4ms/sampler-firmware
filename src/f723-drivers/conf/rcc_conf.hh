@@ -35,7 +35,7 @@ const RCC_PeriphCLKInitTypeDef rcc_periph_conf = {
 			.PLLSAIP = RCC_PLLSAIP_DIV2,
 		},
 	.PLLSAIDivQ = 2,
-	.Sai2ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI,
+	.Sai1ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI,
 	.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1,
 };
 

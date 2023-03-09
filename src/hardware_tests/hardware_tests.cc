@@ -97,7 +97,7 @@ void run(Controls &controls) {
 
 	// RAM Test
 	controls.bank_led.set_color(Colors::white);
-	auto err = mdrivlib::SDRAMPeriph::test(Brain::SDRAMstart, Brain::SDRAMsize);
+	auto err = mdrivlib::SDRAMPeriph::test(Brain::MemoryStartAddr, Brain::MemorySizeBytes);
 	if (err) {
 		while (1) {
 			controls.rev_led.set_color(Colors::red);

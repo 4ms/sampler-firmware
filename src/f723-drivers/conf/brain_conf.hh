@@ -79,10 +79,6 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 	.priority2 = 3,
 };
 
-constexpr inline uint32_t SDRAMstart = SdramBank == mdrivlib::SDRAMBank::Bank1 ? 0xC000'0000 : 0xD000'0000;
-constexpr inline uint32_t SDRAMsize = SDRAM_conf.size_bytes;
-constexpr inline uint32_t SDRAMend = SDRAMstart + SDRAMsize;
-
 namespace Debug
 {
 struct Disabled {

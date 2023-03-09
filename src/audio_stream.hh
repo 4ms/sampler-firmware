@@ -3,7 +3,7 @@
 #include "audio_stream_conf.hh"
 #include "conf/codec_conf.hh"
 #include "conf/rcc_conf.hh"
-#include "drivers/callable.hh"
+// #include "drivers/callable.hh"
 #include "drivers/codec_PCM3060.hh"
 #include "drivers/i2c.hh"
 #include <functional>
@@ -32,10 +32,12 @@ public:
 	}
 
 	void start() { codec.start(); }
+	void stop() { codec.stop(); }
 
-	template<uint32_t buffer_half>
-	void _process() {
-		_process_func(audio_in_dma_buffer[1 - buffer_half], audio_out_dma_buffer[buffer_half]);
+	void set_callback(AudioProcessFunction &&process_func) {
+		stop();
+		_process_func = std::move(process_func);
+		start();
 	}
 
 private:
@@ -43,6 +45,17 @@ private:
 	mdrivlib::CodecPCM3060 codec;
 
 	AudioProcessFunction _process_func;
+	template<uint32_t buffer_half>
+	void _process() {
+		_process_func(audio_in_dma_buffer[1 - buffer_half], audio_out_dma_buffer[buffer_half]);
+	}
 };
 
+/*
+	Note:
+	Despite using std::function and multiple nested functions, the g++ optimizer does an excellent job
+	of simplifying the audio interrupt (SAI DMA IRQ). The generated assembly has 3 instructions before
+	the actual body of the interrupt handler (which checks for the HT, or TC flags and calls the right
+	process_func().
+   */
 } // namespace SamplerKit

@@ -1,5 +1,6 @@
 #pragma once
 #include "disk_ops.hh"
+// #include "printf.h"
 #include "volumes.hh"
 #include <cstdint>
 #include <span>
@@ -9,8 +10,8 @@
 bool fatfs_register_disk(DiskOps *ops, uint8_t disk_id);
 
 // For debugging:
-// #include "printf.h"
-#define printf_(...)
+// #define printf_(...)
+extern "C" int printf_(const char *format, ...);
 
 class FatFileIO {
 

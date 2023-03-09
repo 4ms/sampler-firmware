@@ -23,7 +23,7 @@ function(set_hal_sources sources family_name)
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_rcc_ex.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sai.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_tim.c
-      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_usart.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_uart.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sd.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_fmc.c
@@ -112,8 +112,10 @@ function(create_target target)
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
     ${root}/src/main.cc
+    ${root}/src/console.cc
     ${root}/src/hardware_tests/hardware_tests.cc
     ${root}/src/fatfs/diskio.cc
+	${root}/lib/printf/printf.c
     ${root}/lib/fatfs/source/ff.c
     ${root}/lib/fatfs/source/ffunicode.c
     ${TARGET_SOURCES}
@@ -128,6 +130,7 @@ function(create_target target)
             ${root}/lib/mdrivlib
             ${root}/lib/mdrivlib/drivers
             ${root}/lib/cpputil
+            ${root}/lib/printf
             ${root}/lib/fatfs/source
             ${TARGET_INCLUDES})
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)

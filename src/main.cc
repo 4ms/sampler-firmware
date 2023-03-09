@@ -21,11 +21,6 @@ void main() {
 	using AudioInBlock = AudioStreamConf::AudioInBlock;
 	using AudioOutBlock = AudioStreamConf::AudioOutBlock;
 
-	Debug::Pin0{};
-	Debug::Pin1{};
-	Debug::Pin2{};
-	Debug::Pin3{};
-
 	Controls controls;
 
 	controls.start();

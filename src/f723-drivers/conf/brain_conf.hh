@@ -85,11 +85,12 @@ struct Disabled {
 	static void high() {}
 	static void low() {}
 };
+
 using Pin0 = Disabled;
 using Pin1 = Disabled;
-
 // using Pin0 = mdrivlib::FPin<mdrivlib::GPIO::H, mdrivlib::PinNum::_13>;
 // using Pin1 = mdrivlib::FPin<mdrivlib::GPIO::H, mdrivlib::PinNum::_14>;
+
 using Pin2 = mdrivlib::FPin<mdrivlib::GPIO::H, mdrivlib::PinNum::_15>;
 using Pin3 = mdrivlib::FPin<mdrivlib::GPIO::D, mdrivlib::PinNum::_3>;
 }; // namespace Debug

@@ -24,6 +24,7 @@ function(set_hal_sources sources family_name)
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sai.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_usart.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sd.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_fmc.c
       PARENT_SCOPE)
@@ -92,11 +93,8 @@ function(create_target target)
       -mfloat-abi=hard
       ${ARCH_FLAGS})
 
-  # Create libhwtests target
-  add_subdirectory(../../lib/libhwtests ${CMAKE_CURRENT_BINARY_DIR}/libhwtests)
-  target_link_libraries(libhwtests PRIVATE ${target}_ARCH)
 
-  # Create main app elf file target
+  # Create main app elf file target, and link to the ARCH interface
   add_executable(${target}.elf 
     ${root}/lib/mdrivlib/drivers/pin.cc
     ${root}/lib/mdrivlib/drivers/tim.cc
@@ -124,9 +122,13 @@ function(create_target target)
     ${TARGET_INCLUDES}
     )
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
-  target_link_libraries(${target}.elf PRIVATE libhwtests)
   target_link_script(${target} ${TARGET_LINK_SCRIPT})
   add_bin_hex_command(${target})
+
+  # Create libhwtests target, and link to the ARCH interface, and link main app to it
+  add_subdirectory(../../lib/libhwtests ${CMAKE_CURRENT_BINARY_DIR}/libhwtests)
+  target_link_libraries(libhwtests PRIVATE ${target}_ARCH)
+  target_link_libraries(${target}.elf PRIVATE libhwtests)
 
   # Create bootloader elf file target
   add_executable(
@@ -206,8 +208,7 @@ function(add_bin_hex_command target_base)
   add_custom_command(
     TARGET ${target_base}.elf
     POST_BUILD
-    COMMAND echo "Binaries are in    $<TARGET_FILE_DIR:${target_base}.elf>"
-    COMMAND echo "Target filename is $<TARGET_FILE:${target_base}.elf>"
+    COMMAND echo "Built .elf file: $<TARGET_FILE:${target_base}.elf>"
     COMMAND arm-none-eabi-objcopy -O ihex $<TARGET_FILE:${target_base}.elf>
             ${BASENAME}.hex
     COMMAND arm-none-eabi-objcopy -O binary $<TARGET_FILE:${target_base}.elf>

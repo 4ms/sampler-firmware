@@ -27,6 +27,7 @@ function(set_hal_sources sources family_name)
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sd.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_fmc.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_sdmmc.c
       PARENT_SCOPE)
 endfunction()
 
@@ -55,47 +56,50 @@ function(create_target target)
   # Create <target>_ARCH: Interface library for defs/options common to all
   # builds on this architecture
   add_library(${target}_ARCH INTERFACE)
-  target_compile_definitions(${target}_ARCH INTERFACE 
-    USE_HAL_DRIVER 
-    USE_FULL_LL_DRIVER
-    ${ARCH_DEFINES})
+  target_compile_definitions(
+    ${target}_ARCH INTERFACE USE_HAL_DRIVER USE_FULL_LL_DRIVER ${ARCH_DEFINES})
 
-  target_compile_options(${target}_ARCH INTERFACE 
-    $<$<CONFIG:Debug>:-O0 -g3>
-    $<$<CONFIG:Release>:-Ofast>
-    $<$<CONFIG:RelWithDebInfo>:-Ofast -g3>
-    -fdata-sections
-    -ffunction-sections
-    -fno-common
-    -ffreestanding
-    -fno-unwind-tables
-    -mfloat-abi=hard
-    -mthumb
-    -nostartfiles
+  target_compile_options(
+    ${target}_ARCH
+    INTERFACE $<$<CONFIG:Debug>:-O0
+              -g3>
+              $<$<CONFIG:Release>:-Ofast>
+              $<$<CONFIG:RelWithDebInfo>:-Ofast
+              -g3>
+              -fdata-sections
+              -ffunction-sections
+              -fno-common
+              -ffreestanding
+              -fno-unwind-tables
+              -mfloat-abi=hard
+              -mthumb
+              -nostartfiles
+              -nostdlib
+              -Wdouble-promotion
+              -Werror=return-type
+              $<$<COMPILE_LANGUAGE:CXX>:
+              -std=c++23
+              -ffold-simple-inlines
+              -fno-rtti
+              -fno-threadsafe-statics
+              -fno-exceptions
+              -Wno-register
+              -Wno-volatile
+              >
+              ${ARCH_FLAGS})
+
+  target_link_options(
+    ${target}_ARCH
+    INTERFACE
+    -Wl,--gc-sections
     -nostdlib
-    -Wdouble-promotion
-    -Werror=return-type
-    $<$<COMPILE_LANGUAGE:CXX>:
-        -std=c++23
-        -ffold-simple-inlines
-        -fno-rtti
-        -fno-threadsafe-statics
-        -fno-exceptions
-        -Wno-register
-        -Wno-volatile
-    >
+    -mthumb
+    -mfloat-abi=hard
     ${ARCH_FLAGS})
 
-  target_link_options(${target}_ARCH INTERFACE 
-      -Wl,--gc-sections 
-      -nostdlib 
-      -mthumb 
-      -mfloat-abi=hard
-      ${ARCH_FLAGS})
-
-
   # Create main app elf file target, and link to the ARCH interface
-  add_executable(${target}.elf 
+  add_executable(
+    ${target}.elf
     ${root}/lib/mdrivlib/drivers/pin.cc
     ${root}/lib/mdrivlib/drivers/tim.cc
     ${root}/lib/mdrivlib/drivers/timekeeper.cc
@@ -109,23 +113,29 @@ function(create_target target)
     ${root}/src/libcpp_stub.cc
     ${root}/src/main.cc
     ${root}/src/hardware_tests/hardware_tests.cc
+    ${root}/src/fatfs/diskio.cc
+    ${root}/lib/fatfs/source/ff.c
+    ${root}/lib/fatfs/source/ffunicode.c
     ${TARGET_SOURCES}
-    ${HAL_SOURCES}
-    )
-  target_include_directories(${target}.elf PRIVATE 
-    ${root}/src
-    ${root}/src/hardware_tests
-    ${root}/lib/CMSIS/Include
-    ${root}/lib/mdrivlib
-    ${root}/lib/mdrivlib/drivers
-    ${root}/lib/cpputil
-    ${TARGET_INCLUDES}
-    )
+    ${HAL_SOURCES})
+
+  target_include_directories(
+    ${target}.elf
+    PRIVATE ${root}/src
+            ${root}/src/hardware_tests
+            ${root}/src/fatfs
+            ${root}/lib/CMSIS/Include
+            ${root}/lib/mdrivlib
+            ${root}/lib/mdrivlib/drivers
+            ${root}/lib/cpputil
+            ${root}/lib/fatfs/source
+            ${TARGET_INCLUDES})
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
   target_link_script(${target} ${TARGET_LINK_SCRIPT})
   add_bin_hex_command(${target})
 
-  # Create libhwtests target, and link to the ARCH interface, and link main app to it
+  # Create libhwtests target, and link to the ARCH interface, and link main app
+  # to it
   add_subdirectory(../../lib/libhwtests ${CMAKE_CURRENT_BINARY_DIR}/libhwtests)
   target_link_libraries(libhwtests PRIVATE ${target}_ARCH)
   target_link_libraries(${target}.elf PRIVATE libhwtests)
@@ -144,18 +154,17 @@ function(create_target target)
     ${root}/lib/mdrivlib/drivers/timekeeper.cc
     ${root}/lib/mdrivlib/drivers/tim.cc
     ${TARGET_BOOTLOADER_SOURCES}
-    ${BOOTLOADER_HAL_SOURCES}
-    )
-  target_include_directories( ${target}-bootloader.elf PRIVATE 
-    ${root}/lib/CMSIS/Include
-    ${root}/src/bootloader
-    ${root}/src/bootloader/stmlib
-    ${root}/src
-    ${root}/lib/mdrivlib
-    ${root}/lib/mdrivlib/drivers
-    ${root}/lib/cpputil
-    ${TARGET_INCLUDES}
-    )
+    ${BOOTLOADER_HAL_SOURCES})
+  target_include_directories(
+    ${target}-bootloader.elf
+    PRIVATE ${root}/lib/CMSIS/Include
+            ${root}/src/bootloader
+            ${root}/src/bootloader/stmlib
+            ${root}/src
+            ${root}/lib/mdrivlib
+            ${root}/lib/mdrivlib/drivers
+            ${root}/lib/cpputil
+            ${TARGET_INCLUDES})
 
   target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
   target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
@@ -263,5 +272,3 @@ function(set_target_sources_includes project_driver_dir mdrivlib_target_dir
       ${BOOTLOADER_HAL_SOURCES}
       PARENT_SCOPE)
 endfunction()
-
-

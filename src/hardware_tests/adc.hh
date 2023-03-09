@@ -59,14 +59,14 @@ struct TestADCs : IAdcChecker {
 		}
 	}
 
-	void pause_between_steps() override {
-		Util::pause_until_button_pressed();
-		Util::pause_until_button_released();
-	}
+	void pause_between_steps() override { HAL_Delay(10); }
 
 	void show_multiple_nonzeros_error() override { Board::PlayLED{}.set_color(Colors::red); }
 
-	bool button_to_skip_step() override { return Board::PlayButton::PinT::read(); }
+	bool button_to_skip_step() override {
+		controls.play_button.update();
+		return controls.play_button.is_just_pressed();
+	}
 
 	void delay_ms(uint32_t x) override { HAL_Delay(x); }
 };

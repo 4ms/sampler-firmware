@@ -2,8 +2,12 @@
 // #include "drivers/rcc.hh"
 #include "drivers/uart.hh"
 
+constexpr inline UartConf uart_conf{
+	.base_addr = UART4_BASE,
+};
+
 struct Console {
-	static mdrivlib::Uart<UART4_BASE> console;
+	static mdrivlib::Uart<uart_conf> console;
 
 	static void putchar(char c);
 

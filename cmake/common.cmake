@@ -132,6 +132,7 @@ function(create_target target)
             ${root}/lib/cpputil
             ${root}/lib/printf
             ${root}/lib/fatfs/source
+            ${root}/lib/printf
             ${TARGET_INCLUDES})
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
   target_link_script(${target} ${TARGET_LINK_SCRIPT})

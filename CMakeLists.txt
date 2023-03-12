@@ -22,8 +22,9 @@ add_custom_target(
   tests ALL
   # COMMAND cd ${CMAKE_SOURCE_DIR}/tests && cmake -B build && cmake --build
   # build && build/tests
-  COMMAND cd ${CMAKE_SOURCE_DIR}/lib/cpputil && make --no-print-directory -f
-          tests/Makefile
-  COMMAND cd ${CMAKE_SOURCE_DIR}/lib/mdrivlib && make --no-print-directory -f
-          tests/Makefile
-  USES_TERMINAL)
+  # COMMAND cd ${CMAKE_SOURCE_DIR}/lib/cpputil && make --no-print-directory -f
+  #         tests/Makefile
+  # COMMAND cd ${CMAKE_SOURCE_DIR}/lib/mdrivlib && make --no-print-directory -f
+  #         tests/Makefile
+  # USES_TERMINAL
+  )

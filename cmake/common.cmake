@@ -149,34 +149,34 @@ function(create_target target)
   target_link_libraries(${target}.elf PRIVATE libhwtests)
 
   # Create bootloader elf file target
-  add_executable(
-    ${target}-bootloader.elf
-    ${root}/src/bootloader/bootloader.cc
-    # ${root}/src/bootloader/leds.cc ${root}/src/bootloader/animation.cc
-    # ${root}/src/bootloader/bl_utils.cc
-    # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
-    ${root}/src/libc_stub.c
-    ${root}/src/libcpp_stub.cc
-    # ${root}/src/shareddrv/flash.cc
-    ${root}/lib/mdrivlib/drivers/pin.cc
-    ${root}/lib/mdrivlib/drivers/timekeeper.cc
-    ${root}/lib/mdrivlib/drivers/tim.cc
-    ${TARGET_BOOTLOADER_SOURCES}
-    ${BOOTLOADER_HAL_SOURCES})
-  target_include_directories(
-    ${target}-bootloader.elf
-    PRIVATE ${root}/lib/CMSIS/Include
-            ${root}/src/bootloader
-            ${root}/src/bootloader/stmlib
-            ${root}/src
-            ${root}/lib/mdrivlib
-            ${root}/lib/mdrivlib/drivers
-            ${root}/lib/cpputil
-            ${TARGET_INCLUDES})
+  # add_executable(
+  #   ${target}-bootloader.elf
+  #   ${root}/src/bootloader/bootloader.cc
+  #   # ${root}/src/bootloader/leds.cc ${root}/src/bootloader/animation.cc
+  #   # ${root}/src/bootloader/bl_utils.cc
+  #   # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
+  #   ${root}/src/libc_stub.c
+  #   ${root}/src/libcpp_stub.cc
+  #   # ${root}/src/shareddrv/flash.cc
+  #   ${root}/lib/mdrivlib/drivers/pin.cc
+  #   ${root}/lib/mdrivlib/drivers/timekeeper.cc
+  #   ${root}/lib/mdrivlib/drivers/tim.cc
+  #   ${TARGET_BOOTLOADER_SOURCES}
+  #   ${BOOTLOADER_HAL_SOURCES})
+  # target_include_directories(
+  #   ${target}-bootloader.elf
+  #   PRIVATE ${root}/lib/CMSIS/Include
+  #           ${root}/src/bootloader
+  #           ${root}/src/bootloader/stmlib
+  #           ${root}/src
+  #           ${root}/lib/mdrivlib
+  #           ${root}/lib/mdrivlib/drivers
+  #           ${root}/lib/cpputil
+  #           ${TARGET_INCLUDES})
 
-  target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
-  target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
-  add_bin_hex_command(${target}-bootloader)
+  # target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
+  # target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
+  # add_bin_hex_command(${target}-bootloader)
 
   # Create .wav file target for firmware upgrades
   add_custom_target(

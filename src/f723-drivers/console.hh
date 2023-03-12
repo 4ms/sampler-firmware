@@ -20,11 +20,5 @@ struct Console {
 	static void log(const char *format, ...);
 
 	Console() { console.init(); }
-
-	static void init() {
-		console.init();
-		// mdrivlib::Pin uart_tx{ mdrivlib::GPIO::H, mdrivlib::PinNum::_13, mdrivlib::PinMode::Alt,
-		// mdrivlib::PinAF::AltFunc8}; mdrivlib::Pin uart_rx{ mdrivlib::GPIO::H, mdrivlib::PinNum::_14,
-		// mdrivlib::PinMode::Alt, mdrivlib::PinAF::AltFunc8};
-	}
+	static void init() { console.init(); }
 };

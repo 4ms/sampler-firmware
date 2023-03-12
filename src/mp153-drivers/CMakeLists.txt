@@ -45,7 +45,7 @@ set(WAV_ENCODE_PYTHON_CMD
 )
 
 set(TARGET_INCLUDES ${MDRIVLIB_TARGET_DIR_2})
-set_target_sources_includes(${PROJECT_DRIVER_DIR} ${MDRIVLIB_TARGET_DIR}
+set_target_sources_includes(${PROJECT_DRIVER_DIR} ${MDRIVLIB_TARGET_DIR} ${MDRIVLIB_TARGET_DIR_2}
                             ${FAMILY_NAME})
 
 create_target(${target})

@@ -113,8 +113,6 @@ function(create_target target)
     ${root}/lib/mdrivlib/drivers/i2c.cc
     ${root}/lib/mdrivlib/drivers/codec_PCM3060.cc
     ${root}/lib/mdrivlib/drivers/hal_handlers.cc
-    ${root}/lib/mdrivlib/target/stm32f7xx/drivers/interrupt_handler.cc
-    ${root}/lib/mdrivlib/target/stm32f7xx/drivers/sai_tdm.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
     ${root}/src/main.cc
@@ -239,7 +237,7 @@ function(add_bin_hex_command target_base)
 endfunction()
 
 function(set_target_sources_includes project_driver_dir mdrivlib_target_dir
-         family_name)
+         mdrivlib_target_dir_2 family_name)
   # family_name is like stm32f7
   string(TOLOWER ${family_name} family_name)
   string(TOUPPER ${family_name} family_name_uc)
@@ -251,6 +249,7 @@ function(set_target_sources_includes project_driver_dir mdrivlib_target_dir
       ${mdrivlib_target_dir}/boot/startup.s
       # ${project_driver_dir}/adc.cc ${project_driver_dir}/system.cc
       ${mdrivlib_target_dir}/drivers/interrupt_handler.cc
+      ${mdrivlib_target_dir_2}/drivers/sai_tdm.cc
       PARENT_SCOPE)
 
   set(TARGET_INCLUDES

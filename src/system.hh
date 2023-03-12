@@ -25,7 +25,7 @@ struct System {
 		Debug::Pin1{};
 		Debug::Pin2{};
 		Debug::Pin3{};
-		Console::console_init();
+		Console::init();
 	}
 };
 

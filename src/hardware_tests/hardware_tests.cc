@@ -25,6 +25,7 @@ void all_lights_off() {
 
 void run(Controls &controls) {
 	printf_("HW Test\n");
+
 	all_lights_off();
 	Util::pause_until_button_released();
 	Util::flash_mainbut_until_pressed();

@@ -11,6 +11,6 @@ void Console::log(const char *format, ...) {
 	va_end(va);
 }
 
-mdrivlib::Uart<UART4_BASE> Console::console;
+// mdrivlib::Uart<UART4_BASE> Console::console;
 
 extern "C" void _putchar(char c) { Console::putchar(c); }

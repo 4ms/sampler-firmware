@@ -113,7 +113,6 @@ function(create_target target)
     ${root}/lib/mdrivlib/drivers/i2c.cc
     ${root}/lib/mdrivlib/drivers/codec_PCM3060.cc
     ${root}/lib/mdrivlib/drivers/hal_handlers.cc
-    ${root}/lib/mdrivlib/drivers/sdram.cc
     ${root}/lib/mdrivlib/target/stm32f7xx/drivers/interrupt_handler.cc
     ${root}/lib/mdrivlib/target/stm32f7xx/drivers/sai_tdm.cc
     ${root}/src/libc_stub.c
@@ -259,7 +258,9 @@ function(set_target_sources_includes project_driver_dir mdrivlib_target_dir
       ${project_driver_dir}
       ${mdrivlib_target_dir}
       ${mdrivlib_target_dir}/drivers
+      ${mdrivlib_target_dir_2}/drivers
       ${root}/lib/CMSIS/Device/ST/${family_name_uc}xx/Include
+      ${root}/lib/CMSIS/Core_A/Include
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Inc
       PARENT_SCOPE)
 

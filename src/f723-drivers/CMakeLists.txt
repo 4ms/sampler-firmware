@@ -15,6 +15,8 @@ set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH.ld)
 set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16)
 set(ARCH_DEFINES STM32F723xx STM32F7 ARM_MATH_CM7)
 
+set(TARGET_SOURCES ../../lib/mdrivlib/drivers/sdram.cc)
+
 set(TARGET_BOOTLOADER_SOURCES
     # ../../src/bootloader/gate_input_f423.cc
     # ../../src/f423-drivers/adc.cc

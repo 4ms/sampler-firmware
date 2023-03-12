@@ -11,6 +11,7 @@ set(target mp153)
 set(FAMILY_NAME stm32mp1)
 set(PROJECT_DRIVER_DIR ../../src/mp153-drivers)
 set(MDRIVLIB_TARGET_DIR ../../lib/mdrivlib/target/stm32mp1_ca7)
+set(MDRIVLIB_TARGET_DIR_2 ../../lib/mdrivlib/target/stm32mp1)
 set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/stm32mp15xx_ca7.ld)
 set(ARCH_FLAGS
     -mcpu=cortex-a7
@@ -43,6 +44,7 @@ set(WAV_ENCODE_PYTHON_CMD
   # cmake-format: on
 )
 
+set(TARGET_INCLUDES ${MDRIVLIB_TARGET_DIR_2})
 set_target_sources_includes(${PROJECT_DRIVER_DIR} ${MDRIVLIB_TARGET_DIR}
                             ${FAMILY_NAME})
 

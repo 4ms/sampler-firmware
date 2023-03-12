@@ -14,12 +14,11 @@ struct System {
 	System() {
 		mdrivlib::System::SetVectorTable(AppStartAddr);
 		mdrivlib::SystemClocks::init_clocks(osc_conf, clk_conf, rcc_periph_conf);
-		mdrivlib::SDRAMPeriph sdram{Brain::SDRAM_conf, Brain::SdramBank, Brain::SdramKernelClock};
-		// SCB_CleanInvalidateDCache();
-		// SCB_DisableDCache();
-		SCB_InvalidateICache();
-		SCB_EnableICache();
-		// SCB_DisableDCache();
+
+		// TODO: F7 only:
+		//  mdrivlib::SDRAMPeriph sdram{Brain::SDRAM_conf, Brain::SdramBank, Brain::SdramKernelClock};
+		//  SCB_InvalidateICache();
+		//  SCB_EnableICache();
 
 		Debug::Pin0{};
 		Debug::Pin1{};

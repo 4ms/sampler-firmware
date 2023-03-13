@@ -4,6 +4,8 @@
 #include "hardware_tests/util.hh"
 #include "libhwtests/AdcChecker.hh"
 #include "libhwtests/AdcRangeChecker.hh"
+#include "printf.h"
+#include <string_view>
 
 namespace SamplerKit::HWTests
 {
@@ -18,6 +20,9 @@ struct TestADCs : IAdcChecker {
 	};
 
 	Controls &controls;
+
+	static constexpr std::string_view pot_names[] = {"Pitch", "StartPos", "Length", "Sample"};
+	static constexpr std::string_view cv_names[] = {"Pitch", "StartPos", "Length", "Sample", "Bank"};
 
 	TestADCs(Controls &controls)
 		: IAdcChecker{bounds, NumPots, 1, NumCVs - 1}
@@ -35,13 +40,18 @@ struct TestADCs : IAdcChecker {
 
 	void set_indicator(uint8_t adc_i, AdcType adctype, AdcCheckState state) override {
 		if (state == AdcCheckState::NoCoverage) {
+			if (adctype == AdcType::Pot)
+				printf_("Checking Pot %.10s (#%d): ", pot_names[adc_i].data(), adc_i);
+			if (adctype == AdcType::Pot)
+				printf_("Checking CV Jack %.10s (#%d): ", cv_names[adc_i].data(), adc_i);
 			Board::BankLED{}.set_color(Colors::red);
 			Board::PlayLED{}.set_color(Colors::green);
 			Board::RevLED{}.set_color(Colors::red);
 		}
 
-		if (state == AdcCheckState::AtMin)
+		if (state == AdcCheckState::AtMin) {
 			Board::BankLED{}.set_color(Colors::off);
+		}
 
 		if (state == AdcCheckState::AtMax)
 			Board::RevLED{}.set_color(Colors::off);
@@ -53,6 +63,7 @@ struct TestADCs : IAdcChecker {
 			Board::PlayLED{}.set_color(Colors::green);
 
 		if (state == AdcCheckState::FullyCovered) {
+			printf_("Done\n");
 			Board::PlayLED{}.set_color(Colors::off);
 			Board::RevLED{}.set_color(Colors::off);
 			Board::BankLED{}.set_color(Colors::off);

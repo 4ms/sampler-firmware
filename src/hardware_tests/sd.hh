@@ -23,9 +23,21 @@ struct TestSDCard {
 			Board::PlayLED{}.set_color(Colors::off);
 			Board::BankLED{}.set_color(Colors::off);
 
+			Board::RevB::set(true);
+			printf_("Attempting to mount SD Card\n");
+			ok = sdcard.mount_disk();
+			if (!ok) {
+				printf_("Failed to mount SD Card\n");
+				Board::RevR::set(true);
+				Util::flash_mainbut_until_pressed();
+				continue;
+			}
+
 			Board::RevG::set(true);
+			printf_("Attempting to write file\n");
 			ok = sdcard.create_file("test.txt", wbuf);
 			if (!ok) {
+				printf_("Failed to create file test.txt\n");
 				Board::RevR::set(true);
 				Util::flash_mainbut_until_pressed();
 				continue;
@@ -33,8 +45,10 @@ struct TestSDCard {
 
 			std::array<char, 128> rbuf;
 			Board::BankG::set(true);
+			printf_("Attempting to read file\n");
 			auto bytes_read = sdcard.read_file("test.txt", rbuf);
 			if (!bytes_read || bytes_read != wbuf.size()) {
+				printf_("Failed to read file test.txt. Bytes_read = %d\n", bytes_read);
 				ok = false;
 				Board::BankR::set(true);
 				Util::flash_mainbut_until_pressed();
@@ -43,6 +57,7 @@ struct TestSDCard {
 
 			for (auto [w, r] : zip(wbuf, rbuf)) {
 				if (w != r) {
+					printf_("File was not the same when read back.\n");
 					ok = false;
 					Board::RevB::set(true);
 					Board::BankR::set(true);
@@ -59,12 +74,10 @@ struct TestSDCard {
 	}
 
 	void run_test() {
+		constexpr uint32_t block_to_test = 1024;
+
 		auto &sd = sdcard_ops.sd;
 		// mdrivlib::SDCard<Brain::SDCardConf> sd;
-
-		std::array<uint8_t, 512> buf;
-		for (auto &x : buf)
-			x = 0xAA;
 
 		// Allow user to insert a card if they forgot to
 		// or try a different card
@@ -74,7 +87,12 @@ struct TestSDCard {
 			Board::PlayLED{}.set_color(Colors::off);
 			Board::BankLED{}.set_color(Colors::off);
 
-			ok = sd.read(buf, 1024);
+			// Read into buf, check if canary values were overwritten
+			std::array<uint8_t, 512> buf;
+			for (auto &x : buf)
+				x = 0xAA;
+
+			ok = sd.read(buf, block_to_test);
 			if (!ok) {
 				Board::RevR::set(true);
 				Util::flash_mainbut_until_pressed();
@@ -93,22 +111,28 @@ struct TestSDCard {
 				continue;
 			}
 
-			// Try a write test
-			std::array<uint8_t, 512> wbuf;
-			for (unsigned i = 0; auto &x : wbuf)
-				x = (++i) & 0xFF;
-			ok = sd.write(wbuf, 1024);
+			// Write calculated values from wbuf
+			std::array<uint8_t, block_to_test> wbuf;
+			for (unsigned i = 0; auto &x : wbuf) {
+				x = (i * 17) & 0xFF;
+				i++;
+			}
+			ok = sd.write(wbuf, block_to_test);
 			if (!ok) {
 				Board::BankB::set(true);
 				Util::flash_mainbut_until_pressed();
 				continue;
 			}
+			// clear wbuf
+			for (auto &x : wbuf)
+				x = 0;
 
-			// Read back:
-			ok = sd.read(wbuf, 1024);
+			// Read back and compare
+			ok = sd.read(wbuf, block_to_test);
 			for (unsigned i = 0; auto &x : wbuf) {
-				if (x != ((++i) & 0xFF))
+				if (x != ((i * 17) & 0xFF))
 					ok = false;
+				i++;
 			}
 			if (!ok) {
 				Board::BankB::set(true);
@@ -118,7 +142,7 @@ struct TestSDCard {
 			}
 
 			// Restore original data
-			sd.write(buf, 1024);
+			sd.write(buf, block_to_test);
 		}
 	}
 };

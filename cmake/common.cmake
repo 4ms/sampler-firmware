@@ -79,7 +79,6 @@ function(create_target target)
               -ffreestanding
               -fno-unwind-tables
               -mfloat-abi=hard
-              -mthumb
               -nostartfiles
               -nostdlib
               -Wdouble-promotion
@@ -95,14 +94,8 @@ function(create_target target)
               >
               ${ARCH_FLAGS})
 
-  target_link_options(
-    ${target}_ARCH
-    INTERFACE
-    -Wl,--gc-sections
-    -nostdlib
-    -mthumb
-    -mfloat-abi=hard
-    ${ARCH_FLAGS})
+  target_link_options(${target}_ARCH INTERFACE -Wl,--gc-sections -nostdlib
+                      -mfloat-abi=hard ${ARCH_FLAGS})
 
   # Create main app elf file target, and link to the ARCH interface
   add_executable(

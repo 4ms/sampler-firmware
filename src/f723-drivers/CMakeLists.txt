@@ -11,8 +11,9 @@ set(target 723)
 set(FAMILY_NAME stm32f7)
 set(PROJECT_DRIVER_DIR ../../src/f723-drivers)
 set(MDRIVLIB_TARGET_DIR ../../lib/mdrivlib/target/stm32f7xx)
+set(MDRIVLIB_TARGET_DIR_2 ../../lib/mdrivlib/target/stm32f723)
 set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH.ld)
-set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16)
+set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mthumb)
 set(ARCH_DEFINES STM32F723xx STM32F7 ARM_MATH_CM7)
 
 set(TARGET_SOURCES ../../lib/mdrivlib/drivers/sdram.cc)
@@ -36,6 +37,6 @@ set(WAV_ENCODE_PYTHON_CMD
 )
 
 set_target_sources_includes(${PROJECT_DRIVER_DIR} ${MDRIVLIB_TARGET_DIR}
-                            ${FAMILY_NAME})
+                            ${MDRIVLIB_TARGET_DIR_2} ${FAMILY_NAME})
 
 create_target(${target})

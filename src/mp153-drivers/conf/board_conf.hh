@@ -17,14 +17,14 @@ using mdrivlib::PinNum;
 using enum mdrivlib::PinPolarity;
 using enum mdrivlib::PinMode;
 
-using PlayButton = mdrivlib::DebouncedSwitch<PinDef{GPIO::C, PinNum::_1}, Inverted>;
+using PlayButton = mdrivlib::DebouncedSwitch<PinDef{GPIO::E, PinNum::_4}, Inverted>;
 using BankButton = mdrivlib::DebouncedSwitch<PinDef{GPIO::B, PinNum::_10}, Inverted>;
 using RevButton = mdrivlib::DebouncedSwitch<PinDef{GPIO::B, PinNum::_0}, Inverted>;
 
 using PlayJack = mdrivlib::DebouncedPin<PinDef{GPIO::D, PinNum::_1}, Normal>;
 using RevJack = mdrivlib::DebouncedPin<PinDef{GPIO::B, PinNum::_7}, Normal>;
 
-using PlayR = mdrivlib::FPin<GPIO::E, PinNum::_4, Output, Inverted>;
+using PlayR = mdrivlib::FPin<GPIO::C, PinNum::_1, Output, Inverted>;
 using PlayG = mdrivlib::FPin<GPIO::B, PinNum::_1, Output, Inverted>;
 using PlayB = mdrivlib::FPin<GPIO::A, PinNum::_1, Output, Inverted>;
 using PlayLED = mdrivlib::MixedRgbLed<PlayR, PlayG, PlayB>;

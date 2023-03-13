@@ -23,7 +23,9 @@ struct TestButtons : IButtonChecker {
 		return false;
 	}
 
-	void _set_error_indicator(uint8_t channel, ErrorType err) override { Board::PlayLED{}.set_color(Colors::red); }
+	void _set_error_indicator(uint8_t channel, ErrorType err) override {
+		Board::PlayLED{}.set_color(err == ErrorType::None ? Colors::off : Colors::red);
+	}
 
 	void _set_indicator(uint8_t indicator_num, bool newstate) override {
 		if (indicator_num == 0)

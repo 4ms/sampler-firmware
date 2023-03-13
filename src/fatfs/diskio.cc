@@ -1,7 +1,9 @@
 #include "diskio.h" /* Declarations of disk functions */
 #include "disk_ops.hh"
+#include "drivers/stm32xx.h"
 #include "ff.h"
 #include <array>
+
 
 constexpr unsigned MaxNumDisks = 4;
 
@@ -9,6 +11,8 @@ namespace
 {
 std::array<DiskOps *, MaxNumDisks> _diskops{nullptr, nullptr, nullptr, nullptr};
 }
+
+extern "C" uint32_t get_fattime() { return HAL_GetTick(); }
 
 // Register a set of disk operations with the FatFS filesystem.
 // Returns false if failed: disk_id is already taken or out of range.

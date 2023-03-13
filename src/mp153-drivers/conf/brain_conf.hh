@@ -13,7 +13,7 @@ constexpr inline int16_t MinPotChange = 10;
 constexpr inline int16_t MinCVChange = 10;
 
 // ADC Peripheral Conf:
-struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
+struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;
 	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_1;
 	static constexpr auto oversample = true;
@@ -35,7 +35,7 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	};
 };
 
-struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
+struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;
 	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_2;
 	static constexpr auto oversample = true;
@@ -59,7 +59,7 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
 
 // memory_conf:
 constexpr inline uint32_t MemoryStartAddr = 0xD0000000;
-constexpr inline uint32_t MemorySizeBytes = 0x00800000;
+constexpr inline uint32_t MemorySizeBytes = 0x08000000; // TODO: check this value
 constexpr inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
 
 using RAMSampleT = int16_t;

@@ -24,7 +24,13 @@ void all_lights_off() {
 }
 
 void run(Controls &controls) {
-	printf_("HW Test\n");
+	printf_("\n\nSampler Kit -- HW Test\n");
+
+	// SD Card
+	printf_("Initializing SD Card periph\n");
+	TestSDCard sdtest;
+	// sdtest.run_test();
+	sdtest.run_fatfs_test();
 
 	all_lights_off();
 	Util::pause_until_button_released();
@@ -94,10 +100,6 @@ void run(Controls &controls) {
 
 	all_lights_off();
 	Util::flash_mainbut_until_pressed();
-
-	// SD Card
-	TestSDCard sdtest;
-	sdtest.run_test();
 
 	// RAM Test
 	controls.bank_led.set_color(Colors::white);

@@ -44,7 +44,7 @@ using EndOut = mdrivlib::FPin<GPIO::D, PinNum::_0, Output, Normal>;
 constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_2Cycles;
 
 constexpr std::array<AdcChannelConf, NumPots> PotAdcChans = {{
-	{{GPIO::A, PinNum::_3}, AdcChanNum::_15, PitchPot, AdcSampTime},
+	{{GPIO::A, PinNum::_6}, AdcChanNum::_3, PitchPot, AdcSampTime},
 	{{GPIO::A, PinNum::_5}, AdcChanNum::_19, StartPot, AdcSampTime},
 	{{GPIO::C, PinNum::_5}, AdcChanNum::_8, LengthPot, AdcSampTime},
 	{{GPIO::C, PinNum::_0}, AdcChanNum::_10, SamplePot, AdcSampTime},
@@ -55,7 +55,7 @@ constexpr std::array<AdcChannelConf, NumCVs> CVAdcChans = {{
 	{{GPIO::A, PinNum::_2}, AdcChanNum::_14, StartCV, AdcSampTime},
 	{{GPIO::A, PinNum::_7}, AdcChanNum::_7, LengthCV, AdcSampTime},
 	{{GPIO::C, PinNum::_3}, AdcChanNum::_13, SampleCV, AdcSampTime},
-	{{GPIO::A, PinNum::_6}, AdcChanNum::_3, BankCV, AdcSampTime},
+	{{GPIO::A, PinNum::_3}, AdcChanNum::_15, BankCV, AdcSampTime},
 }};
 
 } // namespace SamplerKit::Board

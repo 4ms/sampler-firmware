@@ -51,6 +51,8 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
 		static constexpr uint32_t pri = 0;
 		static constexpr uint32_t subpri = 0;
 	};
+
+	static constexpr uint16_t min_value = 15;
 };
 
 // memory_conf:

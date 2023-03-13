@@ -6,6 +6,7 @@
 #include "drivers/pin_change_conf.hh"
 #include "drivers/timekeeper.hh"
 #include "drivers/uart.hh"
+#include "ld.h"
 
 namespace Brain
 {
@@ -55,16 +56,18 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 		static constexpr uint32_t pri = 0;
 		static constexpr uint32_t subpri = 0;
 	};
+
+	static constexpr uint16_t min_value = 70;
 };
 
 // memory_conf:
-constexpr inline uint32_t MemoryStartAddr = 0xD0000000;
-constexpr inline uint32_t MemorySizeBytes = 0x08000000; // TODO: check this value
-constexpr inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
+const inline uint32_t MemoryStartAddr = A7_HEAP;
+const inline uint32_t MemorySizeBytes = A7_HEAP_SZ;
+const inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
 
-using RAMSampleT = int16_t;
-constexpr inline uint32_t MemorySampleSize = sizeof(RAMSampleT);
-constexpr inline uint32_t MemorySamplesNum = MemorySizeBytes / MemorySampleSize;
+// using RAMSampleT = int16_t;
+// constexpr inline uint32_t MemorySampleSize = sizeof(RAMSampleT);
+// constexpr inline uint32_t MemorySamplesNum = MemorySizeBytes / MemorySampleSize;
 
 // clock sync conf
 struct LRClkPinChangeConf : mdrivlib::DefaultPinChangeConf {

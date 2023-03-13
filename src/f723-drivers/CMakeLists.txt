@@ -1,29 +1,27 @@
 cmake_minimum_required(VERSION 3.15)
-set(CMAKE_TOOLCHAIN_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(f723 C CXX ASM)
 
 message("Configuring f723")
-include(../../cmake/common.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/common.cmake)
 
 set(target 723)
 set(FAMILY_NAME stm32f7)
-set(PROJECT_DRIVER_DIR ../../src/f723-drivers)
-set(MDRIVLIB_TARGET_DIR ../../lib/mdrivlib/target/stm32f7xx)
-set(MDRIVLIB_TARGET_DIR_2 ../../lib/mdrivlib/target/stm32f723)
+set(PROJECT_DRIVER_DIR ${CMAKE_SOURCE_DIR}/src/f723-drivers)
+set(MDRIVLIB_TARGET_DIR ${CMAKE_SOURCE_DIR}/lib/mdrivlib/target/stm32f723)
+set(MDRIVLIB_TARGET_DIR_2 ${CMAKE_SOURCE_DIR}/lib/mdrivlib/target/stm32f7xx)
 set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH.ld)
 set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mthumb)
 set(ARCH_DEFINES STM32F723xx STM32F7 ARM_MATH_CM7)
 
-set(TARGET_SOURCES ../../lib/mdrivlib/drivers/sdram.cc)
+set(TARGET_SOURCES 
+	${CMAKE_SOURCE_DIR}/lib/mdrivlib/drivers/sdram.cc
+    ${CMAKE_SOURCE_DIR}/lib/mdrivlib/drivers/hal_handlers.cc)
 
 set(TARGET_BOOTLOADER_SOURCES
-    # ../../src/bootloader/gate_input_f423.cc
-    # ../../src/f423-drivers/adc.cc
-    # ../../stm32/HAL/stm32f4/Src/stm32f4xx_hal_adc.c
-    # ../../stm32/HAL/stm32f4/Src/stm32f4xx_hal_dma.c
 )
+
 set(TARGET_BOOTLOADER_LINK_SCRIPT
     ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)
 

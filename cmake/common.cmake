@@ -105,7 +105,6 @@ function(create_target target)
     ${root}/lib/mdrivlib/drivers/timekeeper.cc
     ${root}/lib/mdrivlib/drivers/i2c.cc
     ${root}/lib/mdrivlib/drivers/codec_PCM3060.cc
-    ${root}/lib/mdrivlib/drivers/hal_handlers.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
     ${root}/src/main.cc

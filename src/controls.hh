@@ -12,18 +12,18 @@ namespace SamplerKit
 {
 
 class Controls {
-	static constexpr bool debug = false;
 
 	template<typename ConfT>
 	using AdcDmaPeriph = mdrivlib::AdcDmaPeriph<ConfT>;
 
 	// ADCs (Pots and CV):
-	std::array<uint16_t, NumCVs> cv_adc_buffer;
+	static inline __attribute__((section(".noncachable"))) std::array<uint16_t, NumCVs> cv_adc_buffer;
 	AdcDmaPeriph<Brain::CVAdcConf> cv_adcs{cv_adc_buffer, Board::CVAdcChans};
 
-	std::array<uint16_t, NumPots> pot_adc_buffer;
+	static inline __attribute__((section(".noncachable"))) std::array<uint16_t, NumPots> pot_adc_buffer;
 	AdcDmaPeriph<Brain::PotAdcConf> pot_adcs{pot_adc_buffer, Board::PotAdcChans};
 
+	static constexpr bool hardware_oversampling = Brain::PotAdcConf::oversample;
 	std::array<Oversampler<16, uint16_t>, NumPots> pots;
 	std::array<Oversampler<8, uint16_t>, NumCVs> cvs;
 
@@ -49,22 +49,20 @@ public:
 	enum class SwitchPos { Invalid = 0b00, Up = 0b01, Down = 0b10, Center = 0b11 };
 
 	uint16_t read_pot(PotAdcElement adcnum) {
-		if constexpr (debug)
+		if constexpr (hardware_oversampling)
 			return pot_adc_buffer[adcnum];
 		else
 			return pots[adcnum].val();
 	}
 	uint16_t read_cv(CVAdcElement adcnum) {
-		if constexpr (debug)
+		if constexpr (hardware_oversampling)
 			return cv_adc_buffer[adcnum];
 		else
 			return cvs[adcnum].val();
 	}
 
-	// SwitchPos read_time_switch() { return static_cast<SwitchPos>(time_switch.read()); }
-
 	void start() {
-		if constexpr (!debug) {
+		if constexpr (!hardware_oversampling) {
 			pot_adcs.register_callback([this] {
 				for (unsigned i = 0; auto &pot : pots)
 					pot.add_val(pot_adc_buffer[i++]);

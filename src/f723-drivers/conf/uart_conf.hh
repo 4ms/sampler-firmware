@@ -1,5 +1,5 @@
 #pragma once
-#include "drivers/uart.hh"
+#include "drivers/uart_conf.hh"
 
 constexpr inline UartConf uart_conf{
 	.base_addr = UART4_BASE,
@@ -10,15 +10,4 @@ constexpr inline UartConf uart_conf{
 	.wordlen = 8,
 	.parity = UartConf::Parity::None,
 	.stopbits = UartConf::StopBits::_1,
-};
-
-struct Console {
-	static inline mdrivlib::Uart<uart_conf> console;
-
-	static void putchar(char c);
-
-	static void log(const char *format, ...);
-
-	Console() { console.init(); }
-	static void init() { console.init(); }
 };

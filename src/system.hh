@@ -6,6 +6,7 @@
 #include "debug.hh"
 #include "drivers/sdram.hh"
 #include "drivers/system.hh"
+#include "drivers/system_clocks.hh"
 
 namespace SamplerKit
 {

@@ -43,6 +43,20 @@ using EndOut = mdrivlib::FPin<GPIO::H, PinNum::_5, Output, Normal>;
 
 constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_480Cycles;
 
+// constexpr auto PotConfs = std::to_array({
+// 	AdcChannelConf{{GPIO::B, PinNum::_1}, mdrivlib::AdcChanNum::_5, PotA, AdcSampTime},
+// 	AdcChannelConf{{GPIO::A, PinNum::_2}, mdrivlib::AdcChanNum::_14, PotB, AdcSampTime},
+// 	AdcChannelConf{{GPIO::B, PinNum::_0}, mdrivlib::AdcChanNum::_9, PotC, AdcSampTime},
+// 	AdcChannelConf{{GPIO::C, PinNum::_1}, mdrivlib::AdcChanNum::_11, PotD, AdcSampTime},
+// 	AdcChannelConf{{GPIO::C, PinNum::_2}, mdrivlib::AdcChanNum::_12, PotE, AdcSampTime},
+// 	AdcChannelConf{{GPIO::A, PinNum::_5}, mdrivlib::AdcChanNum::_19, PotF, AdcSampTime},
+// 	AdcChannelConf{{GPIO::A, PinNum::_6}, mdrivlib::AdcChanNum::_3, PotU, AdcSampTime},
+// 	AdcChannelConf{{GPIO::A, PinNum::_7}, mdrivlib::AdcChanNum::_7, PotV, AdcSampTime},
+// 	AdcChannelConf{{GPIO::C, PinNum::_5}, mdrivlib::AdcChanNum::_8, PotW, AdcSampTime},
+// 	AdcChannelConf{{GPIO::A, PinNum::_3}, mdrivlib::AdcChanNum::_15, PotX, AdcSampTime},
+// 	AdcChannelConf{{GPIO::C, PinNum::_3}, mdrivlib::AdcChanNum::_13, PotY, AdcSampTime},
+// 	AdcChannelConf{{GPIO::A, PinNum::_4}, mdrivlib::AdcChanNum::_18, PotZ, AdcSampTime},
+// });
 constexpr std::array<AdcChannelConf, NumPots> PotAdcChans = {{
 	{{GPIO::A, PinNum::_5}, AdcChanNum::_5, PitchPot, AdcSampTime},
 	{{GPIO::C, PinNum::_3}, AdcChanNum::_13, StartPot, AdcSampTime},

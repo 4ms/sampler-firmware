@@ -1,7 +1,9 @@
 CompileFlags:
 	Remove: [
 		"-std=c++23",
-		"-ffold-simple-inlines"
+		"-ffold-simple-inlines",
+		"-mvectorize*",
+		"-mthumb*"
 	]
 	Add: [
 		"-std=c++20"

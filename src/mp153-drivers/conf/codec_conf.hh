@@ -15,8 +15,8 @@ using mdrivlib::SaiConfig;
 // TODO: move to BrainBoard::
 const I2CConfig codec_i2c_conf = {
 	.I2Cx = I2C2,
-	.SCL = {GPIO::B, PinNum::_10, PinAF::AltFunc4},
-	.SDA = {GPIO::B, PinNum::_11, PinAF::AltFunc4},
+	.SCL = {GPIO::D, PinNum::_7, PinAF::AltFunc4},
+	.SDA = {GPIO::G, PinNum::_15, PinAF::AltFunc4},
 	.timing =
 		{
 			.PRESC = 0x40,

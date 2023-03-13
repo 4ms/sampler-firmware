@@ -47,7 +47,7 @@ const RCC_ClkInitTypeDef clk_conf = {
 	.APB3_Div = RCC_APB3_DIV2,
 };
 
-const RCC_PeriphCLKInitTypeDef periph_clk_conf = {
+const RCC_PeriphCLKInitTypeDef rcc_periph_conf = {
 	.PeriphClockSelection =
 		RCC_PERIPHCLK_I2C12 | RCC_PERIPHCLK_SAI2 | RCC_PERIPHCLK_USART6 | RCC_PERIPHCLK_SDMMC12 | RCC_PERIPHCLK_ADC,
 	.I2c12ClockSelection = RCC_I2C12CLKSOURCE_PCLK1,

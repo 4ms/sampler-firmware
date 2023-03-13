@@ -3,21 +3,21 @@
 
 namespace Brain
 {
-using PinDef = mdrivlib::PinDef;
-using GPIO = mdrivlib::GPIO;
-using PinNum = mdrivlib::PinNum;
-using PinAF = mdrivlib::PinAF;
 
 struct SDCardConf : mdrivlib::DefaultSDCardConf {
-	static constexpr uint32_t SDPeriphNum = 1;
-	static constexpr uint32_t speed_hz = 24'000'000;
-	static constexpr Width width = Wide4;
-	static constexpr PinDef D0{GPIO::C, PinNum::_8, PinAF::AltFunc12};
-	static constexpr PinDef D1{GPIO::C, PinNum::_9, PinAF::AltFunc12};
-	static constexpr PinDef D2{GPIO::C, PinNum::_10, PinAF::AltFunc12};
-	static constexpr PinDef D3{GPIO::C, PinNum::_11, PinAF::AltFunc12};
-	static constexpr PinDef SCLK{GPIO::C, PinNum::_12, PinAF::AltFunc12};
-	static constexpr PinDef CMD{GPIO::D, PinNum::_2, PinAF::AltFunc12};
-	//
+	using enum mdrivlib::GPIO;
+	using enum mdrivlib::PinNum;
+	using enum mdrivlib::PinAF;
+
+	static constexpr auto SDPeriphNum = 1;
+	static constexpr auto speed_hz = 32'000'000;
+	static constexpr auto width = Wide4;
+	static constexpr mdrivlib::PinDef D0{C, _8, AltFunc12};
+	static constexpr mdrivlib::PinDef D1{C, _9, AltFunc12};
+	static constexpr mdrivlib::PinDef D2{C, _10, AltFunc12};
+	static constexpr mdrivlib::PinDef D3{C, _11, AltFunc12};
+	static constexpr mdrivlib::PinDef SCLK{C, _12, AltFunc12};
+	static constexpr mdrivlib::PinDef CMD{D, _2, AltFunc12};
 };
+
 } // namespace Brain

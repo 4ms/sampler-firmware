@@ -10,10 +10,9 @@
 #include "hardware_tests/sd.hh"
 #include "hardware_tests/util.hh"
 #include "libhwtests/CodecCallbacks.hh"
+#include "printf.h"
 #include "stm32xx.h"
 #include "util/zip.hh"
-
-extern "C" int printf_(const char *format, ...);
 
 namespace SamplerKit::HWTests
 {

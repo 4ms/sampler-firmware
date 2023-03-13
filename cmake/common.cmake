@@ -126,9 +126,7 @@ function(create_target target)
             ${root}/lib/mdrivlib
             ${root}/lib/mdrivlib/drivers
             ${root}/lib/cpputil
-            ${root}/lib/printf
             ${root}/lib/fatfs/source
-            ${root}/lib/printf
             ${TARGET_INCLUDES})
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
   target_link_script(${target} ${TARGET_LINK_SCRIPT})
@@ -140,31 +138,19 @@ function(create_target target)
   target_link_libraries(libhwtests PRIVATE ${target}_ARCH)
   target_link_libraries(${target}.elf PRIVATE libhwtests)
 
-  # Create bootloader elf file target
-  # add_executable(
-  #   ${target}-bootloader.elf
-  #   ${root}/src/bootloader/bootloader.cc
-  #   # ${root}/src/bootloader/leds.cc ${root}/src/bootloader/animation.cc
-  #   # ${root}/src/bootloader/bl_utils.cc
-  #   # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
-  #   ${root}/src/libc_stub.c
-  #   ${root}/src/libcpp_stub.cc
-  #   # ${root}/src/shareddrv/flash.cc
-  #   ${root}/lib/mdrivlib/drivers/pin.cc
-  #   ${root}/lib/mdrivlib/drivers/timekeeper.cc
-  #   ${root}/lib/mdrivlib/drivers/tim.cc
-  #   ${TARGET_BOOTLOADER_SOURCES}
-  #   ${BOOTLOADER_HAL_SOURCES})
-  # target_include_directories(
-  #   ${target}-bootloader.elf
-  #   PRIVATE ${root}/lib/CMSIS/Include
-  #           ${root}/src/bootloader
-  #           ${root}/src/bootloader/stmlib
-  #           ${root}/src
-  #           ${root}/lib/mdrivlib
-  #           ${root}/lib/mdrivlib/drivers
-  #           ${root}/lib/cpputil
-  #           ${TARGET_INCLUDES})
+  # Create bootloader elf file target add_executable( ${target}-bootloader.elf
+  # ${root}/src/bootloader/bootloader.cc # ${root}/src/bootloader/leds.cc
+  # ${root}/src/bootloader/animation.cc # ${root}/src/bootloader/bl_utils.cc #
+  # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
+  # ${root}/src/libc_stub.c ${root}/src/libcpp_stub.cc #
+  # ${root}/src/shareddrv/flash.cc ${root}/lib/mdrivlib/drivers/pin.cc
+  # ${root}/lib/mdrivlib/drivers/timekeeper.cc
+  # ${root}/lib/mdrivlib/drivers/tim.cc ${TARGET_BOOTLOADER_SOURCES}
+  # ${BOOTLOADER_HAL_SOURCES}) target_include_directories(
+  # ${target}-bootloader.elf PRIVATE ${root}/lib/CMSIS/Include
+  # ${root}/src/bootloader ${root}/src/bootloader/stmlib ${root}/src
+  # ${root}/lib/mdrivlib ${root}/lib/mdrivlib/drivers ${root}/lib/cpputil
+  # ${TARGET_INCLUDES})
 
   # target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
   # target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
@@ -234,32 +220,21 @@ function(set_target_sources_includes project_driver_dir mdrivlib_target_dir
   string(TOLOWER ${family_name} family_name)
   string(TOUPPER ${family_name} family_name_uc)
 
-  # Add target-specific project files and paths:
-  set(TARGET_SOURCES
-      ${TARGET_SOURCES}
-      ${mdrivlib_target_dir}/boot/system_init.c
-      ${mdrivlib_target_dir}/boot/startup.s
-      # ${project_driver_dir}/adc.cc ${project_driver_dir}/system.cc
-      ${mdrivlib_target_dir}/drivers/interrupt_handler.cc
-      ${mdrivlib_target_dir_2}/drivers/sai_tdm.cc
-      PARENT_SCOPE)
+  # Add target-specific project files and paths: set(TARGET_SOURCES
+  # ${TARGET_SOURCES} PARENT_SCOPE)
 
   set(TARGET_INCLUDES
       ${TARGET_INCLUDES}
       ${project_driver_dir}
       ${mdrivlib_target_dir}
-      ${mdrivlib_target_dir}/drivers
-      ${mdrivlib_target_dir_2}/drivers
+      ${mdrivlib_target_dir_2}
       ${root}/lib/CMSIS/Device/ST/${family_name_uc}xx/Include
       ${root}/lib/CMSIS/Core_A/Include
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Inc
       PARENT_SCOPE)
 
   set(TARGET_BOOTLOADER_SOURCES
-      ${TARGET_BOOTLOADER_SOURCES}
-      ${mdrivlib_target_dir}/boot/system_init.c
-      ${mdrivlib_target_dir}/boot/startup.s
-      # ${project_driver_dir}/system.cc
+      ${TARGET_BOOTLOADER_SOURCES} ${sysinit} ${startup}
       ${mdrivlib_target_dir}/drivers/interrupt_handler.cc
       PARENT_SCOPE)
 

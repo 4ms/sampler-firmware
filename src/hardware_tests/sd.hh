@@ -5,6 +5,7 @@
 #include "fatfs/fat_file_io.hh"
 #include "fatfs/sdcard_ops.hh"
 #include "hardware_tests/util.hh"
+#include "printf.h"
 #include "util/zip.hh"
 
 namespace SamplerKit::HWTests

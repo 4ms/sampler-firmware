@@ -15,16 +15,16 @@ project(
   DESCRIPTION "Sampler Kit"
   LANGUAGES C CXX ASM)
 
-# add_subdirectory(src/f723-drivers f723)
-add_subdirectory(src/mp153-drivers mp153)
+add_subdirectory(src/f723-drivers f723)
+# add_subdirectory(src/mp153-drivers mp153)
 
 add_custom_target(
   tests ALL
   # COMMAND cd ${CMAKE_SOURCE_DIR}/tests && cmake -B build && cmake --build
-  # build && build/tests
-  # COMMAND cd ${CMAKE_SOURCE_DIR}/lib/cpputil && make --no-print-directory -f
-  #         tests/Makefile
-  # COMMAND cd ${CMAKE_SOURCE_DIR}/lib/mdrivlib && make --no-print-directory -f
-  #         tests/Makefile
-  # USES_TERMINAL
-  )
+  # build
+  # && build/tests
+  COMMAND cd ${CMAKE_SOURCE_DIR}/lib/cpputil && make --no-print-directory -f
+          tests/Makefile
+  COMMAND cd ${CMAKE_SOURCE_DIR}/lib/mdrivlib && make --no-print-directory -f
+          tests/Makefile
+  USES_TERMINAL)

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
+set(CMAKE_TOOLCHAIN_FILE
+    ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(f723 C CXX ASM)
 
@@ -15,12 +16,15 @@ set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH.ld)
 set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mthumb)
 set(ARCH_DEFINES STM32F723xx STM32F7 ARM_MATH_CM7)
 
-set(TARGET_SOURCES 
-	${CMAKE_SOURCE_DIR}/lib/mdrivlib/drivers/sdram.cc
-    ${CMAKE_SOURCE_DIR}/lib/mdrivlib/drivers/hal_handlers.cc)
+set(TARGET_SOURCES
+    ${CMAKE_SOURCE_DIR}/lib/mdrivlib/drivers/sdram.cc
+    ${CMAKE_SOURCE_DIR}/lib/mdrivlib/drivers/hal_handlers.cc
+    ${MDRIVLIB_TARGET_DIR_2}/drivers/sai_tdm.cc
+    ${MDRIVLIB_TARGET_DIR_2}/drivers/interrupt_handler.cc
+    ${MDRIVLIB_TARGET_DIR_2}/boot/startup.s
+    ${MDRIVLIB_TARGET_DIR_2}/boot/system_init.c)
 
-set(TARGET_BOOTLOADER_SOURCES
-)
+set(TARGET_BOOTLOADER_SOURCES)
 
 set(TARGET_BOOTLOADER_LINK_SCRIPT
     ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)

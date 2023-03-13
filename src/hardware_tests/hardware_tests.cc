@@ -1,6 +1,7 @@
 #include "audio_stream.hh"
 #include "conf/board_conf.hh"
 #include "conf/brain_conf.hh"
+#include "console.hh"
 #include "drivers/ram_test.hh"
 #include "hardware_tests/adc.hh"
 #include "hardware_tests/buttons.hh"
@@ -23,36 +24,44 @@ void all_lights_off() {
 	Board::BankLED{}.set_color(Colors::off);
 }
 
-void run(Controls &controls) {
-	printf_("\n%sSampler Kit Hardware Test%s\n", "\x1b[31m", "\033[0m");
+void print_test_name(std::string_view nm) {
+	printf_("\n-------------------------------------\n");
+	printf_("%s%.64s%s\n", Term::BoldYellow, nm.data(), Term::Normal);
+}
+void print_press_button() { printf_("%sPress button to continue%s\n", Term::BlinkGreen, Term::Normal); }
+void print_error(std::string_view err) { printf_("%s%.255s%s\n", Term::BoldRed, err.data(), Term::Normal); }
 
-	// SD Card
-	printf_("Initializing SD Card periph\n");
+void run(Controls &controls) {
+	printf_("\n\n%sSampler Kit Hardware Test%s\n", Term::BoldGreen, Term::Normal);
+
+	//////////////////////////////
+	print_test_name("SD Card Test");
 	TestSDCard sdtest;
 	// sdtest.run_test();
 	sdtest.run_fatfs_test();
 
-	printf_("Press button to continue\n");
 	all_lights_off();
 	Util::pause_until_button_released();
+
+	print_press_button();
 	Util::flash_mainbut_until_pressed();
 
-	// Press Play to cycle through LEDs one at a time
-	// then each button white
-	printf_("LED Test\n");
+	//////////////////////////////
+	print_test_name("LED Test");
+	printf_("Press the Play button to verify each LED. You'll see red=>green=>blue\n");
+	printf_("The LEDs will each turn white for you to verify color balance\n");
 	TestLEDs ledtester;
 	ledtester.run_test();
 
-	// Press each button once
-	printf_("Skipping Button Test\n");
+	//////////////////////////////
+	print_test_name("Button Test");
+	printf_("Press each button once when it lights up\n");
+	all_lights_off();
 	TestButtons buttontester;
 	buttontester.run_test();
 
-	// Audio out and End Out test
-	// Endout shoudl see 8V square wave 750HZ
-	// OutLeft should see -10V to +10V right-leaning tri 500Hz
-	// OutRight should see -10V to +10V left-leaning tri 3.7kHz (3.5kHz?)
-	printf_("\n%sAudio Output Test%s\n", "\x1b[31m", "\033[0m");
+	//////////////////////////////
+	print_test_name("Audio Output Test");
 	SkewedTriOsc oscL{500, 0.3, 1, -1, 0, 48000};
 	SkewedTriOsc oscR{3700, 0.85, 1, -1, 0, 48000};
 	AudioStream audio([&oscL, &oscR](const AudioStreamConf::AudioInBlock &in, AudioStreamConf::AudioOutBlock &out) {
@@ -69,15 +78,12 @@ void run(Controls &controls) {
 	printf_("  1) Out Left: 500Hz right-leaning triangle, -10V to +10V [+/- 0.3V]\n");
 	printf_("  2) Out Right: 3700Hz left-leaning triangle, -10V to +10V [+/- 0.3V]\n");
 	printf_("  3) End Out: 750Hz square wave, 0V to +8V [+/- 0.5V]\n");
-	printf_("Press button when verified\n");
 
+	print_press_button();
 	Util::flash_mainbut_until_pressed();
 
-	// Audio input test:
-	// Should see nothing on Out L
-	// Then patch Out R to In R, should see the 3.4kHz 20Vpp wave
-	// Then patch Out R to In L, should see the same wave but inverted (right-leaning)
-	printf_("Audio Input Test\n");
+	//////////////////////////////
+	print_test_name("Audio Input Test");
 	audio.set_callback([&oscR](const AudioStreamConf::AudioInBlock &in, AudioStreamConf::AudioOutBlock &out) {
 		for (auto [i, o] : zip(in, out)) {
 			o.chan[0] = oscR.update() * 0x7FFFFF;
@@ -87,39 +93,45 @@ void run(Controls &controls) {
 	printf_("  1) Patch Out L to scope, verify no signal\n");
 	printf_("  2) Patch Out R to In R, verify left-leaning 3.4kHz 20Vpp wave [+/- 0.3V] on Out L\n");
 	printf_("  3) Unpatch In R. Patch Out R to In L, verify right-leaning 3.4kHz 20Vpp wave [+/- 0.3V] on Out L\n");
-	printf_("Press button when verified\n");
 
+	print_press_button();
 	Util::flash_mainbut_until_pressed();
 
-	// Test waveforms to test CV jacks
-	CenterFlatRamp test_waveform_0_5{2., 0.2, -4000000, 0, 0, 48000};
-	CenterFlatRamp test_waveform_n5_5{2., 0.2, 4000000, -4000000, 0, 48000};
+	//////////////////////////////
+	print_test_name("Pot and CV jack Test");
+	printf_("Turn each pot from low to high to center\n");
+	printf_("After the pots, patch Out L into Pitch CV (bi-polar CV)\n");
+	printf_("Then patch Out R into the other CV jacks (uni-polar CV)\n");
+
+	CenterFlatRamp test_waveform_0_5{1., 0.3, -4'200'000, 300'000, 0, 48000};
+	CenterFlatRamp test_waveform_n5_5{1., 0.3, 4'000'000, -4'000'000, 0, 48000};
 	audio.set_callback([&](const AudioStreamConf::AudioInBlock &in, AudioStreamConf::AudioOutBlock &out) {
 		for (auto &o : out) {
-			o.chan[1] = test_waveform_0_5.update();
-			o.chan[0] = test_waveform_n5_5.update();
+			o.chan[0] = test_waveform_0_5.update();	 // R
+			o.chan[1] = test_waveform_n5_5.update(); // L
 		}
 	});
 
-	// Turn each pot
-	// Patch Out L into Pitch CV, then Out R into each of the other 4 CVs
-	printf_("Pot and CV jack test\n");
 	TestADCs adctester{controls};
 	adctester.run_test();
 
 	all_lights_off();
 
-	// Patch End Out into Play Trig, then Rev Trig
+	//////////////////////////////
+	print_test_name("Gate Input Test");
+	printf_("Patch End Out into Play Trig, then Rev Trig\n");
 	TestGateIns gateintester;
 	gateintester.run_test();
 
 	all_lights_off();
-	Util::flash_mainbut_until_pressed();
 
-	// RAM Test
+	//////////////////////////////
+	print_test_name("RAM Test (automatic)");
+	printf_("If this takes longer than 20 seconds then RAM Test fails.\n");
 	controls.bank_led.set_color(Colors::white);
 	auto err = mdrivlib::RamTest::test(Brain::MemoryStartAddr, Brain::MemorySizeBytes);
 	if (err) {
+		print_error("RAM Test Failed: readback did not match\n");
 		while (1) {
 			controls.rev_led.set_color(Colors::red);
 			controls.bank_led.set_color(Colors::red);
@@ -132,6 +144,10 @@ void run(Controls &controls) {
 	controls.rev_led.set_color(Colors::white);
 	controls.bank_led.set_color(Colors::off);
 
+	//////////////////////////////
+	printf_("Hardware Test Complete.\n");
+
+	print_press_button();
 	Util::flash_mainbut_until_pressed();
 
 	all_lights_off();

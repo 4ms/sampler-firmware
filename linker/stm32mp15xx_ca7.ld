@@ -2,22 +2,39 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_Reset)
 
-INCLUDE system/linker/memory.ld
+/* INCLUDE ./memory.ld */
 
+/* Presume 256MB RAM */
+_A7_CODE 		= 0xC2000040;
+_A7_CODE_SZ  	= 16M - 0x40;/*0x00FFFFD8*/
+_A7_CODE_END 	= 0xC3000000;
+
+_A7_RAM 		= 0xC3000000;
+_A7_RAM_SZ 		= 144M;		/*0x09000000*/
+_A7_RAM_END 	= 0xCC000000;
+
+_A7_HEAP		= 0xCC000000;
+_A7_HEAP_SZ 	= 63M; 	/*0x03F00000*/
+_A7_HEAP_END	= 0xCFF00000;
+
+_DMABUF			= 0xCFF00000;
+_DMABUF_SZ		= 1M;		/*0x00100000*/
+_DMABUF_END		= 0xD0000000;
+
+_M4_SHARED_LIST 	= 0x1005FF00;
+_A7_SHARED_LIST 	= 0x3005FF00;
+_SHARED_LIST_SZ 	= 256;
+_M4_SHARED_LIST_END = 0x10060000;
 
 MEMORY
 {
     ROM (rx)			: ORIGIN = _A7_CODE,		LENGTH = _A7_CODE_SZ
     RAM (rw)			: ORIGIN = _A7_RAM,			LENGTH = _A7_RAM_SZ
-	VIRTDRIVE (rw)		: ORIGIN = _VIRTDRIVE,		LENGTH = _VIRTDRIVE_SZ 
 	HEAP (rw)			: ORIGIN = _A7_HEAP,		LENGTH = _A7_HEAP_SZ
 	DMABUF (rw)			: ORIGIN = _DMABUF,			LENGTH = _DMABUF_SZ 
 
 	SHAREDMEMINDEX (rw) : ORIGIN = _A7_SHARED_LIST, LENGTH = _SHARED_LIST_SZ
 	SYSRAM (rw)			: ORIGIN = 0x2FFC0000,		LENGTH = 256K
-
-	M4_EXTCODE (rwx)   	: ORIGIN = _M4_EXTCODE, LENGTH = _M4_EXTCODE_SZ
-	M4_EXTDATA  (rw)   	: ORIGIN = _M4_EXTDATA, LENGTH = _M4_EXTDATA_SZ
 }
 
 /* A7 stacks are at end of RAM */
@@ -128,24 +145,6 @@ SECTIONS
 		. = ALIGN(8);
 		_end_of_sysram = .;
 	} > SYSRAM
-
-	.virtdrive (NOLOAD):
-	{
-		*(.virtdrive)
-	} > VIRTDRIVE
-
-	/* These are disabled until/unless putting m4 code/ddr */
-	/* .m4_extcode : { */
-	/* 	INCLUDE m4_ddr_code.ld */
-	/* } > M4_EXTCODE */
-
-	/* .m4_extdata : { */
-	/* 	INCLUDE m4_data.ld */
-	/* } > M4_EXTDATA */
-
-	.m4_extrodata : {
-		INCLUDE m4_rodata.ld
-	} > M4_EXTDATA
 
 
     _user_stack_start = _ram_aligned_end;

@@ -1,7 +1,7 @@
 #pragma once
 #include "conf/board_conf.hh"
+#include "drivers/stm32xx.h"
 #include "libhwtests/HardwareTestUtil.hh"
-#include "stm32xx.h"
 
 namespace SamplerKit::HWTests
 {

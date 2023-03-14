@@ -1,9 +1,9 @@
 #pragma once
-#include "analog_in_ext.hh"
 #include "brain_conf.hh"
 #include "conf/board_conf.hh"
 #include "debug.hh"
 #include "drivers/adc_builtin.hh"
+#include "drivers/analog_in_ext.hh"
 #include "drivers/debounced_switch.hh"
 #include "elements.hh"
 #include "util/filter.hh"

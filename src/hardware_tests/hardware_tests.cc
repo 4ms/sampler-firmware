@@ -3,6 +3,7 @@
 #include "conf/board_conf.hh"
 #include "console.hh"
 #include "drivers/ram_test.hh"
+#include "drivers/stm32xx.h"
 #include "hardware_tests/adc.hh"
 #include "hardware_tests/buttons.hh"
 #include "hardware_tests/gate_ins.hh"
@@ -11,7 +12,6 @@
 #include "hardware_tests/util.hh"
 #include "libhwtests/CodecCallbacks.hh"
 #include "printf.h"
-#include "stm32xx.h"
 #include "util/term_codes.hh"
 #include "util/zip.hh"
 

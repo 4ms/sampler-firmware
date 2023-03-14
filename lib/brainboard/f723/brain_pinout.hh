@@ -60,8 +60,6 @@ constexpr inline PinDef D18SdmmcDat2AF = {D18.gpio, D18.pin, PinAF::AltFunc12};
 constexpr inline PinDef D19SdmmcDat3AF = {D19.gpio, D19.pin, PinAF::AltFunc12};
 constexpr inline PinDef D9SdmmcClkAF = {D9.gpio, D9.pin, PinAF::AltFunc12};
 constexpr inline PinDef D4SdmmcCmdAF = {D4.gpio, D4.pin, PinAF::AltFunc12};
-constexpr inline uint32_t SdmmcPeriphNum = 1;
-constexpr inline uint32_t SdmmcMaxSpeed = 24'000'000;
 
 // TODO: Add AF for all other pins (DAC, I2C, SPI, UART, etc)
 
@@ -70,8 +68,14 @@ constexpr inline PinDef Debug3{GPIO::D, PinNum::_3};
 constexpr inline PinDef ConsoleUartTX{GPIO::H, PinNum::_13, PinAF::AltFunc8};
 constexpr inline PinDef ConsoleUartRX{GPIO::H, PinNum::_14, PinAF::AltFunc8};
 
-constexpr inline uint32_t ConsoleUartBaseAddr = UART4_BASE;
 
 // TODO: do we put SAI, Codec I2C, Codec Reset here?
 
-} // namespace Brain::Pin
+} // namespace Pin
+
+constexpr inline uint32_t ConsoleUartBaseAddr = UART4_BASE;
+constexpr inline uint32_t SdmmcPeriphNum = 1;
+constexpr inline uint32_t SdmmcMaxSpeed = 24'000'000;
+constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_480Cycles;
+
+} // namespace Brain

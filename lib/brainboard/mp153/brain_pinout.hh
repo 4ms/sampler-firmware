@@ -3,7 +3,9 @@
 #include "drivers/pin.hh"
 #include <array>
 
-namespace Brain::Pin
+namespace Brain
+{
+namespace Pin
 {
 using PinDef = mdrivlib::PinDef;
 using GPIO = mdrivlib::GPIO;
@@ -66,11 +68,17 @@ constexpr inline PinDef D18SdmmcDat2AF = {D18.gpio, D18.pin, PinAF::AltFunc12};
 constexpr inline PinDef D19SdmmcDat3AF = {D19.gpio, D19.pin, PinAF::AltFunc12};
 constexpr inline PinDef D9SdmmcClkAF = {D9.gpio, D9.pin, PinAF::AltFunc12};
 constexpr inline PinDef D4SdmmcCmdAF = {D4.gpio, D4.pin, PinAF::AltFunc12};
-constexpr inline uint32_t SdmmcPeriphNum = 1;
-constexpr inline uint32_t SdmmcMaxSpeed = 32'000'000;
 
 //
 constexpr inline PinDef ConsoleUartTX{GPIO::C, PinNum::_6, PinAF::AltFunc7};
 constexpr inline PinDef ConsoleUartRX{GPIO::C, PinNum::_7, PinAF::AltFunc7};
+
+
+} // namespace Pin
+
 constexpr inline uint32_t ConsoleUartBaseAddr = USART6_BASE;
-} // namespace Brain::Pin
+constexpr inline uint32_t SdmmcPeriphNum = 1;
+constexpr inline uint32_t SdmmcMaxSpeed = 32'000'000;
+constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_2Cycles;
+
+} // namespace Brain

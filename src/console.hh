@@ -1,4 +1,5 @@
 #pragma once
+#include "brain_conf.hh"
 #include "brain_pinout.hh"
 #include "drivers/uart.hh"
 

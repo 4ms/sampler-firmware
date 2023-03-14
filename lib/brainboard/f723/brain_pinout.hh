@@ -73,10 +73,4 @@ constexpr inline PinDef ConsoleUartRX{GPIO::H, PinNum::_14, PinAF::AltFunc8};
 // TODO: do we put SAI, Codec I2C, Codec Reset here?
 
 } // namespace Pin
-
-constexpr inline uint32_t ConsoleUartBaseAddr = UART4_BASE;
-constexpr inline uint32_t SdmmcPeriphNum = 1;
-constexpr inline uint32_t SdmmcMaxSpeed = 24'000'000;
-constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_480Cycles;
-
 } // namespace Brain

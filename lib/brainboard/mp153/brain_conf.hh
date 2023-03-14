@@ -1,4 +1,5 @@
 #pragma once
+#include "brain_pinout.hh"
 #include "conf/sdram_conf.hh"
 #include "drivers/adc_builtin_conf.hh"
 #include "drivers/dma_config_struct.hh"
@@ -12,6 +13,7 @@ namespace Brain
 {
 constexpr inline int16_t MinPotChange = 10;
 constexpr inline int16_t MinCVChange = 10;
+constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_2Cycles;
 
 // ADC Peripheral Conf:
 struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
@@ -86,20 +88,12 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 	.priority2 = 3,
 };
 
-namespace Debug
-{
-struct Disabled {
-	static void high() {}
-	static void low() {}
-};
+// SDCard
+constexpr inline bool SdmmcWide = true;
+constexpr inline uint32_t SdmmcPeriphNum = 1;
+constexpr inline uint32_t SdmmcMaxSpeed = 32'000'000;
 
-using Pin0 = Disabled;
-using Pin1 = Disabled;
-// using Pin0 = mdrivlib::FPin<mdrivlib::GPIO::C, mdrivlib::PinNum::_6>;
-// using Pin1 = mdrivlib::FPin<mdrivlib::GPIO::C, mdrivlib::PinNum::_7>;
-
-using Pin2 = mdrivlib::FPin<mdrivlib::GPIO::G, mdrivlib::PinNum::_12>;
-using Pin3 = mdrivlib::FPin<mdrivlib::GPIO::E, mdrivlib::PinNum::_11>;
-}; // namespace Debug
+// Debug
+constexpr inline uint32_t ConsoleUartBaseAddr = USART6_BASE;
 
 } // namespace Brain

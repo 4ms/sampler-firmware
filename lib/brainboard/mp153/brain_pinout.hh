@@ -70,15 +70,11 @@ constexpr inline PinDef D9SdmmcClkAF = {D9.gpio, D9.pin, PinAF::AltFunc12};
 constexpr inline PinDef D4SdmmcCmdAF = {D4.gpio, D4.pin, PinAF::AltFunc12};
 
 //
+constexpr inline PinDef Debug2{GPIO::G, PinNum::_12};
+constexpr inline PinDef Debug3{GPIO::E, PinNum::_11};
 constexpr inline PinDef ConsoleUartTX{GPIO::C, PinNum::_6, PinAF::AltFunc7};
 constexpr inline PinDef ConsoleUartRX{GPIO::C, PinNum::_7, PinAF::AltFunc7};
 
-
 } // namespace Pin
-
-constexpr inline uint32_t ConsoleUartBaseAddr = USART6_BASE;
-constexpr inline uint32_t SdmmcPeriphNum = 1;
-constexpr inline uint32_t SdmmcMaxSpeed = 32'000'000;
-constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_2Cycles;
 
 } // namespace Brain

@@ -83,52 +83,5 @@ public:
 		play_jack.update();
 		rev_jack.update();
 	}
-
-	GCC_OPTIMIZE_OFF
-	void test() {
-		play_led.set_color(Colors::off);
-		play_led.set_color(Colors::red);
-		play_led.set_color(Colors::blue);
-		play_led.set_color(Colors::green);
-		play_led.set_color(Colors::white);
-		play_led.set_color(Colors::off);
-
-		rev_led.set_color(Colors::off);
-		rev_led.set_color(Colors::red);
-		rev_led.set_color(Colors::blue);
-		rev_led.set_color(Colors::green);
-		rev_led.set_color(Colors::white);
-		rev_led.set_color(Colors::off);
-
-		bank_led.set_color(Colors::off);
-		bank_led.set_color(Colors::red);
-		bank_led.set_color(Colors::blue);
-		bank_led.set_color(Colors::green);
-		bank_led.set_color(Colors::white);
-		bank_led.set_color(Colors::off);
-
-		end_out.high();
-		end_out.low();
-		end_out.high();
-		end_out.low();
-
-		play_jack.is_high();
-		rev_jack.is_high();
-
-		play_button.update();
-		play_button.is_pressed();
-		play_button.update();
-		play_button.is_pressed();
-
-		rev_button.update();
-		rev_button.is_pressed();
-		rev_button.update();
-		rev_button.is_pressed();
-
-		bank_button.update();
-		bank_button.is_pressed();
-		bank_button.update();
-		bank_button.is_pressed();
-	}
 };
 } // namespace SamplerKit

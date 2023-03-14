@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
-set(CMAKE_TOOLCHAIN_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-project(f723 C CXX ASM)
+project(
+  f723
+  C
+  CXX
+  ASM
+)
 
 message("Configuring f723")
 include(${CMAKE_SOURCE_DIR}/cmake/common.cmake)
@@ -22,12 +26,12 @@ set(TARGET_SOURCES
     ${MDRIVLIB_TARGET_DIR_2}/drivers/sai_tdm.cc
     ${MDRIVLIB_TARGET_DIR_2}/drivers/interrupt_handler.cc
     ${MDRIVLIB_TARGET_DIR_2}/boot/startup.s
-    ${MDRIVLIB_TARGET_DIR_2}/boot/system_init.c)
+    ${MDRIVLIB_TARGET_DIR_2}/boot/system_init.c
+)
 
 set(TARGET_BOOTLOADER_SOURCES)
 
-set(TARGET_BOOTLOADER_LINK_SCRIPT
-    ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)
+set(TARGET_BOOTLOADER_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)
 
 set(WAV_ENCODE_PYTHON_CMD
     # Note: flash sector size is 128kB, but we arbitrarily limit app size with
@@ -38,7 +42,11 @@ set(WAV_ENCODE_PYTHON_CMD
   # cmake-format: on
 )
 
-set_target_sources_includes(${PROJECT_DRIVER_DIR} ${MDRIVLIB_TARGET_DIR}
-                            ${MDRIVLIB_TARGET_DIR_2} ${FAMILY_NAME})
+set_target_sources_includes(
+  ${PROJECT_DRIVER_DIR}
+  ${MDRIVLIB_TARGET_DIR}
+  ${MDRIVLIB_TARGET_DIR_2}
+  ${FAMILY_NAME}
+)
 
 create_target(${target})

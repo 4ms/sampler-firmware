@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
-set(CMAKE_TOOLCHAIN_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/cmake/arm-none-eabi-gcc.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-project(mp153 C CXX ASM)
+project(
+  mp153
+  C
+  CXX
+  ASM
+)
 
 message("Configuring MP153")
 include(${CMAKE_SOURCE_DIR}/cmake/common.cmake)
@@ -22,7 +26,8 @@ set(ARCH_FLAGS
     -mno-unaligned-access
     -mtune=cortex-a7
     -mvectorize-with-neon-quad
-    -funsafe-math-optimizations)
+    -funsafe-math-optimizations
+)
 
 set(ARCH_DEFINES STM32MP157Cxx STM32MP1 CORE_CA7)
 
@@ -34,15 +39,20 @@ set(TARGET_SOURCES
     ${MDRIVLIB_TARGET_DIR_2}/drivers/sai_tdm.cc
     ${MDRIVLIB_TARGET_DIR}/drivers/interrupt_handler.cc
     ${MDRIVLIB_TARGET_DIR}/boot/startup.s
-    ${MDRIVLIB_TARGET_DIR}/boot/system_init.c)
+    ${MDRIVLIB_TARGET_DIR}/boot/system_init.c
+)
 
 set(WAV_ENCODE_PYTHON_CMD
     # cmake-format: off
-  python ${CMAKE_SOURCE_DIR}/src/bootloader/stm_audio_bootloader/fsk/encoder.py -s 22050 -b 16 -n 8 -z 4 -p 256 -g 40960 -k 1000 $<TARGET_FILE_DIR:${target}.elf>/${target}.bin
-  # cmake-format: on
+    python ${CMAKE_SOURCE_DIR}/src/bootloader/stm_audio_bootloader/fsk/encoder.py -s 22050 -b 16 -n 8 -z 4 -p 256 -g 40960 -k 1000 $<TARGET_FILE_DIR:${target}.elf>/${target}.bin
+    # cmake-format: on
 )
 
-set_target_sources_includes(${PROJECT_DRIVER_DIR} ${MDRIVLIB_TARGET_DIR}
-                            ${MDRIVLIB_TARGET_DIR_2} ${FAMILY_NAME})
+set_target_sources_includes(
+  ${PROJECT_DRIVER_DIR}
+  ${MDRIVLIB_TARGET_DIR}
+  ${MDRIVLIB_TARGET_DIR_2}
+  ${FAMILY_NAME}
+)
 
 create_target(${target})

@@ -5,8 +5,8 @@
 namespace Brain
 {
 struct SDCardConf : mdrivlib::DefaultSDCardConf {
-	static constexpr uint32_t SDPeriphNum = Brain::Pin::SdmmcPeriphNum;
-	static constexpr uint32_t speed_hz = Brain::Pin::SdmmcMaxSpeed;
+	static constexpr uint32_t SDPeriphNum = Brain::SdmmcPeriphNum;
+	static constexpr uint32_t speed_hz = Brain::SdmmcMaxSpeed;
 	static constexpr Width width = Wide4;
 	static constexpr mdrivlib::PinDef D0 = Brain::Pin::D16SdmmcDat0AF;
 	static constexpr mdrivlib::PinDef D1 = Brain::Pin::D17SdmmcDat1AF;

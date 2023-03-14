@@ -3,7 +3,9 @@
 #include "drivers/pin.hh"
 #include <array>
 
-namespace Brain::Pin
+namespace Brain
+{
+namespace Pin
 {
 using PinDef = mdrivlib::PinDef;
 using GPIO = mdrivlib::GPIO;
@@ -67,7 +69,6 @@ constexpr inline PinDef Debug2{GPIO::H, PinNum::_15};
 constexpr inline PinDef Debug3{GPIO::D, PinNum::_3};
 constexpr inline PinDef ConsoleUartTX{GPIO::H, PinNum::_13, PinAF::AltFunc8};
 constexpr inline PinDef ConsoleUartRX{GPIO::H, PinNum::_14, PinAF::AltFunc8};
-
 
 // TODO: do we put SAI, Codec I2C, Codec Reset here?
 

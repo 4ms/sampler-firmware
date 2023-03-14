@@ -3,7 +3,7 @@
 #include "drivers/uart.hh"
 
 constexpr inline UartConf ConsoleUartConf{
-	.base_addr = Brain::Pin::ConsoleUartBaseAddr,
+	.base_addr = Brain::ConsoleUartBaseAddr,
 	.TXPin = Brain::Pin::ConsoleUartTX,
 	.RXPin = Brain::Pin::ConsoleUartRX,
 	.mode = UartConf::Mode::TXRX,

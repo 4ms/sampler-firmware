@@ -25,11 +25,9 @@ constexpr inline AdcChanNum A4_adc{AdcChanNum::_14};
 constexpr inline AdcChanNum A5_adc{AdcChanNum::_14};
 
 //
-constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_480Cycles;
-constexpr std::array<mdrivlib::AdcChannelConf, 4> PotAdcChans = {{
-	{{GPIO::A, PinNum::_5}, AdcChanNum::_5, 0, AdcSampTime},
-	{{GPIO::C, PinNum::_3}, AdcChanNum::_13, 1, AdcSampTime},
-	{{GPIO::C, PinNum::_0}, AdcChanNum::_10, 2, AdcSampTime},
-	{{GPIO::A, PinNum::_6}, AdcChanNum::_6, 3, AdcSampTime},
-}};
+
+//
+constexpr inline PinDef ConsoleUartTX{GPIO::C, PinNum::_6, PinAF::AltFunc7};
+constexpr inline PinDef ConsoleUartRX{GPIO::C, PinNum::_7, PinAF::AltFunc7};
+constexpr inline uint32_t ConsoleUartBaseAddr = USART6_BASE;
 } // namespace Brain::Pin

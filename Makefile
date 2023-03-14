@@ -1,7 +1,8 @@
 BUILDDIR := build
 
 rebuild: | $(BUILDDIR)
-	cmake --build $(BUILDDIR)
+	cmake --build $(BUILDDIR) --config Debug 
+	cmake --build $(BUILDDIR) --config RelWithDebInfo
 
 debug:
 	cmake --build $(BUILDDIR) --config Debug

@@ -1,6 +1,6 @@
 #include "audio_stream.hh"
+#include "brain_conf.hh"
 #include "conf/board_conf.hh"
-#include "conf/brain_conf.hh"
 #include "console.hh"
 #include "drivers/ram_test.hh"
 #include "hardware_tests/adc.hh"
@@ -12,6 +12,7 @@
 #include "libhwtests/CodecCallbacks.hh"
 #include "printf.h"
 #include "stm32xx.h"
+#include "util/term_codes.hh"
 #include "util/zip.hh"
 
 namespace SamplerKit::HWTests

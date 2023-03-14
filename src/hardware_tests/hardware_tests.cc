@@ -147,9 +147,10 @@ void run(Controls &controls) {
 	//////////////////////////////
 	printf_("Hardware Test Complete.\n");
 
-	print_press_button();
-	Util::flash_mainbut_until_pressed();
-
+	printf_("Please reboot\n"); //, or system will automatically reboot in 5 seconds\n.");
 	all_lights_off();
+
+	while (true)
+		;
 }
 } // namespace SamplerKit::HWTests

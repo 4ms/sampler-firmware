@@ -24,7 +24,9 @@ void main() {
 	Controls controls;
 
 	controls.start();
-	HWTests::run(controls);
+	controls.update();
+	if (controls.play_button.is_pressed() && controls.rev_button.is_pressed())
+		HWTests::run(controls);
 
 	// Flags flags;
 	// Timer timer;

@@ -1,12 +1,12 @@
 #pragma once
 #include "conf/flash_layout.hh"
 #include "conf/rcc_conf.hh"
-#include "conf/sdram_conf.hh"
 #include "console.hh"
 #include "debug.hh"
 #include "drivers/sdram.hh"
 #include "drivers/system.hh"
 #include "drivers/system_clocks.hh"
+#include "system_target.hh"
 
 namespace SamplerKit
 {
@@ -16,10 +16,7 @@ struct System {
 		mdrivlib::System::SetVectorTable(AppStartAddr);
 		mdrivlib::SystemClocks::init_clocks(osc_conf, clk_conf, rcc_periph_conf);
 
-		// TODO: F7 only:
-		//  mdrivlib::SDRAMPeriph sdram{Brain::SDRAM_conf, Brain::SdramBank, Brain::SdramKernelClock};
-		//  SCB_InvalidateICache();
-		//  SCB_EnableICache();
+		SystemTarget::init();
 
 		Debug::Pin0{};
 		Debug::Pin1{};

@@ -28,6 +28,15 @@ public:
 
 		if (sd.detect_card()) {
 			_status = Status::Mounted;
+			// DEBUG: Test RX throughput
+			// static bool tested = false;
+			// if (!tested) {
+			// 	tested = true;
+			// 	uint32_t ms_per_10MB = sd.test_rx_speed(0, 10 * 2048);
+			// 	float s_per_10MB = (float)ms_per_10MB / 1000.f;
+			// 	float s_per_MB = s_per_10MB / 10.f;
+			// 	printf_("%d ms/10MB = %fMB/s\n", ms_per_10MB, 1.f / s_per_MB);
+			// }
 			return 0;
 		} else {
 			_status = Status::NoCard;

@@ -28,6 +28,7 @@ set(TARGET_SOURCES
     ${MDRIVLIB_TARGET_DIR_2}/boot/startup.s
     ${MDRIVLIB_TARGET_DIR_2}/boot/system_init.c
 )
+set(TARGET_INCLUDES ${CMAKE_SOURCE_DIR}/lib/brainboard/f723)
 
 set(TARGET_BOOTLOADER_SOURCES)
 

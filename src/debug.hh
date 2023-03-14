@@ -1,5 +1,5 @@
 #pragma once
-#include "conf/brain_conf.hh"
+#include "brain_conf.hh"
 
 namespace Debug = Brain::Debug; // NOLINT
 

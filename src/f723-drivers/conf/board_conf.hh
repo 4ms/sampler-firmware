@@ -1,4 +1,5 @@
 #pragma once
+#include "brain_pinout.hh"
 #include "drivers/adc_builtin_conf.hh"
 #include "drivers/debounced_switch.hh"
 #include "drivers/pin.hh"

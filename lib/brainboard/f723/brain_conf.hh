@@ -9,10 +9,11 @@
 
 namespace Brain
 {
+
+// ADC Peripheral Conf:
 constexpr inline int16_t MinPotChange = 10;
 constexpr inline int16_t MinCVChange = 10;
 
-// ADC Peripheral Conf:
 struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;
 	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_1;

@@ -86,7 +86,7 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 // SDCard
 constexpr inline bool SdmmcWide = false;
 constexpr inline uint32_t SdmmcPeriphNum = 1;
-constexpr inline uint32_t SdmmcMaxSpeed = 24'000'000;
+constexpr inline uint32_t SdmmcMaxSpeed = 48'000'000;
 
 // Debug
 constexpr inline uint32_t ConsoleUartBaseAddr = UART4_BASE;

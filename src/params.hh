@@ -1,45 +1,37 @@
 #pragma once
 #include "audio_stream_conf.hh"
-#include "clock_mult_util.hh"
 #include "controls.hh"
 #include "epp_lut.hh"
 #include "flags.hh"
 #include "log_taper_lut.hh"
 #include "modes.hh"
-#include "timer.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
-#include <cstdint>
 
 namespace SamplerKit
 {
-// Params holds all the modes, settings and parameters for the looping delay
+// Params holds all the modes, settings and parameters for the sampler delay
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
 	Controls &controls;
 	Flags &flags;
-	Timer &timer;
 
-	// TODO: double-buffer Params:
-	// put just these into its own struct
-	float time = 0.f;		 // TIME: fractional value for time multiplication, integer value for time division
-	float delay_feed = 0.7f; // DELAY FEED: amount of main input mixed into delay loop
-	float feedback = 0.5f;	 // FEEDBACK: amount of regeneration
-	float mix_dry = 0.7f;	 // MIX: mix of delayed and clean on the main output
-	float mix_wet = 0.7f;
-	float tracking_comp = 1.f;	// TRACKING_COMP: -2.0 .. 2.0 compensation for 1V/oct tracking
-	float divmult_time = 12000; // samples between read and write heads
-	uint32_t ping_time = 12000;
-	uint32_t locked_ping_time = 12000;
+	uint32_t bank = 0;
+	uint32_t sample = 0;
+	bool reverse = 0;
+	bool looping = 0;
+	float pitch = 1.0f;
+	float start = 0.f;
+	float length = 1.f;
+	float volume = 1.f;
 
 	ChannelMode modes;
 	Settings settings;
 	OperationMode op_mode = OperationMode::Normal;
 
-	Params(Controls &controls, Flags &flags, Timer &timer)
+	Params(Controls &controls, Flags &flags)
 		: controls{controls}
-		, flags{flags}
-		, timer{timer} {}
+		, flags{flags} {}
 
 	void update() {
 		controls.update();

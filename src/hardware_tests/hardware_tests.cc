@@ -130,21 +130,21 @@ void run(Controls &controls) {
 	//////////////////////////////
 	print_test_name("RAM Test (automatic)");
 	printf_("If this takes longer than 20 seconds then RAM Test fails.\n");
-	controls.bank_led.set_color(Colors::white);
+	Board::BankLED{}.set_color(Colors::white);
 	auto err = mdrivlib::RamTest::test(Brain::MemoryStartAddr, Brain::MemorySizeBytes);
 	if (err) {
 		print_error("RAM Test Failed: readback did not match\n");
 		while (1) {
-			controls.rev_led.set_color(Colors::red);
-			controls.bank_led.set_color(Colors::red);
-			controls.play_led.set_color(Colors::red);
+			Board::PlayLED{}.set_color(Colors::red);
+			Board::BankLED{}.set_color(Colors::red);
+			Board::RevLED{}.set_color(Colors::red);
 			HAL_Delay(200);
 			all_lights_off();
 			HAL_Delay(200);
 		}
 	}
-	controls.rev_led.set_color(Colors::white);
-	controls.bank_led.set_color(Colors::off);
+	Board::RevLED{}.set_color(Colors::white);
+	Board::BankLED{}.set_color(Colors::off);
 
 	//////////////////////////////
 	printf_("Hardware Test Complete.\n");

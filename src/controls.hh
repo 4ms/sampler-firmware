@@ -42,11 +42,13 @@ public:
 	Board::EndOut end_out;
 
 	// LEDs:
-	Board::PlayLED play_led;
-	Board::RevLED rev_led;
-	Board::BankLED bank_led;
+	// Board::PlayLED play_led;
+	// Board::RevLED rev_led;
+	// Board::BankLED bank_led;
 
-	enum class SwitchPos { Invalid = 0b00, Up = 0b01, Down = 0b10, Center = 0b11 };
+	Board::PlayPWM play_led;
+	Board::RevPWM rev_led;
+	Board::BankPWM bank_led;
 
 	uint16_t read_pot(PotAdcElement adcnum) {
 		if constexpr (hardware_oversampling)
@@ -82,6 +84,10 @@ public:
 		bank_button.update();
 		play_jack.update();
 		rev_jack.update();
+
+		play_led.update_animation();
+		rev_led.update_animation();
+		bank_led.update_animation();
 	}
 };
 } // namespace SamplerKit

@@ -1,6 +1,6 @@
 #pragma once
 #include "disk_ops.hh"
-// #include "printf.h"
+#include "elements.hh"
 #include "volumes.hh"
 #include <cstdint>
 #include <span>
@@ -11,7 +11,7 @@ bool fatfs_register_disk(DiskOps *ops, uint8_t disk_id);
 
 // For debugging:
 // #define printf_(...)
-extern "C" int printf_(const char *format, ...);
+#include "printf.h"
 
 class FatFileIO {
 
@@ -44,6 +44,7 @@ public:
 		uint8_t err;
 		if (err = f_mount(&fs, _fatvol, 1); err == FR_OK)
 			return true;
+		f_mount(&fs, _fatvol, 0);
 		printf_("Could not mount volume %s. err:%d\n", _volname, err);
 		return false;
 	}

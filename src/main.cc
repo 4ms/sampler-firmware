@@ -5,6 +5,7 @@
 // #include "delay_buffer.hh"
 #include "drivers/timekeeper.hh"
 // #include "looping_delay.hh"
+#include "sdcard.hh"
 #include "system.hh"
 // #include "timer.hh"
 #include "hardware_tests/hardware_tests.hh"
@@ -25,27 +26,35 @@ void main() {
 
 	controls.start();
 	controls.update();
-	if (controls.play_button.is_pressed() && controls.rev_button.is_pressed())
+	if (controls.play_button.is_pressed() && controls.rev_button.is_pressed()) {
 		HWTests::run(controls);
+	}
+
+	Sdcard sd;
+	sd.reload_disk();
 
 	// Flags flags;
-	// Timer timer;
 	// Params params{controls, flags, timer};
 	// DelayBuffer &audio_buffer = get_delay_buffer();
 	// LoopingDelay looping_delay{params, flags, audio_buffer};
 	TestAudio sampler; //{params};
 	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
 
-	// mdrivlib::Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
+	mdrivlib::Timekeeper params_update_task(Board::param_update_task_conf,
+											// [&params]() { params.update(); }
+											[] {});
 
 	// TODO: Make Params thread-safe:
 	// Use double-buffering (two Params structs), and LoopingDelay is constructed with a Params*
 	// And right before looping_delay.update(), call params.load_updated_values()
 
 	__HAL_DBGMCU_FREEZE_TIM6();
+	// Tasks:
+	// LED PWM update(TIM2) + Button LED(TIM10) 4.8kHz + 200Hz
+	// SD Card read: 1.4kHz (TIM7)
+	// Trig Jack(TIM5)? 12kHz
 
 	// timer.start();
-	// controls.start();
 	// params_update_task.start();
 	audio.start();
 
@@ -53,4 +62,5 @@ void main() {
 		__NOP();
 	}
 }
+
 void recover_from_task_fault(void) { __BKPT(); }

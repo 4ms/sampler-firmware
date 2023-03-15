@@ -5,7 +5,6 @@
 
 template<mdrivlib::SDCardConfC ConfT>
 class SDCardOps : public DiskOps {
-
 	constexpr static uint32_t SDBlockSize = 512;
 
 public:

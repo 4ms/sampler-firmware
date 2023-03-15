@@ -28,4 +28,5 @@ enum TrigInJackElement : uint32_t { PlayRecJack, RevJack };
 
 enum TrigOutElement : uint32_t { EndOutJack };
 
+enum { NumSamplesPerBank = 10 };
 } // namespace SamplerKit

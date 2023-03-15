@@ -15,7 +15,7 @@ struct TestADCs : IAdcChecker {
 	static constexpr AdcRangeCheckerBounds bounds{
 		.center_val = 2048,
 		.center_width = 20,
-		.center_check_counts = 100,
+		.center_check_counts = 1000,
 		.min_val = Brain::PotAdcConf::min_value,
 		.max_val = 4086,
 	};
@@ -45,7 +45,7 @@ struct TestADCs : IAdcChecker {
 			val = controls.read_cv(static_cast<CVAdcElement>(adc_i + 1));
 
 		if ((HAL_GetTick() - last_update) > 100) {
-			printf_("\x1b[2K\x1b[0G%d", val);
+			printf_("\x1b[0GMin: %4d  \tCur: %4d\tMax: %4d    ", get_last_min(), val, get_last_max());
 			last_update = HAL_GetTick();
 		}
 		return val;
@@ -79,7 +79,7 @@ struct TestADCs : IAdcChecker {
 			Board::PlayLED{}.set_color(Colors::green);
 
 		if (state == AdcCheckState::FullyCovered) {
-			printf_("Done\n");
+			printf_(" OK\n");
 			Board::PlayLED{}.set_color(Colors::off);
 			Board::RevLED{}.set_color(Colors::off);
 			Board::BankLED{}.set_color(Colors::off);
@@ -92,7 +92,10 @@ struct TestADCs : IAdcChecker {
 
 	bool button_to_skip_step() override {
 		controls.play_button.update();
-		return controls.play_button.is_just_pressed();
+		bool skip = controls.play_button.is_just_pressed();
+		if (skip)
+			printf_(" XXX SKIPPED\n");
+		return skip;
 	}
 
 	void delay_ms(uint32_t x) override { HAL_Delay(x); }

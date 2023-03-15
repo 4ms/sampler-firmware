@@ -28,7 +28,7 @@ class Controls {
 	std::array<Oversampler<8, uint16_t>, NumCVs> cvs;
 
 public:
-	Controls() = default;
+	Controls() {} //= default;
 
 	// Buttons/Switches:
 	Board::PlayButton play_button;

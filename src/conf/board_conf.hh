@@ -5,6 +5,7 @@
 #include "drivers/debounced_switch.hh"
 #include "drivers/pin.hh"
 #include "drivers/rgbled.hh"
+#include "drivers/tim_pwm.hh"
 #include "elements.hh"
 #include <array>
 
@@ -32,6 +33,8 @@ using PlayR = mdrivlib::FPin<Pin::D8.gpio, Pin::D8.pin, Output, Inverted>;
 using PlayG = mdrivlib::FPin<Pin::D11.gpio, Pin::D11.pin, Output, Inverted>;
 using PlayB = mdrivlib::FPin<Pin::D14.gpio, Pin::D14.pin, Output, Inverted>;
 using PlayLED = mdrivlib::MixedRgbLed<PlayR, PlayG, PlayB>;
+
+using PlayPWM = mdrivlib::MixedRgbLed<mdrivlib::TimPwmChannel, mdrivlib::TimPwmChannel, mdrivlib::TimPwmChannel>;
 
 using RevR = mdrivlib::FPin<Pin::D7.gpio, Pin::D7.pin, Output, Inverted>;
 using RevG = mdrivlib::FPin<Pin::D10.gpio, Pin::D10.pin, Output, Inverted>;

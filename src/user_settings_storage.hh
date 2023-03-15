@@ -1,19 +1,36 @@
 #pragma once
 #include "sdcard.hh"
 #include "settings.hh"
+#include "str_util.h"
 #include "sts_filesystem.h"
 
 namespace SamplerKit
 {
 
 class UserSettingsStorage {
-	Sdcard &sd;
 	UserSettings &settings;
 
+	enum Settings {
+		NoSetting,
+		StereoMode,
+		RecordSampleBits,
+		RecordSampleRate,
+		AutoStopSampleChange,
+		PlayStopsLengthFull,
+		QuantizeChannel1,
+		QuantizeChannel2,
+		PercEnvelope,
+		FadeEnvelope,
+		StartUpBank_ch1,
+		StartUpBank_ch2,
+		TrigDelay,
+		FadeUpDownTime,
+		AutoIncRecSlot,
+	};
+
 public:
-	UserSettingsStorage(Sdcard &sd, UserSettings &settings)
-		: sd{sd}
-		, settings{settings} {}
+	UserSettingsStorage(UserSettings &settings)
+		: settings{settings} {}
 
 	void set_default_user_settings() {
 		settings.stereo_mode = false;
@@ -88,39 +105,37 @@ public:
 			// Write the 24bit record mode setting
 			f_printf(&settings_file, "[RECORD SAMPLE BITS]\n");
 
-			if (global_mode[REC_24BITS])
+			if (settings.rec_24bits)
 				f_printf(&settings_file, "24\n\n");
 			else
 				f_printf(&settings_file, "16\n\n");
 
-#ifdef ENABLE_VARIABLE_RECORD_SAMPLE_RATE
 			// Write the record sample rate setting
 			f_printf(&settings_file, "[RECORD SAMPLE RATE]\n");
 
-			if (global_params.record_sample_rate == REC_48K)
+			if (settings.record_sample_rate == 48000)
 				f_printf(&settings_file, "48k\n\n");
-			else if (global_params.record_sample_rate == REC_88K)
+			else if (settings.record_sample_rate == 88200)
 				f_printf(&settings_file, "88.2k\n\n");
-			else if (global_params.record_sample_rate == REC_96K)
+			else if (settings.record_sample_rate == 96000)
 				f_printf(&settings_file, "96k\n\n");
 			else
 				f_printf(&settings_file, "44.1k\n\n");
-#endif
 
 			// Write the Auto Stop on Sample Change mode setting
 			f_printf(&settings_file, "[AUTO STOP ON SAMPLE CHANGE]\n");
 
-			if (global_mode[AUTO_STOP_ON_SAMPLE_CHANGE] == AutoStop_ALWAYS)
+			if (settings.auto_stop_on_sample_change == AutoStopMode::Always)
 				f_printf(&settings_file, "Yes\n\n");
-			else if (global_mode[AUTO_STOP_ON_SAMPLE_CHANGE] == AutoStop_OFF)
+			else if (settings.auto_stop_on_sample_change == AutoStopMode::Off)
 				f_printf(&settings_file, "No\n\n");
-			else if (global_mode[AUTO_STOP_ON_SAMPLE_CHANGE] == AutoStop_LOOPING)
+			else if (settings.auto_stop_on_sample_change == AutoStopMode::Looping)
 				f_printf(&settings_file, "Looping Only\n\n");
 
 			// Write the Auto Stop on Sample Change mode setting
 			f_printf(&settings_file, "[PLAY BUTTON STOPS WITH LENGTH AT FULL]\n");
 
-			if (global_mode[LENGTH_FULL_START_STOP])
+			if (settings.length_full_start_stop)
 				f_printf(&settings_file, "Yes\n\n");
 			else
 				f_printf(&settings_file, "No\n\n");
@@ -128,7 +143,7 @@ public:
 			// Write the Quantize Channel 1 setting
 			f_printf(&settings_file, "[QUANTIZE CHANNEL 1 1V/OCT JACK]\n");
 
-			if (global_mode[QUANTIZE_CH1])
+			if (settings.quantize)
 				f_printf(&settings_file, "Yes\n\n");
 			else
 				f_printf(&settings_file, "No\n\n");
@@ -136,7 +151,7 @@ public:
 			// Write the Quantize Channel 2 setting
 			f_printf(&settings_file, "[QUANTIZE CHANNEL 2 1V/OCT JACK]\n");
 
-			if (global_mode[QUANTIZE_CH2])
+			if (settings.quantize)
 				f_printf(&settings_file, "Yes\n\n");
 			else
 				f_printf(&settings_file, "No\n\n");
@@ -144,7 +159,7 @@ public:
 			// Write the Perc Envelope setting
 			f_printf(&settings_file, "[SHORT SAMPLE PERCUSSIVE ENVELOPE]\n");
 
-			if (global_mode[PERC_ENVELOPE])
+			if (settings.perc_env)
 				f_printf(&settings_file, "Yes\n\n");
 			else
 				f_printf(&settings_file, "No\n\n");
@@ -152,30 +167,30 @@ public:
 			// Write the Fade Up/Down Envelope setting
 			f_printf(&settings_file, "[CROSSFADE SAMPLE END POINTS]\n");
 
-			if (global_mode[FADEUPDOWN_ENVELOPE])
+			if (settings.fadeupdown_env)
 				f_printf(&settings_file, "Yes\n\n");
 			else
 				f_printf(&settings_file, "No\n\n");
 
 			// Write the Channel 1 startup bank setting
 			f_printf(&settings_file, "[STARTUP BANK CHANNEL 1]\n");
-			f_printf(&settings_file, "%d\n\n", global_mode[STARTUPBANK_CH1]);
+			f_printf(&settings_file, "%d\n\n", settings.startup_bank);
 
 			// Write the Channel 2 startup bank setting
 			f_printf(&settings_file, "[STARTUP BANK CHANNEL 2]\n");
-			f_printf(&settings_file, "%d\n\n", global_mode[STARTUPBANK_CH2]);
+			f_printf(&settings_file, "%d\n\n", settings.startup_bank);
 
 			// Write the Trig Delay setting
 			f_printf(&settings_file, "[TRIG DELAY]\n");
-			f_printf(&settings_file, "%d\n\n", global_mode[TRIG_DELAY]);
+			f_printf(&settings_file, "%d\n\n", settings.trig_delay);
 
 			// Write the Trig Delay setting
 			f_printf(&settings_file, "[FADE TIME]\n");
-			f_printf(&settings_file, "%d\n\n", global_params.fade_time_ms);
+			f_printf(&settings_file, "%d\n\n", settings.fade_time_ms);
 
 			// Write Auto Inc Rec Slot setting
 			f_printf(&settings_file, "[AUTO INCREMENT REC SLOT ON TRIG]\n");
-			f_printf(&settings_file, "%s\n\n", global_params.auto_inc_slot_num_after_rec_trig ? "Yes" : "No");
+			f_printf(&settings_file, "%s\n\n", settings.auto_inc_slot_num_after_rec_trig ? "Yes" : "No");
 
 			res = f_close(&settings_file);
 		}
@@ -185,7 +200,7 @@ public:
 
 	FRESULT read_user_settings(void) {
 		FRESULT res;
-		char filepath[_MAX_LFN];
+		char filepath[FF_MAX_LFN];
 		char read_buffer[255];
 		FIL settings_file;
 		uint8_t cur_setting_found;
@@ -286,124 +301,121 @@ public:
 
 				if (cur_setting_found == StereoMode) {
 					if (str_startswith_nocase(read_buffer, "stereo"))
-						global_mode[STEREO_MODE] = 1;
+						settings.stereo_mode = 1;
 					else if (str_startswith_nocase(read_buffer, "mono"))
-						global_mode[STEREO_MODE] = 0;
+						settings.stereo_mode = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == RecordSampleBits) {
 					if (str_startswith_nocase(read_buffer, "24"))
-						global_mode[REC_24BITS] = 1;
+						settings.rec_24bits = 1;
 					else
 						// if (str_startswith_nocase(read_buffer, "16"))
-						global_mode[REC_24BITS] = 0;
+						settings.rec_24bits = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
-#ifdef ENABLE_VARIABLE_RECORD_SAMPLE_RATE
 				if (cur_setting_found == RecordSampleRate) {
 					if (str_startswith_nocase(read_buffer, "48"))
-						global_params.record_sample_rate = REC_48K;
+						settings.record_sample_rate = 48000;
 					else if (str_startswith_nocase(read_buffer, "88"))
-						global_params.record_sample_rate = REC_88K;
+						settings.record_sample_rate = 88200;
 					else if (str_startswith_nocase(read_buffer, "96"))
-						global_params.record_sample_rate = REC_96K;
+						settings.record_sample_rate = 96000;
 					else
-						global_params.record_sample_rate = REC_44K;
+						settings.record_sample_rate = 44100;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
-#endif
 
 				if (cur_setting_found == AutoStopSampleChange) {
 					if (str_startswith_nocase(read_buffer, "Yes"))
-						global_mode[AUTO_STOP_ON_SAMPLE_CHANGE] = AutoStop_ALWAYS;
+						settings.auto_stop_on_sample_change = AutoStopMode::Always;
 					else if (str_startswith_nocase(read_buffer, "Looping Only"))
-						global_mode[AUTO_STOP_ON_SAMPLE_CHANGE] = AutoStop_LOOPING;
+						settings.auto_stop_on_sample_change = AutoStopMode::Looping;
 					else
-						global_mode[AUTO_STOP_ON_SAMPLE_CHANGE] = AutoStop_OFF;
+						settings.auto_stop_on_sample_change = AutoStopMode::Off;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == PlayStopsLengthFull) {
 					if (str_startswith_nocase(read_buffer, "Yes"))
-						global_mode[LENGTH_FULL_START_STOP] = 1;
+						settings.length_full_start_stop = 1;
 					else
-						global_mode[LENGTH_FULL_START_STOP] = 0;
+						settings.length_full_start_stop = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == QuantizeChannel1) {
 					if (str_startswith_nocase(read_buffer, "Yes"))
-						global_mode[QUANTIZE_CH1] = 1;
+						settings.quantize = 1;
 					else
-						global_mode[QUANTIZE_CH1] = 0;
+						settings.quantize = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == QuantizeChannel2) {
 					if (str_startswith_nocase(read_buffer, "Yes"))
-						global_mode[QUANTIZE_CH2] = 1;
+						settings.quantize = 1;
 					else
-						global_mode[QUANTIZE_CH2] = 0;
+						settings.quantize = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == PercEnvelope) {
 					if (str_startswith_nocase(read_buffer, "Yes"))
-						global_mode[PERC_ENVELOPE] = 1;
+						settings.perc_env = 1;
 					else
-						global_mode[PERC_ENVELOPE] = 0;
+						settings.perc_env = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == FadeEnvelope) {
 					if (str_startswith_nocase(read_buffer, "Yes"))
-						global_mode[FADEUPDOWN_ENVELOPE] = 1;
+						settings.fadeupdown_env = 1;
 					else
-						global_mode[FADEUPDOWN_ENVELOPE] = 0;
+						settings.fadeupdown_env = 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == StartUpBank_ch1) {
-					global_mode[STARTUPBANK_CH1] = str_xt_int(read_buffer);
+					settings.startup_bank = str_xt_int(read_buffer);
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 				if (cur_setting_found == StartUpBank_ch2) {
-					global_mode[STARTUPBANK_CH2] = str_xt_int(read_buffer);
+					settings.startup_bank = str_xt_int(read_buffer);
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == TrigDelay) {
-					global_mode[TRIG_DELAY] = str_xt_int(read_buffer);
-					if (global_mode[TRIG_DELAY] < 1 || global_mode[TRIG_DELAY] > 20)
-						global_mode[TRIG_DELAY] = 8;
+					settings.trig_delay = str_xt_int(read_buffer);
+					if (settings.trig_delay < 1 || settings.trig_delay > 20)
+						settings.trig_delay = 8;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == FadeUpDownTime) {
-					global_params.fade_time_ms = str_xt_int(read_buffer);
-					if (global_params.fade_time_ms < 0 || global_params.fade_time_ms > 255)
-						global_params.fade_time_ms = 24;
+					settings.fade_time_ms = str_xt_int(read_buffer);
+					if (settings.fade_time_ms < 0 || settings.fade_time_ms > 255)
+						settings.fade_time_ms = 24;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}
 
 				if (cur_setting_found == AutoIncRecSlot) {
-					global_params.auto_inc_slot_num_after_rec_trig =
-						(str_startswith_nocase(read_buffer, "Yes")) ? 1 : 0;
+					settings.auto_inc_slot_num_after_rec_trig = (str_startswith_nocase(read_buffer, "Yes")) ? 1 : 0;
 
 					cur_setting_found = NoSetting; // back to looking for headers
 				}

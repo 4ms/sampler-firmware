@@ -45,7 +45,7 @@ void main() {
 	Flags flags;
 	Params params{controls, flags};
 
-	UserSettingsStorage settings_storage{sd, params.settings};
+	UserSettingsStorage settings_storage{params.settings};
 
 	TestAudio sampler; //{params, flags};
 	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });

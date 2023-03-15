@@ -1,9 +1,10 @@
 #pragma once
-#include "audio_stream_conf.hh"
+#include <cstdint>
 
 enum class GateType { Gate, Trig };
 enum class AutoStopMode { Off = 0, Always = 1, Looping = 2 };
 
+// Was global_modes[...] and global_params.
 struct UserSettings {
 	bool stereo_mode = false;
 	AutoStopMode auto_stop_on_sample_change = AutoStopMode::Off;
@@ -20,6 +21,9 @@ struct UserSettings {
 	GateType endout_jack = GateType::Trig;
 	GateType start_jack = GateType::Trig;
 	GateType main_clock = GateType::Gate;
+
+	bool rec_24bits = false;
+	uint32_t record_sample_rate = 48000;
 };
 
 enum class OperationMode { Normal, SysSettings, Calibrate };

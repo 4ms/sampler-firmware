@@ -42,10 +42,6 @@ public:
 	Board::EndOut end_out;
 
 	// LEDs:
-	// Board::PlayLED play_led;
-	// Board::RevLED rev_led;
-	// Board::BankLED bank_led;
-
 	Board::PlayPWM play_led;
 	Board::RevPWM rev_led;
 	Board::BankPWM bank_led;
@@ -79,15 +75,23 @@ public:
 	}
 
 	void update() {
+		// Debug::Pin1::high();
 		play_button.update();
 		rev_button.update();
 		bank_button.update();
 		play_jack.update();
 		rev_jack.update();
 
-		play_led.update_animation();
-		rev_led.update_animation();
-		bank_led.update_animation();
+		constexpr uint32_t led_throttle = Board::ParamUpdateHz / LEDUpdateRateHz;
+		static uint32_t led_throttle_ctr = 0;
+		// 187Hz
+		if (led_throttle_ctr++ > led_throttle) {
+			led_throttle_ctr = 0;
+			play_led.update_animation();
+			rev_led.update_animation();
+			bank_led.update_animation();
+		}
+		// Debug::Pin1::low();
 	}
 };
 } // namespace SamplerKit

@@ -47,17 +47,17 @@ using BankLED = mdrivlib::MixedRgbLed<BankR, BankG, BankB>;
 // using PlayRPwm = mdrivlib::TimPwmChan<Pin::D8PwmConf>; // R = D8, has no PWM on F723-p3 or mp1-p3
 using PlayGPwm = mdrivlib::TimPwmChan<Pin::D11PwmConf>;
 using PlayBPwm = mdrivlib::TimPwmChan<Pin::D14PwmConf>;
-using PlayPWM = mdrivlib::MixedRgbLed<PlayR, PlayGPwm, PlayBPwm>;
+using PlayPWM = mdrivlib::MixedRgbLed<PlayR, PlayGPwm, PlayBPwm, LEDUpdateRateHz>;
 
 // using RevRPwm = mdrivlib::TimPwmChan<Pin::D7PwmConf>;// R = D7, has no PWM on mp1-p3
 using RevGPwm = mdrivlib::TimPwmChan<Pin::D10PwmConf>;
 using RevBPwm = mdrivlib::TimPwmChan<Pin::D3PwmConf>;
-using RevPWM = mdrivlib::MixedRgbLed<RevR, RevGPwm, RevBPwm>;
+using RevPWM = mdrivlib::MixedRgbLed<RevR, RevGPwm, RevBPwm, LEDUpdateRateHz>;
 
 using BankRPwm = mdrivlib::TimPwmChan<Pin::D1PwmConf>;
 using BankGPwm = mdrivlib::TimPwmChan<Pin::D0PwmConf>;
 // using BankBPwm = mdrivlib::TimPwmChan<Pin::D5PwmConf>;// Blue = D5, which has no PWM on mp1-p3
-using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankB>;
+using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankB, LEDUpdateRateHz>;
 
 using EndOut = mdrivlib::FPin<Pin::D15.gpio, Pin::D15.pin, Output, Normal>;
 

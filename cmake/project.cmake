@@ -1,3 +1,5 @@
+# TODO: make this src/CMakeLists.txt somehow...?
+
 include(${CMAKE_SOURCE_DIR}/cmake/common.cmake)
 
 # ############## Common #####################
@@ -41,8 +43,6 @@ function(set_bootloader_hal_sources sources family_name)
   set(${sources}
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_cortex.c
-      # ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_flash.c
-      # ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_flash_ex.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_gpio.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_pwr.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_pwr_ex.c
@@ -117,8 +117,11 @@ function(create_target target)
     ${root}/src/main.cc
     ${root}/src/console.cc
     ${root}/src/hardware_tests/hardware_tests.cc
-    ${root}/src/fatfs/diskio.cc
+    ${root}/src/user_system_settings.cc
+    # Printf:
     ${root}/lib/printf/printf.c
+    # FatFS:
+    ${root}/src/fatfs/diskio.cc
     ${root}/lib/fatfs/source/ff.c
     ${root}/lib/fatfs/source/ffunicode.c
     ${TARGET_SOURCES}

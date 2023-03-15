@@ -127,8 +127,8 @@ constexpr inline mdrivlib::TimChanConf D14PwmConf{
 
 // D15-D19?
 
-// TODO: Add AF for all other pins (DAC, I2C, SPI, UART, etc)
-
+constexpr inline PinDef Debug0{GPIO::H, PinNum::_13};
+constexpr inline PinDef Debug1{GPIO::H, PinNum::_14};
 constexpr inline PinDef Debug2{GPIO::H, PinNum::_15};
 constexpr inline PinDef Debug3{GPIO::D, PinNum::_3};
 constexpr inline PinDef ConsoleUartTX{GPIO::H, PinNum::_13, PinAF::AltFunc8};

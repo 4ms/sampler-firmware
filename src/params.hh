@@ -4,7 +4,7 @@
 #include "epp_lut.hh"
 #include "flags.hh"
 #include "log_taper_lut.hh"
-#include "modes.hh"
+#include "settings.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
 
@@ -25,8 +25,7 @@ struct Params {
 	float length = 1.f;
 	float volume = 1.f;
 
-	ChannelMode modes;
-	Settings settings;
+	UserSettings settings;
 	OperationMode op_mode = OperationMode::Normal;
 
 	Params(Controls &controls, Flags &flags)
@@ -36,66 +35,53 @@ struct Params {
 	void update() {
 		controls.update();
 
-		update_ping_jack();
+		// update_ping_jack();
 
-		update_pot_states();
-		update_cv_states();
+		// update_pot_states();
+		// update_cv_states();
 
-		update_adjust_loop_end_mode();
-		update_time_quant_mode();
+		// update_adjust_loop_end_mode();
+		// update_time_quant_mode();
 
-		calc_delay_feed();
-		calc_feedback();
-		calc_time();
-		calc_mix();
+		// calc_delay_feed();
+		// calc_feedback();
+		// calc_time();
+		// calc_mix();
 
-		if (modes.inf == InfState::On)
-			update_scroll_loop_amount();
+		// if (modes.inf == InfState::On)
+		// 	update_scroll_loop_amount();
 
-		// TODO
-		tracking_comp = 1.f;
+		// // TODO
+		// tracking_comp = 1.f;
 
-		if (op_mode == OperationMode::Calibrate) {
-			// TODO: Calibrate mode
-			//  update_calibration();
-		}
+		// if (op_mode == OperationMode::Calibrate) {
+		// 	// TODO: Calibrate mode
+		// 	//  update_calibration();
+		// }
 
-		if (op_mode == OperationMode::SysSettings) {
-			// TODO: System Settings mode
-			//  update_system_settings();
-		}
+		// if (op_mode == OperationMode::SysSettings) {
+		// 	// TODO: System Settings mode
+		// 	//  update_system_settings();
+		// }
 
-		// check_entering_system_mode();
+		// // check_entering_system_mode();
 
-		update_leds();
-		update_button_modes();
+		// update_leds();
+		// update_button_modes();
 
-		if (flags.mute_on_boot_ctr)
-			flags.mute_on_boot_ctr--;
+		// if (flags.mute_on_boot_ctr)
+		// 	flags.mute_on_boot_ctr--;
 	}
-
-	void reset_loop() {
-		controls.loop_led.high();
-		controls.loop_out.high();
-		timer.reset_loopled_tmr();
-	}
-
-	// TODO: to use a double-buffer params, then
-	// looping delay should set a flag that tells params to set a
-	// new state for these
-	void set_inf_state(InfState newstate) { modes.inf = newstate; }
-	void toggle_reverse() { modes.reverse = !modes.reverse; }
-	void set_divmult(float new_divmult) { divmult_time = new_divmult; }
 
 private:
 	void update_ping_jack() {
-		if (timer.take_ping_changed()) {
-			controls.clk_out.high();
-			controls.ping_led.high();
-			ping_time = timer.get_ping_time();
-			if (!modes.ping_locked)
-				flags.set_time_changed();
-		}
+		// if (timer.take_ping_changed()) {
+		// 	controls.clk_out.high();
+		// 	controls.ping_led.high();
+		// 	ping_time = timer.get_ping_time();
+		// 	if (!modes.ping_locked)
+		// 		flags.set_time_changed();
+		// }
 	}
 
 	void update_pot_states() {
@@ -112,14 +98,14 @@ private:
 				pot.delta = diff;
 				pot.moved = true;
 
-				if (controls.reverse_button.is_pressed()) {
+				if (controls.rev_button.is_pressed()) {
 					pot.moved_while_rev_down = true;
 					ignore_rev_release = true; // if i==TimePot and in InfMode only?
 				}
 
-				if (controls.reverse_button.is_pressed()) {
-					pot.moved_while_inf_down = true;
-					ignore_inf_release = true; // if i==TimePot || FeedbackPot in InfMode only?
+				if (controls.bank_button.is_pressed()) {
+					pot.moved_while_bank_down = true;
+					ignore_bank_release = true; // if i==TimePot || FeedbackPot in InfMode only?
 				}
 			}
 		}
@@ -140,70 +126,23 @@ private:
 	}
 
 	void update_button_modes() {
-		if (controls.ping_button.just_went_low()) {
-			// TODO: handle entering modes: QMC, Ping Locked
-			// if (!INF1BUT && !INF2BUT && REV1BUT && REV2BUT) {
-			// 	flag_acknowlegde_qcm = (6 << 8);
-
-			// 	if (global_mode[QUANTIZE_MODE_CHANGES] == 0)
-			// 		global_mode[QUANTIZE_MODE_CHANGES] = 1;
-			// 	else
-			// 		global_mode[QUANTIZE_MODE_CHANGES] = 0;
-
-			// 	flag_ignore_revdown[0] = 1;
-			// 	flag_ignore_revdown[1] = 1;
-			// } else if (REV1BUT && !INF1BUT && !INF2BUT && !REV2BUT) {
-			// 	flag_ignore_revdown[0] = 1;
-			// } else if (REV2BUT && !INF1BUT && !INF2BUT && !REV1BUT) {
-			// 	flag_ignore_revdown[1] = 1;
-			// }
-
-			// else if (INF1BUT && !INF2BUT && !REV1BUT && !REV2BUT)
-			// {
-			// 	if (mode[0][PING_LOCKED] == 0) {
-			// 		locked_ping_time[0] = ping_time;
-			// 		mode[0][PING_LOCKED] = 1;
-			// 	} else {
-			// 		mode[0][PING_LOCKED] = 0;
-			// 		set_divmult_time(0);
-			// 	}
-
-			// 	flag_ignore_infdown[0] = 1;
-
-			// } else if (INF2BUT && INF1BUT && REV1BUT && REV2BUT) {
-			// 	flag_ignore_revdown[0] = 1;
-			// 	flag_ignore_revdown[1] = 1;
-			// 	flag_ignore_infdown[0] = 1;
-			// 	flag_ignore_infdown[1] = 1;
-
-			// } else if (!INF2BUT && !INF1BUT && !REV1BUT && !REV2BUT) {
-			ping_time = timer.get_ping_tmr();
-			controls.clk_out.high();
-			timer.reset_ping_tmr();
-			timer.reset_pingled_tmr();
-			// timer.reset_clkout_tmr();
-
-			// TODO: this is handled automatically now, right?
-			if (modes.quantize_mode_changes) {
-				// 	process_mode_flags();
-			}
-			if (!modes.ping_locked)
-				flags.set_time_changed();
+		if (controls.play_button.just_went_low()) {
 		}
 
-		if (controls.inf_button.is_just_released()) {
-			if (!ignore_inf_release) {
-				flags.set_inf_changed();
+		if (controls.bank_button.is_just_released()) {
+			if (!ignore_bank_release) {
+				// TODO: handle change bank
 			}
 
-			ignore_inf_release = false;
+			ignore_bank_release = false;
 			for (auto &pot : pot_state)
-				pot.moved_while_inf_down = false;
+				pot.moved_while_bank_down = false;
 		}
 
-		if (controls.reverse_button.is_just_released()) {
+		if (controls.rev_button.is_just_released()) {
 			if (!ignore_rev_release) {
-				flags.set_rev_changed();
+				// TODO:
+				//  flags.set_rev_changed();
 			}
 
 			ignore_rev_release = false;
@@ -379,12 +318,12 @@ private:
 private:
 	struct PotState {
 		int16_t cur_val = 0;
-		int16_t prev_val = 0;			   // old_i_smoothed_potadc
-		int16_t track_moving_ctr = 0;	   // track_moving_pot
-		int16_t delta = 0;				   // pot_delta
-		bool moved_while_inf_down = false; // flag_pot_changed_infdown
-		bool moved_while_rev_down = false; // flag_pot_changed_revdown
-		bool moved = false;				   // flag_pot_changed
+		int16_t prev_val = 0;				// old_i_smoothed_potadc
+		int16_t track_moving_ctr = 0;		// track_moving_pot
+		int16_t delta = 0;					// pot_delta
+		bool moved_while_bank_down = false; // flag_pot_changed_infdown
+		bool moved_while_rev_down = false;	// flag_pot_changed_revdown
+		bool moved = false;					// flag_pot_changed
 	};
 	std::array<PotState, NumPots> pot_state;
 
@@ -395,7 +334,7 @@ private:
 	};
 	std::array<CVState, NumPots> cv_state;
 
-	bool ignore_inf_release = false;
+	bool ignore_bank_release = false;
 	bool ignore_rev_release = false;
 };
 

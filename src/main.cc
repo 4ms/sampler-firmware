@@ -2,14 +2,18 @@
 #include "conf/board_conf.hh"
 #include "controls.hh"
 #include "debug.hh"
+#include "flags.hh"
 // #include "delay_buffer.hh"
 #include "drivers/timekeeper.hh"
 // #include "looping_delay.hh"
+#include "params.hh"
 #include "sdcard.hh"
 #include "system.hh"
 // #include "timer.hh"
 #include "hardware_tests/hardware_tests.hh"
 #include "test_audio.hh"
+#include "user_settings_storage.hh"
+#include "user_system_settings.hh"
 
 namespace
 {
@@ -30,15 +34,21 @@ void main() {
 		HWTests::run(controls);
 	}
 
+	UserSystemSettings sys_settings;
+	auto fw_version = sys_settings.load_flash_params();
+
+	// check_calibration_mode();
+
 	Sdcard sd;
 	sd.reload_disk();
 
-	// Flags flags;
-	// Params params{controls, flags, timer};
-	// DelayBuffer &audio_buffer = get_delay_buffer();
-	// LoopingDelay looping_delay{params, flags, audio_buffer};
-	// TestAudio sampler; //{params};
-	// AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
+	Flags flags;
+	Params params{controls, flags};
+
+	UserSettingsStorage settings_storage{sd, params.settings};
+
+	TestAudio sampler; //{params, flags};
+	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
 
 	mdrivlib::Timekeeper params_update_task(Board::param_update_task_conf, [&controls]() { controls.update(); });
 
@@ -47,15 +57,12 @@ void main() {
 	// And right before looping_delay.update(), call params.load_updated_values()
 
 	__HAL_DBGMCU_FREEZE_TIM6();
+
 	// Tasks:
-	// LED PWM update(TIM2) + Button LED(TIM10) 4.8kHz + 200Hz
 	// SD Card read: 1.4kHz (TIM7)
 	// Trig Jack(TIM5)? 12kHz
 
 	// timer.start();
-	controls.play_led.breathe(Colors::white, 0.1);
-	controls.rev_led.breathe(Colors::white, 0.1);
-	controls.bank_led.breathe(Colors::white, 0.1);
 	params_update_task.start();
 
 	// audio.start();

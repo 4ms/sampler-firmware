@@ -37,12 +37,10 @@ void main() {
 	// Params params{controls, flags, timer};
 	// DelayBuffer &audio_buffer = get_delay_buffer();
 	// LoopingDelay looping_delay{params, flags, audio_buffer};
-	TestAudio sampler; //{params};
-	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
+	// TestAudio sampler; //{params};
+	// AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
 
-	mdrivlib::Timekeeper params_update_task(Board::param_update_task_conf,
-											// [&params]() { params.update(); }
-											[] {});
+	mdrivlib::Timekeeper params_update_task(Board::param_update_task_conf, [&controls]() { controls.update(); });
 
 	// TODO: Make Params thread-safe:
 	// Use double-buffering (two Params structs), and LoopingDelay is constructed with a Params*
@@ -55,8 +53,12 @@ void main() {
 	// Trig Jack(TIM5)? 12kHz
 
 	// timer.start();
-	// params_update_task.start();
-	audio.start();
+	controls.play_led.breathe(Colors::white, 0.1);
+	controls.rev_led.breathe(Colors::white, 0.1);
+	controls.bank_led.breathe(Colors::white, 0.1);
+	params_update_task.start();
+
+	// audio.start();
 
 	while (true) {
 		__NOP();

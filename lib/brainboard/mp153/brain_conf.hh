@@ -81,9 +81,11 @@ struct LRClkPinChangeConf : mdrivlib::DefaultPinChangeConf {
 	static constexpr uint32_t priority2 = 0;
 };
 
+constexpr inline uint32_t ParamUpdateHz = 6000;
+
 const mdrivlib::TimekeeperConfig param_update_task_conf = {
 	.TIMx = TIM6,
-	.period_ns = 1'000'000'000 / 6000, // 6kHz
+	.period_ns = 1'000'000'000 / ParamUpdateHz,
 	.priority1 = 2,
 	.priority2 = 3,
 };

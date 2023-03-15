@@ -24,8 +24,8 @@ class Controls {
 	AdcDmaPeriph<Brain::PotAdcConf> pot_adcs{pot_adc_buffer, Board::PotAdcChans};
 
 	static constexpr bool hardware_oversampling = Brain::PotAdcConf::oversample;
-	std::array<Oversampler<16, uint16_t>, NumPots> pots;
-	std::array<Oversampler<8, uint16_t>, NumCVs> cvs;
+	std::array<Oversampler<128, uint16_t>, NumPots> pots;
+	std::array<Oversampler<32, uint16_t>, NumCVs> cvs;
 
 public:
 	Controls() {} //= default;

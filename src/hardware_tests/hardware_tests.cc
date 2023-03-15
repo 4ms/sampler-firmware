@@ -96,6 +96,7 @@ void run(Controls &controls) {
 
 	print_press_button();
 	Util::flash_mainbut_until_pressed();
+	controls.play_button.clear_events();
 
 	//////////////////////////////
 	print_test_name("Pot and CV jack Test");
@@ -116,6 +117,7 @@ void run(Controls &controls) {
 	adctester.run_test();
 
 	all_lights_off();
+	controls.play_button.clear_events();
 
 	//////////////////////////////
 	print_test_name("Gate Input Test");

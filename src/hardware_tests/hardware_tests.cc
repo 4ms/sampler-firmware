@@ -120,7 +120,7 @@ void run(Controls &controls) {
 	//////////////////////////////
 	print_test_name("Gate Input Test");
 	printf_("Patch End Out into Play Trig, then Rev Trig\n");
-	TestGateIns gateintester;
+	TestGateIns gateintester{controls};
 	gateintester.run_test();
 
 	all_lights_off();

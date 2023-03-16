@@ -23,6 +23,8 @@ struct System {
 		Debug::Pin2{};
 		Debug::Pin3{};
 		Console::init();
+
+		__HAL_DBGMCU_FREEZE_TIM6();
 	}
 };
 

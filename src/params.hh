@@ -1,36 +1,50 @@
 #pragma once
 #include "audio_stream_conf.hh"
+#include "calibration_storage.hh"
 #include "controls.hh"
+#include "elements.hh"
 #include "epp_lut.hh"
 #include "flags.hh"
 #include "log_taper_lut.hh"
 #include "settings.hh"
+#include "timing_calcs.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
 
 namespace SamplerKit
 {
-// Params holds all the modes, settings and parameters for the sampler delay
+// Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
 	Controls &controls;
 	Flags &flags;
+	CalibrationStorage &system_calibrations;
 
+	// i_param[]:
 	uint32_t bank = 0;
 	uint32_t sample = 0;
 	bool reverse = 0;
 	bool looping = 0;
+
+	// f_param[]:
 	float pitch = 1.0f;
 	float start = 0.f;
 	float length = 1.f;
 	float volume = 1.f;
 
+	// global_mode[]:
+	enum class MonitorModes { OFF = 0b00, BOTH = 0b11, LEFT = 0b01, RIGHT = 0b10 };
+	MonitorModes monitor_recording = MonitorModes::OFF;
+	bool enable_recording = false;
+	// No: EDIT_MODE, ASSIGN_MODE, ALLOW_SPLIT_MONITORING, VIDEO_DIM
+
 	UserSettings settings;
 	OperationMode op_mode = OperationMode::Normal;
 
-	Params(Controls &controls, Flags &flags)
+	Params(Controls &controls, Flags &flags, CalibrationStorage &system_calibrations)
 		: controls{controls}
-		, flags{flags} {}
+		, flags{flags}
+		, system_calibrations{system_calibrations} {}
 
 	void update() {
 		controls.update();
@@ -60,9 +74,14 @@ struct Params {
 	}
 
 private:
+	void update_pitch() {
+		auto pitchcv = MathTools::plateau<6, 2048>(cv_state[PitchCv].cur_val);
+		pitch = pot_state[PitchPot].cur_val;
+	}
+
 	void update_pot_states() {
 		for (auto [i, pot] : enumerate(pot_state)) {
-			pot.cur_val = (int16_t)controls.read_pot(static_cast<PotAdcElement>(i++));
+			pot.cur_val = (int16_t)controls.read_pot(static_cast<PotAdcElement>(i));
 
 			int16_t diff = std::abs(pot.cur_val - pot.prev_val);
 			if (diff > Board::MinPotChange)
@@ -76,12 +95,12 @@ private:
 
 				if (controls.rev_button.is_pressed()) {
 					pot.moved_while_rev_down = true;
-					ignore_rev_release = true; // if i==TimePot and in InfMode only?
+					ignore_rev_release = true;
 				}
 
 				if (controls.bank_button.is_pressed()) {
 					pot.moved_while_bank_down = true;
-					ignore_bank_release = true; // if i==TimePot || FeedbackPot in InfMode only?
+					ignore_bank_release = true;
 				}
 			}
 		}
@@ -89,10 +108,12 @@ private:
 
 	void update_cv_states() {
 		for (auto [i, cv] : enumerate(cv_state)) {
-			cv.cur_val = (int16_t)controls.read_cv(static_cast<CVAdcElement>(i++));
+			cv.cur_val = (int16_t)controls.read_cv(static_cast<CVAdcElement>(i));
 			if (op_mode == OperationMode::Calibrate) {
 				// TODO: use raw values, without calibration offset
-			}
+			} else
+				cv.cur_val += system_calibrations.cv_calibration_offset[i];
+
 			int16_t diff = std::abs(cv.cur_val - cv.prev_val);
 			if (diff > Board::MinCVChange) {
 				cv.delta = diff;

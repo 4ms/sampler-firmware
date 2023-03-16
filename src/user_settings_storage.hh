@@ -30,7 +30,11 @@ class UserSettingsStorage {
 
 public:
 	UserSettingsStorage(UserSettings &settings)
-		: settings{settings} {}
+		: settings{settings} {
+		set_default_user_settings();
+		read_user_settings();
+		settings.update_timing_calcs();
+	}
 
 	void set_default_user_settings() {
 		settings.stereo_mode = false;

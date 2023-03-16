@@ -198,7 +198,7 @@ public:
 		return (res);
 	}
 
-	FRESULT read_user_settings(void) {
+	bool read_user_settings(void) {
 		FRESULT res;
 		char filepath[FF_MAX_LFN];
 		char read_buffer[255];
@@ -207,223 +207,224 @@ public:
 
 		// Check sys_dir is ok
 		res = check_sys_dir();
-		if (res == FR_OK) {
-			// Open the settings file read-only
-			str_cat(filepath, SYS_DIR_SLASH, SETTINGS_FILE);
-			res = f_open(&settings_file, filepath, FA_READ);
-			if (res != FR_OK)
-				return (res);
+		if (res != FR_OK)
+			return false;
 
-			cur_setting_found = NoSetting;
-			while (!f_eof(&settings_file)) {
-				// Read next line
-				if (f_gets(read_buffer, 255, &settings_file) == 0)
-					return (FR_INT_ERR);
+		// Open the settings file read-only
+		str_cat(filepath, SYS_DIR_SLASH, SETTINGS_FILE);
+		res = f_open(&settings_file, filepath, FA_READ);
+		if (res != FR_OK)
+			return false;
 
-				// Ignore lines starting with #
-				if (read_buffer[0] == '#')
+		cur_setting_found = NoSetting;
+		while (!f_eof(&settings_file)) {
+			// Read next line
+			if (f_gets(read_buffer, 255, &settings_file) == 0)
+				return false;
+
+			// Ignore lines starting with #
+			if (read_buffer[0] == '#')
+				continue;
+
+			// Ignore blank lines
+			if (read_buffer[0] == 0)
+				continue;
+
+			// Remove /n from buffer
+			read_buffer[str_len(read_buffer) - 1] = 0;
+
+			// Look for a settings section header
+			if (read_buffer[0] == '[') {
+				if (str_startswith_nocase(read_buffer, "[STEREO MODE]")) {
+					cur_setting_found = StereoMode; // stereo mode section detected
 					continue;
+				}
 
-				// Ignore blank lines
-				if (read_buffer[0] == 0)
+				if (str_startswith_nocase(read_buffer, "[RECORD SAMPLE BITS]")) {
+					cur_setting_found = RecordSampleBits; // 24bit recording mode section detected
 					continue;
-
-				// Remove /n from buffer
-				read_buffer[str_len(read_buffer) - 1] = 0;
-
-				// Look for a settings section header
-				if (read_buffer[0] == '[') {
-					if (str_startswith_nocase(read_buffer, "[STEREO MODE]")) {
-						cur_setting_found = StereoMode; // stereo mode section detected
-						continue;
-					}
-
-					if (str_startswith_nocase(read_buffer, "[RECORD SAMPLE BITS]")) {
-						cur_setting_found = RecordSampleBits; // 24bit recording mode section detected
-						continue;
-					}
-
-					if (str_startswith_nocase(read_buffer, "[RECORD SAMPLE RATE")) {
-						cur_setting_found = RecordSampleRate; // Sample rate section detected
-						continue;
-					}
-
-					if (str_startswith_nocase(read_buffer, "[AUTO STOP ON SAMPLE CHANGE]")) {
-						cur_setting_found = AutoStopSampleChange; // Auto Stop Mode section detected
-						continue;
-					}
-
-					if (str_startswith_nocase(read_buffer, "[PLAY BUTTON STOPS WITH LENGTH AT FULL]")) {
-						cur_setting_found = PlayStopsLengthFull;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[QUANTIZE CHANNEL 1")) {
-						cur_setting_found = QuantizeChannel1;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[QUANTIZE CHANNEL 2")) {
-						cur_setting_found = QuantizeChannel2;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[SHORT SAMPLE PERCUSSIVE ENVELOPE")) {
-						cur_setting_found = PercEnvelope;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[CROSSFADE SAMPLE END POINTS")) {
-						cur_setting_found = FadeEnvelope;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[STARTUP BANK CHANNEL 1")) {
-						cur_setting_found = StartUpBank_ch1;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[STARTUP BANK CHANNEL 2")) {
-						cur_setting_found = StartUpBank_ch2;
-						continue;
-					}
-					if (str_startswith_nocase(read_buffer, "[TRIG DELAY")) {
-						cur_setting_found = TrigDelay;
-						continue;
-					}
-
-					if (str_startswith_nocase(read_buffer, "[FADE TIME")) {
-						cur_setting_found = FadeUpDownTime;
-						continue;
-					}
-
-					if (str_startswith_nocase(read_buffer, "[AUTO INCREMENT REC SLOT ON TRIG")) {
-						cur_setting_found = AutoIncRecSlot;
-						continue;
-					}
 				}
 
-				// Look for setting values
-
-				if (cur_setting_found == StereoMode) {
-					if (str_startswith_nocase(read_buffer, "stereo"))
-						settings.stereo_mode = 1;
-					else if (str_startswith_nocase(read_buffer, "mono"))
-						settings.stereo_mode = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
+				if (str_startswith_nocase(read_buffer, "[RECORD SAMPLE RATE")) {
+					cur_setting_found = RecordSampleRate; // Sample rate section detected
+					continue;
 				}
 
-				if (cur_setting_found == RecordSampleBits) {
-					if (str_startswith_nocase(read_buffer, "24"))
-						settings.rec_24bits = 1;
-					else
-						// if (str_startswith_nocase(read_buffer, "16"))
-						settings.rec_24bits = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
+				if (str_startswith_nocase(read_buffer, "[AUTO STOP ON SAMPLE CHANGE]")) {
+					cur_setting_found = AutoStopSampleChange; // Auto Stop Mode section detected
+					continue;
 				}
 
-				if (cur_setting_found == RecordSampleRate) {
-					if (str_startswith_nocase(read_buffer, "48"))
-						settings.record_sample_rate = 48000;
-					else if (str_startswith_nocase(read_buffer, "88"))
-						settings.record_sample_rate = 88200;
-					else if (str_startswith_nocase(read_buffer, "96"))
-						settings.record_sample_rate = 96000;
-					else
-						settings.record_sample_rate = 44100;
-
-					cur_setting_found = NoSetting; // back to looking for headers
+				if (str_startswith_nocase(read_buffer, "[PLAY BUTTON STOPS WITH LENGTH AT FULL]")) {
+					cur_setting_found = PlayStopsLengthFull;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[QUANTIZE CHANNEL 1")) {
+					cur_setting_found = QuantizeChannel1;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[QUANTIZE CHANNEL 2")) {
+					cur_setting_found = QuantizeChannel2;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[SHORT SAMPLE PERCUSSIVE ENVELOPE")) {
+					cur_setting_found = PercEnvelope;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[CROSSFADE SAMPLE END POINTS")) {
+					cur_setting_found = FadeEnvelope;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[STARTUP BANK CHANNEL 1")) {
+					cur_setting_found = StartUpBank_ch1;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[STARTUP BANK CHANNEL 2")) {
+					cur_setting_found = StartUpBank_ch2;
+					continue;
+				}
+				if (str_startswith_nocase(read_buffer, "[TRIG DELAY")) {
+					cur_setting_found = TrigDelay;
+					continue;
 				}
 
-				if (cur_setting_found == AutoStopSampleChange) {
-					if (str_startswith_nocase(read_buffer, "Yes"))
-						settings.auto_stop_on_sample_change = AutoStopMode::Always;
-					else if (str_startswith_nocase(read_buffer, "Looping Only"))
-						settings.auto_stop_on_sample_change = AutoStopMode::Looping;
-					else
-						settings.auto_stop_on_sample_change = AutoStopMode::Off;
-
-					cur_setting_found = NoSetting; // back to looking for headers
+				if (str_startswith_nocase(read_buffer, "[FADE TIME")) {
+					cur_setting_found = FadeUpDownTime;
+					continue;
 				}
 
-				if (cur_setting_found == PlayStopsLengthFull) {
-					if (str_startswith_nocase(read_buffer, "Yes"))
-						settings.length_full_start_stop = 1;
-					else
-						settings.length_full_start_stop = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == QuantizeChannel1) {
-					if (str_startswith_nocase(read_buffer, "Yes"))
-						settings.quantize = 1;
-					else
-						settings.quantize = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == QuantizeChannel2) {
-					if (str_startswith_nocase(read_buffer, "Yes"))
-						settings.quantize = 1;
-					else
-						settings.quantize = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == PercEnvelope) {
-					if (str_startswith_nocase(read_buffer, "Yes"))
-						settings.perc_env = 1;
-					else
-						settings.perc_env = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == FadeEnvelope) {
-					if (str_startswith_nocase(read_buffer, "Yes"))
-						settings.fadeupdown_env = 1;
-					else
-						settings.fadeupdown_env = 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == StartUpBank_ch1) {
-					settings.startup_bank = str_xt_int(read_buffer);
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-				if (cur_setting_found == StartUpBank_ch2) {
-					settings.startup_bank = str_xt_int(read_buffer);
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == TrigDelay) {
-					settings.trig_delay = str_xt_int(read_buffer);
-					if (settings.trig_delay < 1 || settings.trig_delay > 20)
-						settings.trig_delay = 8;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == FadeUpDownTime) {
-					settings.fade_time_ms = str_xt_int(read_buffer);
-					if (settings.fade_time_ms < 0 || settings.fade_time_ms > 255)
-						settings.fade_time_ms = 24;
-
-					cur_setting_found = NoSetting; // back to looking for headers
-				}
-
-				if (cur_setting_found == AutoIncRecSlot) {
-					settings.auto_inc_slot_num_after_rec_trig = (str_startswith_nocase(read_buffer, "Yes")) ? 1 : 0;
-
-					cur_setting_found = NoSetting; // back to looking for headers
+				if (str_startswith_nocase(read_buffer, "[AUTO INCREMENT REC SLOT ON TRIG")) {
+					cur_setting_found = AutoIncRecSlot;
+					continue;
 				}
 			}
 
-			res = f_close(&settings_file);
+			// Look for setting values
+
+			if (cur_setting_found == StereoMode) {
+				if (str_startswith_nocase(read_buffer, "stereo"))
+					settings.stereo_mode = 1;
+				else if (str_startswith_nocase(read_buffer, "mono"))
+					settings.stereo_mode = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == RecordSampleBits) {
+				if (str_startswith_nocase(read_buffer, "24"))
+					settings.rec_24bits = 1;
+				else
+					// if (str_startswith_nocase(read_buffer, "16"))
+					settings.rec_24bits = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == RecordSampleRate) {
+				if (str_startswith_nocase(read_buffer, "48"))
+					settings.record_sample_rate = 48000;
+				else if (str_startswith_nocase(read_buffer, "88"))
+					settings.record_sample_rate = 88200;
+				else if (str_startswith_nocase(read_buffer, "96"))
+					settings.record_sample_rate = 96000;
+				else
+					settings.record_sample_rate = 44100;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == AutoStopSampleChange) {
+				if (str_startswith_nocase(read_buffer, "Yes"))
+					settings.auto_stop_on_sample_change = AutoStopMode::Always;
+				else if (str_startswith_nocase(read_buffer, "Looping Only"))
+					settings.auto_stop_on_sample_change = AutoStopMode::Looping;
+				else
+					settings.auto_stop_on_sample_change = AutoStopMode::Off;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == PlayStopsLengthFull) {
+				if (str_startswith_nocase(read_buffer, "Yes"))
+					settings.length_full_start_stop = 1;
+				else
+					settings.length_full_start_stop = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == QuantizeChannel1) {
+				if (str_startswith_nocase(read_buffer, "Yes"))
+					settings.quantize = 1;
+				else
+					settings.quantize = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == QuantizeChannel2) {
+				if (str_startswith_nocase(read_buffer, "Yes"))
+					settings.quantize = 1;
+				else
+					settings.quantize = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == PercEnvelope) {
+				if (str_startswith_nocase(read_buffer, "Yes"))
+					settings.perc_env = 1;
+				else
+					settings.perc_env = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == FadeEnvelope) {
+				if (str_startswith_nocase(read_buffer, "Yes"))
+					settings.fadeupdown_env = 1;
+				else
+					settings.fadeupdown_env = 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == StartUpBank_ch1) {
+				settings.startup_bank = str_xt_int(read_buffer);
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+			if (cur_setting_found == StartUpBank_ch2) {
+				settings.startup_bank = str_xt_int(read_buffer);
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == TrigDelay) {
+				settings.trig_delay = str_xt_int(read_buffer);
+				if (settings.trig_delay < 1 || settings.trig_delay > 20)
+					settings.trig_delay = 8;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == FadeUpDownTime) {
+				settings.fade_time_ms = str_xt_int(read_buffer);
+				if (settings.fade_time_ms < 0 || settings.fade_time_ms > 255)
+					settings.fade_time_ms = 24;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == AutoIncRecSlot) {
+				settings.auto_inc_slot_num_after_rec_trig = (str_startswith_nocase(read_buffer, "Yes")) ? 1 : 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
 		}
-		return (res);
+
+		res = f_close(&settings_file);
+		return res == FR_OK;
 	}
 };
 } // namespace SamplerKit

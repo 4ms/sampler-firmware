@@ -11,9 +11,9 @@
 #include "system.hh"
 // #include "timer.hh"
 #include "hardware_tests/hardware_tests.hh"
+#include "system_settings.hh"
 #include "test_audio.hh"
 #include "user_settings_storage.hh"
-#include "user_system_settings.hh"
 
 namespace
 {
@@ -34,9 +34,8 @@ void main() {
 		HWTests::run(controls);
 	}
 
-	UserSystemSettings sys_settings;
+	SystemCalibrations sys_settings;
 	auto fw_version = sys_settings.load_flash_params();
-
 	// check_calibration_mode();
 
 	Sdcard sd;
@@ -46,6 +45,8 @@ void main() {
 	Params params{controls, flags};
 
 	UserSettingsStorage settings_storage{params.settings};
+	settings_storage.set_default_user_settings();
+	settings_storage.read_user_settings();
 
 	TestAudio sampler; //{params, flags};
 	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });

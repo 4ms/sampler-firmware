@@ -52,10 +52,8 @@ struct Params {
 		update_pot_states();
 		update_cv_states();
 
-		// calc_delay_feed();
-		// calc_feedback();
-		// calc_time();
-		// calc_mix();
+		update_length();
+		update_startpos();
 
 		if (op_mode == OperationMode::Calibrate) {
 			// TODO: Calibrate mode
@@ -75,8 +73,58 @@ struct Params {
 
 private:
 	void update_pitch() {
-		auto pitchcv = MathTools::plateau<6, 2048>(cv_state[PitchCv].cur_val);
-		pitch = pot_state[PitchPot].cur_val;
+		auto &pot = pot_state[PitchPot];
+		auto potval = std::clamp(pot.cur_val + system_calibrations.pitch_pot_detent_offset, 0, 4096);
+
+		int16_t pitch_cv;
+		// STS: TODO: flags[LatchVoltOctCV] is set when Trig happens
+		// and the current CV value is stored into voct_latch_value
+		// After a delay, the latch is released and playback begins
+		// if (flags[LatchVoltOctCV] cvval = voct_latch_value;
+		pitch_cv = MathTools::plateau<6, 2048>(cv_state[PitchCV].cur_val);
+
+		float compensated_pitch_cv =
+			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);
+		if (settings.quantize) {
+		}
+
+		pitch = potval + cvval;
+	}
+
+	void update_length() {
+		auto &pot = pot_state[LengthPot];
+		float potval;
+		if (pot.moved_while_rev_down) {
+			potval = pot.latched_val;
+			// TODO: STS: Edit+Length = fade time
+			// fade_time = pot.cur_val / 4095.f;
+		} else
+			potval = pot.cur_val;
+
+		length = (potval + cv_state[LengthCV].cur_val) / 4096.f;
+		if (length < 0.005f)
+			length = 0.005f;
+		if (length > 0.990f)
+			length = 1.f;
+	}
+
+	void update_startpos() {
+		auto &pot = pot_state[StartPot];
+
+		float potval;
+
+		if (pot.moved_while_rev_down) {
+			// Rev + StartPos = Volume
+			potval = pot.latched_val;
+			volume = pot.cur_val / 4095.f;
+		} else
+			potval = pot.cur_val;
+
+		start = (potval + cv_state[StartCV].cur_val) / 4096.f;
+		if (start < 0.005f)
+			start = 0.f;
+		if (start > 0.99f)
+			start = 1.f;
 	}
 
 	void update_pot_states() {
@@ -94,11 +142,15 @@ private:
 				pot.moved = true;
 
 				if (controls.rev_button.is_pressed()) {
+					if (!pot.moved_while_rev_down)
+						pot.latched_val = pot.cur_val;
 					pot.moved_while_rev_down = true;
 					ignore_rev_release = true;
 				}
 
 				if (controls.bank_button.is_pressed()) {
+					if (!pot.moved_while_bank_down)
+						pot.latched_val = pot.cur_val;
 					pot.moved_while_bank_down = true;
 					ignore_bank_release = true;
 				}
@@ -136,6 +188,7 @@ private:
 				pot.moved_while_bank_down = false;
 		}
 
+		// STS: TODO: long-hold Reverse with Length at extreme toggles env modes
 		if (controls.rev_button.is_just_released()) {
 			if (!ignore_rev_release) {
 				// TODO:
@@ -164,9 +217,10 @@ private:
 private:
 	struct PotState {
 		int16_t cur_val = 0;
-		int16_t prev_val = 0;				// old_i_smoothed_potadc
-		int16_t track_moving_ctr = 0;		// track_moving_pot
-		int16_t delta = 0;					// pot_delta
+		int16_t prev_val = 0;		  // old_i_smoothed_potadc
+		int16_t track_moving_ctr = 0; // track_moving_pot
+		int16_t delta = 0;			  // pot_delta
+		int16_t latched_val = 0;
 		bool moved_while_bank_down = false; // flag_pot_changed_infdown
 		bool moved_while_rev_down = false;	// flag_pot_changed_revdown
 		bool moved = false;					// flag_pot_changed

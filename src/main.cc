@@ -7,6 +7,8 @@
 #include "flags.hh"
 #include "hardware_tests/hardware_tests.hh"
 #include "params.hh"
+#include "sampler.hh"
+#include "sampler_audio.hh"
 #include "sdcard.hh"
 #include "system.hh"
 #include "test_audio.hh"
@@ -44,10 +46,12 @@ void main() {
 
 	UserSettingsStorage settings_storage{params.settings};
 
-	TestAudio sampler; //{params, flags};
+	SamplerAudio sampler{params};
 	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
 
 	Timekeeper params_update_task(Board::param_update_task_conf, [&controls]() { controls.update(); });
+
+	Sampler sampler_bg{params, flags, sd};
 
 	// TODO Tasks:
 	// SD Card read: 1.4kHz (TIM7)
@@ -57,6 +61,7 @@ void main() {
 	audio.start();
 
 	while (true) {
+		sampler_bg.process_mode_flags();
 		__NOP();
 	}
 }

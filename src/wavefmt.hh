@@ -1,5 +1,5 @@
 /*
- * sts_filesystem.c - Bank and folder system for STS
+ * wavefmt.h - wav file: header validation and creation
  *
  * Author: Dan Green (danngreen1@gmail.com)
  *
@@ -27,54 +27,52 @@
  */
 
 #pragma once
-#include "ff.h"
-#include "sample_file.hh"
+#include <cstdint>
 
 namespace SamplerKit
 {
 
-// TODO: constexpr these
+#define ccWAVE 0x45564157
+#define ccRIFF 0x46464952
+#define ccFMT 0x20746D66
+#define ccDATA 0x61746164
 
-#define SYS_DIR "_STS.system"
-#define SYS_DIR_SLASH "_STS.system/"
+struct WaveHeader {
+	// Riff Wave Header
+	uint32_t RIFFId;
+	uint32_t fileSize;
+	uint32_t WAVEId;
+};
 
-#define TMP_DIR "_tmp"
-#define TMP_DIR_SLASH "_tmp/"
+struct WaveChunk {
+	// Data Subchunk
+	uint32_t chunkId;
+	uint32_t chunkSize;
+};
 
-#define SAMPLELIST_FILE "__Sample List__.html"
+struct WaveFmtChunk {
+	// Format Subchunk
+	uint32_t fmtId;
+	uint32_t fmtSize;
+	uint16_t audioFormat;
+	uint16_t numChannels;
+	uint32_t sampleRate;
+	uint32_t byteRate;
+	uint16_t blockAlign;
+	uint16_t bitsPerSample;
+};
 
-#define SAMPLE_INDEX_FILE "sample_index.dat"
-#define SAMPLE_BAK_FILE "sample_index-bak.dat"
-#define SAMPLE_BOOTBAK_FILE "sample_index_boot-bak.dat"
-#define RENAME_LOG_FILE "renamed_folders.txt"
+struct WaveHeaderAndChunk {
+	WaveHeader wh;
+	WaveFmtChunk fc;
+	WaveChunk wc;
+};
 
-#define RENAME_TMP_FILE "sts-renaming-queue.tmp"
-#define ERROR_LOG_FILE "error-log.txt"
-#define SETTINGS_FILE "settings.txt"
+uint8_t is_valid_wav_header(WaveHeader sample_header);
+uint8_t is_valid_format_chunk(WaveFmtChunk fmt_chunk);
 
-#define EOF_TAG "End of file"
-#define EOF_PAD 10 // number of characters that can be left after EOF_TAG
-
-#define MAX_FILES_IN_FOLDER 500
-#define NO_MORE_AVAILABLE_FILES 0xFF
-
-uint8_t new_filename(uint8_t bank, uint8_t sample_num, char *path);
-
-// uint8_t get_banks_path(uint8_t bank, char *path);
-
-void load_new_folders(void);
-void load_missing_files(void);
-
-uint8_t load_banks_by_color_prefix(void);
-uint8_t load_banks_by_default_colors(void);
-uint8_t load_banks_with_noncolors(void);
-
-uint8_t load_all_banks(uint8_t force_reload);
-
-uint8_t load_bank_from_disk(Sample *sample_bank, char *path_noslash);
-
-uint8_t dir_contains_assigned_samples(char *path);
-
-FRESULT check_sys_dir(void);
+void create_waveheader(
+	WaveHeader *w, WaveFmtChunk *f, uint8_t bitsPerSample, uint8_t numChannels, uint32_t sample_rate);
+void create_chunk(uint32_t chunkId, uint32_t chunkSize, WaveChunk *wc);
 
 } // namespace SamplerKit

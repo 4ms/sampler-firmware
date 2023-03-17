@@ -1,51 +1,55 @@
 #pragma once
+#include <array>
 #include <cstdint>
 
 namespace SamplerKit
 {
+enum class Flag : uint32_t {
+	SampleChanged,
+	SampleChangedValid,
+	SampleChangedInvalid,
+	LatchVoltOctCV,
+	RevTrig,
+	PlayBut,
+	PlayTrigDelaying,
+	PlayTrig,
+	RecTrig,
+	ToggleLooping,
+	PlayBuffDiscontinuity,
+	ForceFileReload,
+	NUM_FLAGS
+};
+
 struct Flags {
+	constexpr inline static auto NumFlags = static_cast<uint32_t>(Flag::NUM_FLAGS);
+	static_assert(NumFlags < 32, "Max 31 flags allowed");
+
+	void set(Flag flag) {
+		auto bit = static_cast<uint32_t>(flag);
+		_flags |= (1 << bit);
+	}
+
+	void clear(Flag flag) {
+		auto bit = static_cast<uint32_t>(flag);
+		if (_flags & (1 << bit))
+			_flags &= ~(1 << bit);
+	}
+
+	bool read(Flag flag) {
+		auto bit = static_cast<uint32_t>(flag);
+		return _flags & (1 << bit);
+	}
+
+	bool take(Flag flag) {
+		auto bit = static_cast<uint32_t>(flag);
+		if (_flags & (1 << bit)) {
+			_flags &= ~(1 << bit);
+			return true;
+		}
+		return false;
+	}
+
 private:
-	// TODO: make these atomic, if necessary
-	bool _time_changed = true;
-	bool _inf_changed = false;
-	bool _rev_changed = false;
-	bool _disable_mode_changes = false;
-	float _scroll_loop_amt = 0.f;
-
-public:
-	uint32_t mute_on_boot_ctr = 12000;
-
-	bool take_time_changed() {
-		auto t = _time_changed;
-		_time_changed = false;
-		return t;
-	}
-	bool take_inf_changed() {
-		if (_disable_mode_changes)
-			return false;
-		auto t = _inf_changed;
-		_inf_changed = false;
-		return t;
-	}
-	bool take_rev_changed() {
-		if (_disable_mode_changes)
-			return false;
-		auto t = _rev_changed;
-		_rev_changed = false;
-		return t;
-	}
-	float take_scroll_amt() {
-		auto amt = _scroll_loop_amt;
-		_scroll_loop_amt = 0.f;
-		return amt;
-	}
-
-	void set_time_changed() { _time_changed = true; }
-	void set_inf_changed() { _inf_changed = true; }
-	void set_rev_changed() { _rev_changed = true; }
-	void disable_mode_changes() { _disable_mode_changes = true; }
-	void enable_mode_changes() { _disable_mode_changes = false; }
-	void set_scroll_amt(float amt) { _scroll_loop_amt = amt; }
-	void add_scroll_amt(float amt) { _scroll_loop_amt += amt; }
+	uint32_t _flags = 0;
 };
 } // namespace SamplerKit

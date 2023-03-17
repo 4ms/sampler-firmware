@@ -3,11 +3,13 @@
 #include "calibration_storage.hh"
 #include "controls.hh"
 #include "elements.hh"
-#include "epp_lut.hh"
 #include "flags.hh"
-#include "log_taper_lut.hh"
+#include "lut/pitch_pot_lut.h"
+#include "sample_file.hh"
+#include "sample_pot_detents.hh"
 #include "settings.hh"
 #include "timing_calcs.hh"
+#include "tuning_calcs.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
 
@@ -16,6 +18,8 @@ namespace SamplerKit
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
+	Sample samples[MaxNumBanks][NumSamplesPerBank];
+
 	Controls &controls;
 	Flags &flags;
 	CalibrationStorage &system_calibrations;
@@ -38,6 +42,8 @@ struct Params {
 	bool enable_recording = false;
 	// No: EDIT_MODE, ASSIGN_MODE, ALLOW_SPLIT_MONITORING, VIDEO_DIM
 
+	uint32_t play_trig_timestamp = 0;
+
 	UserSettings settings;
 	OperationMode op_mode = OperationMode::Normal;
 
@@ -54,6 +60,9 @@ struct Params {
 
 		update_length();
 		update_startpos();
+		update_sample();
+		update_pitch();
+		// TODO: TrigDelay (STS: Edit+RecSample)
 
 		if (op_mode == OperationMode::Calibrate) {
 			// TODO: Calibrate mode
@@ -74,21 +83,22 @@ struct Params {
 private:
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
-		auto potval = std::clamp(pot.cur_val + system_calibrations.pitch_pot_detent_offset, 0, 4096);
+		auto potval = std::clamp(pot.cur_val + (int16_t)system_calibrations.pitch_pot_detent_offset, 0, 4095);
 
 		int16_t pitch_cv;
 		// STS: TODO: flags[LatchVoltOctCV] is set when Trig happens
 		// and the current CV value is stored into voct_latch_value
 		// After a delay, the latch is released and playback begins
-		// if (flags[LatchVoltOctCV] cvval = voct_latch_value;
+		// if (flags[LatchVoltOctCV] cvval = voct_latch_value; else
 		pitch_cv = MathTools::plateau<6, 2048>(cv_state[PitchCV].cur_val);
 
 		float compensated_pitch_cv =
 			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);
 		if (settings.quantize) {
+			pitch = pitch_pot_lut[potval] * TuningCalcs::quantized_semitone_voct(compensated_pitch_cv);
 		}
 
-		pitch = potval + cvval;
+		pitch = std::min((potval + pitch_cv) / 4096.f, MAX_RS);
 	}
 
 	void update_length() {
@@ -111,20 +121,46 @@ private:
 	void update_startpos() {
 		auto &pot = pot_state[StartPot];
 
-		float potval;
+		float pot_start;
 
 		if (pot.moved_while_rev_down) {
 			// Rev + StartPos = Volume
-			potval = pot.latched_val;
+			pot_start = pot.latched_val;
+			// TODO: use value-crossing to update volume so vol doesnt jump when we start the push+turn
+			// if (std::abs(pot.cur_val / 4095.f - volume) < 0.04f)
 			volume = pot.cur_val / 4095.f;
-		} else
-			potval = pot.cur_val;
+		} else {
+			if (pot.is_catching_up && pot.latched_val == pot.cur_val)
+				pot.is_catching_up = false;
+			pot_start = pot.is_catching_up ? pot.latched_val : pot.cur_val;
+		}
 
-		start = (potval + cv_state[StartCV].cur_val) / 4096.f;
+		start = (pot_start + cv_state[StartCV].cur_val) / 4096.f;
 		if (start < 0.005f)
 			start = 0.f;
 		if (start > 0.99f)
 			start = 1.f;
+	}
+
+	void update_sample() {
+		auto &pot = pot_state[SamplePot];
+		float potval;
+		if (pot.moved_while_bank_down) {
+			potval = pot.latched_val;
+			// STS: TODO: Bank + Sample changes bank
+			//  bank_hover = detent_num(pot.cur_val); ...etc
+		} else
+			potval = pot.cur_val;
+
+		auto new_sample = detent_num_antihys(potval + cv_state[LengthCV].cur_val, sample);
+		if (new_sample != sample) {
+			sample = new_sample;
+			flags.set(Flag::SampleChanged);
+			if (samples[bank][sample].filename[0] == '\0')
+				flags.set(Flag::SampleChangedInvalid);
+			else
+				flags.set(Flag::SampleChangedValid);
+		}
 	}
 
 	void update_pot_states() {
@@ -196,8 +232,11 @@ private:
 			}
 
 			ignore_rev_release = false;
-			for (auto &pot : pot_state)
+			for (auto &pot : pot_state) {
+				if (pot.moved_while_rev_down)
+					pot.is_catching_up = true;
 				pot.moved_while_rev_down = false;
+			}
 		}
 	}
 
@@ -221,6 +260,7 @@ private:
 		int16_t track_moving_ctr = 0; // track_moving_pot
 		int16_t delta = 0;			  // pot_delta
 		int16_t latched_val = 0;
+		bool is_catching_up = false;
 		bool moved_while_bank_down = false; // flag_pot_changed_infdown
 		bool moved_while_rev_down = false;	// flag_pot_changed_revdown
 		bool moved = false;					// flag_pot_changed

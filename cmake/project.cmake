@@ -117,7 +117,9 @@ function(create_target target)
     ${root}/src/main.cc
     ${root}/src/console.cc
     ${root}/src/hardware_tests/hardware_tests.cc
-    ${root}/src/user_system_settings.cc
+    ${root}/src/calibration_storage.cc
+    ${root}/src/wavefmt.cc
+    ${root}/src/sample_file.cc
     # Printf:
     ${root}/lib/printf/printf.c
     # FatFS:

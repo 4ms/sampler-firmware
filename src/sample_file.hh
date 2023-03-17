@@ -27,14 +27,13 @@
  */
 
 #pragma once
-
 #include "ff.h"
+#include "sdcard.hh"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace SamplerKit
+{
 
-typedef struct Sample {
+struct Sample {
 	char filename[FF_MAX_LFN];
 	uint32_t sampleSize;
 	uint32_t startOfData;
@@ -50,12 +49,26 @@ typedef struct Sample {
 
 	uint16_t PCM;
 	uint8_t file_found;
-} Sample;
 
-uint8_t load_sample_header(Sample *s_sample, FIL *sample_file);
-void clear_sample_header(Sample *s_sample);
-FRESULT reload_sample_file(FIL *fil, Sample *s_sample);
+	Sample() { clear(); }
+	void clear() {
+		filename[0] = 0;
+		sampleSize = 0;
+		sampleByteSize = 0;
+		sampleRate = 0;
+		numChannels = 0;
+		blockAlign = 0;
+		startOfData = 0;
+		PCM = 0;
+		file_found = 0;
+		inst_start = 0;
+		inst_end = 0;
+		inst_size = 0;
+		inst_gain = 1.0;
+	}
+};
 
-#ifdef __cplusplus
-}
-#endif
+uint32_t load_sample_header(Sample *s_sample, FIL *sample_file);
+FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd);
+
+} // namespace SamplerKit

@@ -18,7 +18,7 @@ namespace SamplerKit
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
-	Sample samples[MaxNumBanks][NumSamplesPerBank];
+	// SampleList samples;
 
 	Controls &controls;
 	Flags &flags;
@@ -69,7 +69,7 @@ struct Params {
 			//  update_calibration();
 		}
 
-		if (op_mode == OperationMode::SysSettings) {
+		if (op_mode == OperationMode::SystemMode) {
 			// TODO: System Settings mode
 			//  update_system_settings();
 		}

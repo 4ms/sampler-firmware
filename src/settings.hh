@@ -49,5 +49,6 @@ struct UserSettings {
 	}
 };
 
-enum class OperationMode { Normal, SysSettings, Calibrate };
+// global_modes[SYSTEM_MODE]
+enum class OperationMode { Normal, SystemMode, Calibrate };
 } // namespace SamplerKit

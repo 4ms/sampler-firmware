@@ -120,6 +120,7 @@ function(create_target target)
     ${root}/src/calibration_storage.cc
     ${root}/src/wavefmt.cc
     ${root}/src/sample_file.cc
+    ${root}/src/str_util.c
     # Printf:
     ${root}/lib/printf/printf.c
     # FatFS:

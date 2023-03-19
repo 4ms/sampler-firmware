@@ -1,4 +1,5 @@
 #include "audio_stream.hh"
+#include "bank.hh"
 #include "calibration_storage.hh"
 #include "conf/board_conf.hh"
 #include "controls.hh"
@@ -51,7 +52,13 @@ void main() {
 
 	Timekeeper params_update_task(Board::param_update_task_conf, [&controls]() { controls.update(); });
 
-	Sampler sampler_bg{params, flags, sd};
+	SampleList samples;
+	BankManager{samples};
+
+	// load_all_banks();
+	// set startupbank
+
+	Sampler sampler_bg{params, flags, sd, samples};
 
 	// TODO Tasks:
 	// SD Card read: 1.4kHz (TIM7)

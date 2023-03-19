@@ -18,6 +18,7 @@ class Sampler {
 	Params &params;
 	Flags &flags;
 	Sdcard &sd;
+	SampleList &samples;
 
 	FIL fil[NumSamplesPerBank];
 	uint32_t g_error = 0;
@@ -65,10 +66,11 @@ class Sampler {
 	uint32_t last_play_start_tmr;
 
 public:
-	Sampler(Params &params, Flags &flags, Sdcard &sd)
+	Sampler(Params &params, Flags &flags, Sdcard &sd, SampleList &samples)
 		: params{params}
 		, flags{flags}
-		, sd{sd} {
+		, sd{sd}
+		, samples{samples} {
 
 		Memory::clear();
 		// TODO: init_recbuff();
@@ -161,7 +163,7 @@ private:
 				// See if the endpos is within the cache, then we can just play from that point
 				if ((sample_file_endpos >= cache[samplenum].low) && (sample_file_endpos <= cache[samplenum].high)) {
 					play_buff[samplenum]->out = cache[samplenum].map_cache_to_buffer(
-						sample_file_endpos, params.samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
+						sample_file_endpos, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
 				} else {
 					// Otherwise we have to make a new cache, so run start_playing()
 					params.reverse = !params.reverse;
@@ -196,7 +198,7 @@ private:
 
 		uint8_t samplenum = params.sample;
 		uint8_t banknum = params.bank;
-		Sample *s_sample = &(params.samples[banknum][samplenum]);
+		Sample *s_sample = &(samples[banknum][samplenum]);
 
 		if (s_sample->filename[0] == 0)
 			return;
@@ -358,7 +360,7 @@ private:
 		} else {
 			sample_file_curpos[samplenum] = cache[samplenum].high;
 			play_buff[samplenum]->in = cache[samplenum].map_cache_to_buffer(
-				cache[samplenum].high, params.samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
+				cache[samplenum].high, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
 		}
 
 		// Swap the endpos with the startpos
@@ -391,8 +393,8 @@ private:
 	}
 
 	FRESULT SET_FILE_POS(uint8_t b, uint8_t s) {
-		FRESULT r = f_lseek(&fil[s], params.samples[b][s].startOfData + sample_file_curpos[s]);
-		if (fil[s].fptr != (params.samples[b][s].startOfData + sample_file_curpos[s]))
+		FRESULT r = f_lseek(&fil[s], samples[b][s].startOfData + sample_file_curpos[s]);
+		if (fil[s].fptr != (samples[b][s].startOfData + sample_file_curpos[s]))
 			g_error |= LSEEK_FPTR_MISMATCH;
 		return r;
 	}

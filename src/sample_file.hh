@@ -68,6 +68,9 @@ struct Sample {
 	}
 };
 
+using Bank = std::array<Sample, NumSamplesPerBank>;
+using SampleList = std::array<Bank, MaxNumBanks>;
+
 uint32_t load_sample_header(Sample *s_sample, FIL *sample_file);
 FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd);
 

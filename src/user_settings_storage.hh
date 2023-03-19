@@ -2,7 +2,7 @@
 #include "sdcard.hh"
 #include "settings.hh"
 #include "str_util.h"
-#include "sts_filesystem.h"
+#include "sts_filesystem.hh"
 
 namespace SamplerKit
 {

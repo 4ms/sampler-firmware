@@ -210,7 +210,7 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 						s_sample->inst_start = 0;
 						s_sample->inst_gain = 1.0;
 
-						return g_error;
+						return 0;
 
 					} // else chunk
 				}	  // while chunk
@@ -218,7 +218,7 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 		}			  // if ccFMT
 	}				  // no file error
 
-	return g_error;
+	return FR_INT_ERR; // Unknown error?
 }
 
 } // namespace SamplerKit

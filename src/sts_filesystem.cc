@@ -48,6 +48,12 @@
 namespace SamplerKit
 {
 
+static void pr_dbg(...) {}
+// template<typename... Ts>
+// static void pr_dbg(Ts... args) {
+// 	printf_(args...);
+// }
+
 // TODO get a param that lets us set the LED color. StartupState?
 uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	/*
@@ -126,6 +132,8 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 		// Third pass: go through all remaining folders and try to assign them to banks
 		load_banks_with_noncolors();
+
+		banks.check_enabled_banks();
 	}
 
 	// Write samples struct to index
@@ -782,7 +790,7 @@ uint8_t SampleIndexLoader::load_bank_from_disk(Bank &sample_bank, char *path_nos
 		f_sync(&temp_file);
 
 		if (res == FR_OK) {
-			if (load_sample_header(&(sample_bank[sample_num]), &temp_file))
+			if (load_sample_header(&(sample_bank[sample_num]), &temp_file) == FR_OK)
 				str_cpy(sample_bank[sample_num++].filename, path); // Set the filename (full path)
 		}
 		f_close(&temp_file);

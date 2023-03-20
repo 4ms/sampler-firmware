@@ -62,8 +62,11 @@ public:
 			//
 			for (auto [out, L, R] : zip(outblock, outL, outR)) {
 				// Chan 1 L + Chan 2 L clipped at signed 16-bits
-				out.chan[0] = SSAT16(L + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
-				out.chan[1] = SSAT16(R + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
+				out.chan[0] = L;
+				out.chan[1] = R;
+				// We don't need to do SSAT again, unless we start using dac_calibration_offset
+				// out.chan[0] = SSAT24(L + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
+				// out.chan[1] = SSAT24(R + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
 			}
 			return;
 		}
@@ -73,9 +76,12 @@ public:
 			// Left Out = Right Out = average of L+R
 			for (auto [out, L, R] : zip(outblock, outL, outR)) {
 				// Average is already done in play_audio_from_buffer(), and put into outL
-				int32_t t = L;
-				out.chan[0] = SSAT16(t + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
-				out.chan[1] = SSAT16(t + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
+				out.chan[0] = L;
+				out.chan[1] = L;
+				// We don't need to do SSAT again, unless we start using dac_calibration_offset
+				// int32_t t = L;
+				// out.chan[0] = SSAT24(t + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
+				// out.chan[1] = SSAT24(t + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
 			}
 		}
 	}
@@ -162,8 +168,8 @@ public:
 				amp = 0.f;
 			outL[i] = (float)outL[i] * amp * gain;
 			outR[i] = (float)outR[i] * amp * gain;
-			outL[i] = SSAT16(outL[i]);
-			outR[i] = SSAT16(outR[i]);
+			outL[i] = __SSAT(outL[i], 24);
+			outR[i] = __SSAT(outR[i], 24);
 		}
 		return amp;
 	}
@@ -172,8 +178,8 @@ public:
 		for (int i = 0; i < outL.size(); i++) {
 			outL[i] = (float)outL[i] * gain;
 			outR[i] = (float)outR[i] * gain;
-			outL[i] = SSAT16(outL[i]);
-			outR[i] = SSAT16(outR[i]);
+			outL[i] = __SSAT(outL[i], 24);
+			outR[i] = __SSAT(outR[i], 24);
 		}
 	}
 

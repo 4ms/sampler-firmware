@@ -350,11 +350,5 @@ void BankManager::disable_bank(uint8_t bank) { bank_status[bank] = 0; }
 
 // 	load_all_banks(false);
 
-// 	params.bank = global_mode[STARTUPBANK_CH1];
-
-// 	if (!is_bank_enabled(params.bank)
-// 		params.bank = next_enabled_bank(MaxNumBanks -1);
-
-// 	flags.set(PlaySampleChanged);
 // }
 } // namespace SamplerKit

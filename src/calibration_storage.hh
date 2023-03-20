@@ -2,18 +2,19 @@
 #include "elements.hh"
 #include <cstdint>
 
-namespace SamplerKit {
+namespace SamplerKit
+{
 
 struct CalibrationStorage {
-	uint32_t major_firmware_version;
-	uint32_t minor_firmware_version;
-	int32_t cv_calibration_offset[NumCVs];
-	int32_t codec_adc_calibration_dcoffset[2];
-	int32_t codec_dac_calibration_dcoffset[2];
-	uint32_t led_brightness;
-	float tracking_comp;
-	int32_t pitch_pot_detent_offset;
-	float rgbled_adjustments[3][3];
+	uint32_t major_firmware_version = 0;
+	uint32_t minor_firmware_version = 0;
+	int32_t cv_calibration_offset[NumCVs] = {0, 0, 0, 0, 0};
+	int32_t codec_adc_calibration_dcoffset[2] = {0, 0};
+	int32_t codec_dac_calibration_dcoffset[2] = {0, 0};
+	uint32_t led_brightness = 0;
+	float tracking_comp = 0;
+	int32_t pitch_pot_detent_offset = 0;
+	float rgbled_adjustments[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
 	void factory_reset();
 	uint32_t load_flash_params();
@@ -27,4 +28,4 @@ private:
 	void write_all_system_calibrations_to_FLASH();
 };
 
-}
+} // namespace SamplerKit

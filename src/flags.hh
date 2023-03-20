@@ -17,6 +17,11 @@ enum class Flag : uint32_t {
 	ToggleLooping,
 	PlayBuffDiscontinuity,
 	ForceFileReload,
+	ChangePlaytoPerc,
+	PlayBankChanged,
+	PlaySampleChanged,
+	PlaySampleChangedValid,
+	PlaySampleChangedEmpty,
 	NUM_FLAGS
 };
 

@@ -2,6 +2,9 @@
 
 #include <cstdint>
 
+namespace SamplerKit
+{
+
 // Given a bank number, sets color to the default bank name
 // Example: 49 ==> Pearl-4
 uint8_t bank_to_color(uint8_t bank, char *color);
@@ -25,3 +28,5 @@ inline uint8_t get_bank_color_digit(uint8_t bank) {
 // Given a number, returns the tens digit
 // This digit refers to the bank blink #, regardless of color
 inline uint8_t get_bank_blink_digit(uint8_t bank) { return (bank / 10); }
+
+} // namespace SamplerKit

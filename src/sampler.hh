@@ -1,6 +1,7 @@
 #pragma once
 #include "audio_memory.hh"
 #include "audio_stream_conf.hh"
+#include "bank.hh"
 #include "cache.hh"
 #include "circular_buffer.hh"
 #include "errors.hh"
@@ -12,23 +13,31 @@
 namespace SamplerKit
 {
 
-class Sampler {
+// class Sampler {
+// 	SamplerModes modes;
+// 	SamplerAudio audio;
+// 	SamplerStorage storage;
+// };
+
+class SamplerModes {
 	static constexpr uint32_t NUM_SAMPLES_PER_BANK = NumSamplesPerBank;
 
 	Params &params;
 	Flags &flags;
 	Sdcard &sd;
 	SampleList &samples;
-
-	FIL fil[NumSamplesPerBank];
-	uint32_t g_error = 0;
+	BankManager &banks;
 
 	static const inline uint32_t PLAY_BUFF_START = Board::MemoryStartAddr;
 	static constexpr uint32_t PLAY_BUFF_SLOT_SIZE = 0x0012'0000; // 1.15MB
-	// TODO: get rid of ptr
-	CircularBuffer splay_buff[NumSamplesPerBank];
-	CircularBuffer *play_buff[NumSamplesPerBank];
 
+	float env_level;
+	float env_rate = 0.f;
+
+	uint32_t last_play_start_tmr;
+
+public:
+	// TODO: these are shared between all three Sampler classes
 	enum PlayStates {
 		SILENT,
 		PREBUFFERING,
@@ -40,18 +49,11 @@ class Sampler {
 		RETRIG_FADEDOWN,
 		REV_PERC_FADEDOWN,
 		PAD_SILENCE,
-	} play_state;
+	} play_state = SILENT;
 
-	uint8_t sample_num_now_playing;
-	uint8_t sample_bank_now_playing;
+	CircularBuffer *play_buff[NumSamplesPerBank];
 
-	Cache cache[NumSamplesPerBank];
-
-	// 1 = file is totally cached (from inst_start to inst_end), otherwise 0
-	bool is_buffered_to_file_end[NumSamplesPerBank];
-	uint32_t play_buff_bufferedamt[NumSamplesPerBank];
-	bool cached_rev_state[NumSamplesPerBank];
-
+	// These are used in audio, but probably could move elsewhere
 	// file position where we began playback.
 	uint32_t sample_file_startpos;
 	// file position where we will end playback. endpos > startpos when REV==0, endpos < startpos when REV==1
@@ -60,21 +62,37 @@ class Sampler {
 	// from startpos towards endpos
 	uint32_t sample_file_curpos[NumSamplesPerBank];
 
-	float env_level;
-	float env_rate = 0.f;
+	//////////////////
+	// TODO: These are shared between SampleLoader and SamplerModes
+	FIL fil[NumSamplesPerBank];
 
-	uint32_t last_play_start_tmr;
+	uint32_t &g_error;
 
-public:
-	Sampler(Params &params, Flags &flags, Sdcard &sd, SampleList &samples)
+	Cache cache[NumSamplesPerBank]; // not audio
+
+	// 1 = file is totally cached (from inst_start to inst_end), otherwise 0
+	bool is_buffered_to_file_end[NumSamplesPerBank];
+	uint32_t play_buff_bufferedamt[NumSamplesPerBank];
+	bool cached_rev_state[NumSamplesPerBank];
+	///////////////
+
+	SamplerModes(Params &params,
+				 Flags &flags,
+				 Sdcard &sd,
+				 SampleList &samples,
+				 BankManager &banks,
+				 std::array<CircularBuffer, NumSamplesPerBank> &splay_buff,
+				 uint32_t &g_error)
 		: params{params}
 		, flags{flags}
 		, sd{sd}
-		, samples{samples} {
+		, samples{samples}
+		, banks{banks}
+		, g_error{g_error} {
 
 		Memory::clear();
 		// TODO: init_recbuff();
-		for (unsigned i = 0; i < NUM_SAMPLES_PER_BANK; i++) {
+		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
 			play_buff[i] = &(splay_buff[i]);
 
 			play_buff[i]->min = PLAY_BUFF_START + (i * PLAY_BUFF_SLOT_SIZE);
@@ -92,9 +110,17 @@ public:
 			cached_rev_state[i] = 0;
 			play_buff_bufferedamt[i] = 0;
 			is_buffered_to_file_end[i] = 0;
+
+			fil[i].obj.fs = nullptr;
 		}
 
+		// Verify the channels are set to enabled banks, and correct if necessary
+		params.bank = params.settings.startup_bank;
+		if (!banks.is_bank_enabled(params.bank))
+			params.bank = banks.next_enabled_bank(MaxNumBanks - 1);
+		flags.set(Flag::SampleChanged); // was PlaySampleChanged
 		flags.set(Flag::PlayBuffDiscontinuity);
+		flags.set(Flag::ForceFileReload);
 	}
 
 	void process_mode_flags() {
@@ -132,66 +158,6 @@ public:
 		}
 	}
 
-private:
-	void toggle_reverse() {
-		uint8_t samplenum, banknum;
-
-		if (play_state == PLAYING || play_state == PLAYING_PERC || play_state == PREBUFFERING ||
-			play_state == PLAY_FADEUP || play_state == PERC_FADEUP)
-		{
-			samplenum = sample_num_now_playing;
-			banknum = sample_bank_now_playing;
-		} else {
-			samplenum = params.sample;
-			banknum = params.bank;
-		}
-
-		// Prevent issues if playback interrupts this routine
-		PlayStates tplay_state = play_state;
-		play_state = SILENT;
-
-		// If we are PREBUFFERING or PLAY_FADEUP, then that means we just started playing.
-		// It could be the case a common trigger fired into PLAY and REV, but the PLAY trig was detected first
-		// So we actually want to make it play from the end of the sample rather than reverse direction from the current
-		// spot
-		if (tplay_state == PREBUFFERING || tplay_state == PLAY_FADEUP || tplay_state == PLAYING ||
-			tplay_state == PERC_FADEUP)
-		{
-			// Handle a rev trig shortly after a play trig by playing as if the rev trig was first
-			if ((HAL_GetTick() - last_play_start_tmr) < (params.settings.record_sample_rate * 0.1f)) // 100ms
-			{
-				// See if the endpos is within the cache, then we can just play from that point
-				if ((sample_file_endpos >= cache[samplenum].low) && (sample_file_endpos <= cache[samplenum].high)) {
-					play_buff[samplenum]->out = cache[samplenum].map_cache_to_buffer(
-						sample_file_endpos, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
-				} else {
-					// Otherwise we have to make a new cache, so run start_playing()
-					params.reverse = !params.reverse;
-					start_playing();
-					return;
-				}
-			}
-		}
-		params.reverse = !params.reverse;
-		reverse_file_positions(samplenum, banknum, params.reverse);
-		cached_rev_state[params.sample] = params.reverse;
-
-		// Restore play_state
-		play_state = tplay_state;
-	}
-
-	void toggle_playing() {
-		//
-	}
-
-	void start_restart_playing() {
-		//
-	}
-
-	void toggle_recording() {
-		//
-	}
-
 	void start_playing() {
 		FRESULT res;
 		float rs;
@@ -203,10 +169,10 @@ private:
 		if (s_sample->filename[0] == 0)
 			return;
 
-		sample_num_now_playing = samplenum;
+		params.sample_num_now_playing = samplenum;
 
-		if (banknum != sample_bank_now_playing) {
-			sample_bank_now_playing = banknum;
+		if (banknum != params.sample_bank_now_playing) {
+			params.sample_bank_now_playing = banknum;
 			init_changed_bank();
 		}
 
@@ -329,8 +295,8 @@ private:
 
 		flags.set(Flag::PlayBuffDiscontinuity);
 
-		env_level = 0.f;
-		env_rate = 0.f;
+		// env_level = 0.f;
+		// env_rate = 0.f;
 
 		// play_led_state = 1;
 
@@ -348,6 +314,72 @@ private:
 		dbg_sample.inst_size = s_sample->inst_size;
 		dbg_sample.inst_gain = s_sample->inst_gain;
 #endif
+	}
+
+	void check_sample_end() {
+		if (play_state == SamplerModes::PLAYING || play_state == SamplerModes::PLAY_FADEUP ||
+			play_state == SamplerModes::PLAYING_PERC || play_state == SamplerModes::PERC_FADEUP)
+		{
+			float length = params.length;
+			uint8_t samplenum = params.sample_num_now_playing;
+			uint8_t banknum = params.sample_bank_now_playing;
+			Sample &s_sample = samples[banknum][samplenum];
+
+			float rs = (s_sample.sampleRate == params.settings.record_sample_rate) ?
+						   params.pitch :
+						   params.pitch * ((float)s_sample.sampleRate / (float)params.settings.record_sample_rate);
+
+			// Amount play_buff[]->out changes with each audio block sent to the codec
+			uint32_t resampled_buffer_size = calc_resampled_buffer_size(s_sample, rs);
+
+			// Amount an imaginary pointer in the sample file would move with each audio block sent to the codec
+			int32_t resampled_cache_size = calc_resampled_cache_size(s_sample, resampled_buffer_size);
+
+			// Amount in the sample file we have remaining before we hit sample_file_endpos
+			// int32_t dist_to_end = calc_dist_to_end(s_sample, banknum);
+			// Find out where the audio output data is relative to the start of the cache
+			uint32_t sample_file_playpos = cache[samplenum].map_buffer_to_cache(
+				play_buff[samplenum]->out, s_sample.sampleByteSize, play_buff[samplenum]);
+
+			// Calculate the distance left to the end that we should be playing
+			// TODO: check if playpos is in bounds of startpos as well
+			int32_t dist_to_end;
+			if (!params.reverse)
+				dist_to_end =
+					(sample_file_endpos > sample_file_playpos) ? (sample_file_endpos - sample_file_playpos) : 0;
+			else
+				dist_to_end =
+					(sample_file_playpos > sample_file_endpos) ? (sample_file_playpos - sample_file_endpos) : 0;
+
+			// See if we are about to surpass the calculated position in the file where we should end our sample
+			// We must start fading down at a point that depends on how long it takes to fade down
+
+			uint32_t fadedown_blocks = calc_perc_fadedown_blocks(length, (float)params.settings.record_sample_rate) + 1;
+			PlayStates fadedown_state = REV_PERC_FADEDOWN;
+
+			if (dist_to_end < (resampled_cache_size * fadedown_blocks)) {
+				play_state = fadedown_state;
+				if (play_state != PLAYING_PERC)
+					flags.clear(Flag::ChangePlaytoPerc);
+			} else {
+				// Check if we are about to hit buffer underrun
+				play_buff_bufferedamt[samplenum] = play_buff[samplenum]->distance(params.reverse);
+
+				if (!is_buffered_to_file_end[samplenum] && play_buff_bufferedamt[samplenum] <= resampled_buffer_size) {
+					// buffer underrun: tried to read too much out. Try to recover!
+					g_error |= READ_BUFF1_UNDERRUN;
+					// check_errors();
+					play_state = PREBUFFERING;
+				}
+			}
+		}
+	}
+
+	FRESULT SET_FILE_POS(uint8_t b, uint8_t s) {
+		FRESULT r = f_lseek(&fil[s], samples[b][s].startOfData + sample_file_curpos[s]);
+		if (fil[s].fptr != (samples[b][s].startOfData + sample_file_curpos[s]))
+			g_error |= LSEEK_FPTR_MISMATCH;
+		return r;
 	}
 
 	void reverse_file_positions(uint8_t samplenum, uint8_t banknum, bool new_dir) {
@@ -377,6 +409,91 @@ private:
 		}
 	}
 
+private:
+	void toggle_reverse() {
+		uint8_t samplenum, banknum;
+
+		if (play_state == PLAYING || play_state == PLAYING_PERC || play_state == PREBUFFERING ||
+			play_state == PLAY_FADEUP || play_state == PERC_FADEUP)
+		{
+			samplenum = params.sample_num_now_playing;
+			banknum = params.sample_bank_now_playing;
+		} else {
+			samplenum = params.sample;
+			banknum = params.bank;
+		}
+
+		// Prevent issues if playback interrupts this routine
+		PlayStates tplay_state = play_state;
+		play_state = SILENT;
+
+		// If we are PREBUFFERING or PLAY_FADEUP, then that means we just started playing.
+		// It could be the case a common trigger fired into PLAY and REV, but the PLAY trig was detected first
+		// So we actually want to make it play from the end of the sample rather than reverse direction from the current
+		// spot
+		if (tplay_state == PREBUFFERING || tplay_state == PLAY_FADEUP || tplay_state == PLAYING ||
+			tplay_state == PERC_FADEUP)
+		{
+			// Handle a rev trig shortly after a play trig by playing as if the rev trig was first
+			if ((HAL_GetTick() - last_play_start_tmr) < (params.settings.record_sample_rate * 0.1f)) // 100ms
+			{
+				// See if the endpos is within the cache, then we can just play from that point
+				if ((sample_file_endpos >= cache[samplenum].low) && (sample_file_endpos <= cache[samplenum].high)) {
+					play_buff[samplenum]->out = cache[samplenum].map_cache_to_buffer(
+						sample_file_endpos, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
+				} else {
+					// Otherwise we have to make a new cache, so run start_playing()
+					params.reverse = !params.reverse;
+					start_playing();
+					return;
+				}
+			}
+		}
+		params.reverse = !params.reverse;
+		reverse_file_positions(samplenum, banknum, params.reverse);
+		cached_rev_state[params.sample] = params.reverse;
+
+		// Restore play_state
+		play_state = tplay_state;
+	}
+
+	void toggle_playing() {
+		// Start playing
+		if (play_state == SILENT || play_state == PLAY_FADEDOWN || play_state == RETRIG_FADEDOWN ||
+			play_state == PREBUFFERING || play_state == PLAY_FADEUP || play_state == PERC_FADEUP)
+		{
+			start_playing();
+		}
+
+		// Stop it if we're playing a full sample
+		else if (play_state == PLAYING && params.length > 0.98f)
+		{
+			if (params.settings.length_full_start_stop) {
+				play_state = PLAY_FADEDOWN;
+				env_level = 1.f;
+			} else
+				play_state = RETRIG_FADEDOWN;
+
+			// play_led_state = 0;
+		}
+
+		// Re-start if we have a short length
+		else if (play_state == PLAYING_PERC || play_state == PLAYING || play_state == PAD_SILENCE ||
+				 play_state == REV_PERC_FADEDOWN)
+		{
+			play_state = RETRIG_FADEDOWN;
+			// play_led_state = 0;
+		}
+	}
+
+	void start_restart_playing() {
+		//
+	}
+
+	void toggle_recording() {
+		//
+	}
+
 	void init_changed_bank() {
 		uint8_t samplenum;
 		FRESULT res;
@@ -390,13 +507,6 @@ private:
 
 			play_buff[samplenum]->init();
 		}
-	}
-
-	FRESULT SET_FILE_POS(uint8_t b, uint8_t s) {
-		FRESULT r = f_lseek(&fil[s], samples[b][s].startOfData + sample_file_curpos[s]);
-		if (fil[s].fptr != (samples[b][s].startOfData + sample_file_curpos[s]))
-			g_error |= LSEEK_FPTR_MISMATCH;
-		return r;
 	}
 };
 } // namespace SamplerKit

@@ -26,44 +26,61 @@
  * -----------------------------------------------------------------------------
  */
 
-// STS: TODO: convert this...
-
-#include "sts_sampleindex.h"
-#include "bank.h"
-#include "dig_pins.h"
+#include "sts_sampleindex.hh"
+#include "bank_util.hh"
+#include "elements.hh"
 #include "ff.h"
-#include "file_util.h"
-#include "globals.h"
-#include "params.h"
-#include "res/LED_palette.h"
-#include "sampler.h"
-#include "str_util.h"
-#include "sts_filesystem.h"
-#include "timekeeper.h"
-#include "wavefmt.h"
 
-Sample samples[MAX_NUM_BANKS][NUM_SAMPLES_PER_BANK];
+namespace SamplerKit
+{
 
-uint8_t bank_status[MAX_NUM_BANKS];
+#define ALL_BANKS MaxNumBanks
 
-extern uint8_t global_mode[NUM_GLOBAL_MODES];
-extern uint8_t flags[NUM_FLAGS];
+#define SAMPLE_SLOT 1
+#define PLAY_START 2
+#define PLAY_SIZE 3
+#define PLAY_GAIN 4
 
-// FIL			temp_file1, temp_file2;
+#define PLAYDATTAG_SLOT "- sample slot"
+#define PLAYDATTAG_START "- play start"
+#define PLAYDATTAG_SIZE "- play size"
+#define PLAYDATTAG_GAIN "- play gain"
 
-// extern enum g_Errors g_error;
-// extern uint8_t	i_param[NUM_ALL_CHAN][NUM_I_PARAMS];
-// enum PlayStates play_state				[NUM_PLAY_CHAN];
+#define SAMPLELIST_FILE "__Sample List__.html"
+#define SAMPLE_INDEX_FILE "sample_index.dat"
+#define SAMPLE_BAK_FILE "sample_index-bak.dat"
+#define SAMPLE_BOOTBAK_FILE "sample_index_boot-bak.dat"
+#define RENAME_LOG_FILE "renamed_folders.txt"
 
-FRESULT write_sampleindex_file(void) {
+#define EOF_TAG "End of file"
+#define EOF_PAD 10 // number of characters that can be left after EOF_TAG
+
+// Checks if string ends in ".wav" (case-insensitive)
+static uint8_t is_wav(char *string) {
+
+	char *cp;
+	char a = 0, b = 0, c = 0, d = 0;
+
+	for (cp = string; *cp != 0; cp++) {
+		a = b;
+		b = c;
+		c = d;
+		d = *cp;
+	}
+	if ((a == '.') && (upper(b) == 'W') && (upper(c) == 'A') && (upper(d) == 'V'))
+		return 1;
+	else
+		return 0;
+}
+
+FRESULT SampleIndex::write_sampleindex_file() {
 	FIL temp_file;
-	FRESULT res, res_sysdir;
-	// uint32_t	sz, bw;
+	FRESULT res;
 	uint8_t i, j;
 	char b_color[11];
-	char bank_path[_MAX_LFN + 1];
-	char filename_ptr[_MAX_LFN + 1];
-	char path[_MAX_LFN + 1], bootbakpath[_MAX_LFN + 1];
+	char bank_path[FF_MAX_LFN + 1];
+	char filename_ptr[FF_MAX_LFN + 1];
+	char path[FF_MAX_LFN + 1], bootbakpath[FF_MAX_LFN + 1];
 
 	// CREATE INDEX FILE
 	// previous index files are replaced
@@ -71,137 +88,112 @@ FRESULT write_sampleindex_file(void) {
 	// ...the module application interface
 	// ...for the Generic FAT file system module  (ff.h)
 
-	// Check for system dir
-	res_sysdir = check_sys_dir();
-	if (res_sysdir != FR_OK)
-		return (res_sysdir);
-
 	// WRITE SAMPLES DATA TO INDEX FILE
-	else {
 
-		// file index path
-		str_cat(path, SYS_DIR_SLASH, SAMPLE_INDEX_FILE);
+	// file index path
+	str_cat(path, SYS_DIR_SLASH, SAMPLE_INDEX_FILE);
 
-		// backup index at boot
-		if (flags[BootBak]) {
-			str_cat(bootbakpath, SYS_DIR_SLASH, SAMPLE_BOOTBAK_FILE); // compute path to boot backups
-			f_unlink(bootbakpath);									  // delete existing boot backups
-			f_rename(path, bootbakpath); // set boot backup to sample index, as found on the SD card
-			flags[BootBak] = 0;			 // do not update boot backup file until next boot
-		}
+	// backup index at boot
+	// if (flags[BootBak]) {
+	// 	str_cat(bootbakpath, SYS_DIR_SLASH, SAMPLE_BOOTBAK_FILE); // compute path to boot backups
+	// 	f_unlink(bootbakpath);									  // delete existing boot backups
+	// 	f_rename(path, bootbakpath); // set boot backup to sample index, as found on the SD card
+	// 	flags[BootBak] = 0;			 // do not update boot backup file until next boot
+	// }
 
-		res = f_open(
-			&temp_file, path, FA_WRITE | FA_CREATE_ALWAYS); // (re)create sample.index file and its pointer &temp_file
-		if (res != FR_OK)
-			return (res);
+	// (re)create sample.index file and its pointer &temp_file
+	res = f_open(&temp_file, path, FA_WRITE | FA_CREATE_ALWAYS);
+	if (res != FR_OK)
+		return res;
 
-		// write firmware version
-		f_printf(&temp_file, "Firmware Version: %d.%d\n\n", FW_MAJOR_VERSION, FW_MINOR_VERSION);
+	// write firmware version
+	f_printf(&temp_file, "Firmware Version: %d.%d\n\n", FirmwareMajorVersion, FirmwareMinorVersion);
+
+	// write banks/sample to index file
+	for (i = 0; i < MaxNumBanks; i++) // For each bank
+	{
+		// Print bank Color to index file
+		bank_to_color(i, b_color);
+		f_printf(&temp_file, "--------------------\n%s\n--------------------\n", b_color);
 		// f_sync(&temp_file);
 
-		// write banks/sample to index file
-		for (i = 0; i < MAX_NUM_BANKS; i++) // For each bank
+		for (j = 0; j < NumSamplesPerBank; j++) // For each sample in bank
 		{
-			// Print bank Color to index file
-			bank_to_color(i, b_color);
-			f_printf(&temp_file, "--------------------\n%s\n--------------------\n", b_color);
-			// f_sync(&temp_file);
 
-			for (j = 0; j < NUM_SAMPLES_PER_BANK; j++) // For each sample in bank
+			// FixMe: if samples[i][j] contains a filename with no slashes (example: "ChordHits1.wav")
+			// then the next line will return filename_ptr as null, and so the sample entry will not be written to
+			// the index, but the sample will play and be written to the HTML file Perhaps we could add a slash to
+			// the beginning of samples[][].filename if no slash is found?
+
+			str_split(samples[i][j].filename, '/', path, filename_ptr); // split path and filename
+			if (filename_ptr[0] != '\0')								// Skip empty slots
 			{
-
-				// FixMe: if samples[i][j] contains a filename with no slashes (example: "ChordHits1.wav")
-				// then the next line will return filename_ptr as null, and so the sample entry will not be written to
-				// the index, but the sample will play and be written to the HTML file Perhaps we could add a slash to
-				// the beginning of samples[][].filename if no slash is found?
-
-				str_split(samples[i][j].filename, '/', path, filename_ptr); // split path and filename
-				if (filename_ptr[0] != '\0')								// Skip empty slots
-				{
-					// Print bank path to index file
-					if (j == 0) {
-						str_cpy(bank_path, path);
-						f_printf(&temp_file, "path: %s\n\n", path);
-						// f_sync(&temp_file);
-					}
-
-					// Print sample name to index file
-					if (str_cmp(path, bank_path))
-						f_printf(&temp_file, "%s\n", filename_ptr);
-					else
-						f_printf(&temp_file, "%s\n", samples[i][j].filename);
-					// f_sync(&temp_file);
-
-					// write sample header info to index file
-					switch (samples[i][j].numChannels) {
-						case 1:
-							f_printf(&temp_file,
-									 "sample info: %dHz, %d-bit, mono,   %d samples\n",
-									 samples[i][j].sampleRate,
-									 samples[i][j].sampleByteSize * 8,
-									 samples[i][j].sampleSize);
-							// f_sync(&temp_file);
-							break;
-						case 2:
-							f_printf(&temp_file,
-									 "sample info: %dHz, %d-bit, stereo, %d samples\n",
-									 samples[i][j].sampleRate,
-									 samples[i][j].sampleByteSize * 8,
-									 samples[i][j].sampleSize);
-							// f_sync(&temp_file);
-							break;
-					}
-
-					// write play data to index file
-					f_printf(&temp_file,
-							 "%s: %d\n%s: %d\n%s: %d\n%s(%%): %d\n\n",
-							 PLAYDATTAG_SLOT,
-							 j + 1,
-							 PLAYDATTAG_START,
-							 samples[i][j].inst_start,
-							 PLAYDATTAG_SIZE,
-							 samples[i][j].inst_size,
-							 PLAYDATTAG_GAIN,
-							 (int)(100 * samples[i][j].inst_gain));
+				// Print bank path to index file
+				if (j == 0) {
+					str_cpy(bank_path, path);
+					f_printf(&temp_file, "path: %s\n\n", path);
 					// f_sync(&temp_file);
 				}
+
+				// Print sample name to index file
+				if (str_cmp(path, bank_path))
+					f_printf(&temp_file, "%s\n", filename_ptr);
+				else
+					f_printf(&temp_file, "%s\n", samples[i][j].filename);
+				// f_sync(&temp_file);
+
+				// write sample header info to index file
+				switch (samples[i][j].numChannels) {
+					case 1:
+						f_printf(&temp_file,
+								 "sample info: %dHz, %d-bit, mono,   %d samples\n",
+								 samples[i][j].sampleRate,
+								 samples[i][j].sampleByteSize * 8,
+								 samples[i][j].sampleSize);
+						// f_sync(&temp_file);
+						break;
+					case 2:
+						f_printf(&temp_file,
+								 "sample info: %dHz, %d-bit, stereo, %d samples\n",
+								 samples[i][j].sampleRate,
+								 samples[i][j].sampleByteSize * 8,
+								 samples[i][j].sampleSize);
+						// f_sync(&temp_file);
+						break;
+				}
+
+				// write play data to index file
+				f_printf(&temp_file,
+						 "%s: %d\n%s: %d\n%s: %d\n%s(%%): %d\n\n",
+						 PLAYDATTAG_SLOT,
+						 j + 1,
+						 PLAYDATTAG_START,
+						 samples[i][j].inst_start,
+						 PLAYDATTAG_SIZE,
+						 samples[i][j].inst_size,
+						 PLAYDATTAG_GAIN,
+						 (int)(100 * samples[i][j].inst_gain));
+				// f_sync(&temp_file);
 			}
-			f_printf(&temp_file, "\n");
-			// f_sync(&temp_file);
 		}
-
-		// Write global info to file
-		f_printf(&temp_file, "Timestamp: %d\n", get_fattime()); // timestamp
-		f_printf(&temp_file, EOF_TAG);							// end of file tag
-		f_printf(&temp_file, "\n"); // text editors report an error if file does not end in newline
-
-		// CLOSE INDEX FILE
-		f_sync(&temp_file);
-		f_close(&temp_file);
-		return (FR_OK);
+		f_printf(&temp_file, "\n");
+		// f_sync(&temp_file);
 	}
-}
 
-uint8_t index_write_wrapper(void) {
+	// Write global info to file
+	f_printf(&temp_file, "Timestamp: %d\n", get_fattime()); // timestamp
+	f_printf(&temp_file, EOF_TAG);							// end of file tag
+	f_printf(&temp_file, "\n"); // text editors report an error if file does not end in newline
 
-	FRESULT res;
-	uint8_t html_res;
-
-	// WRITE INDEX FILE
-	flags[RewriteIndex] = MAGENTA;
-	res = write_sampleindex_file();
-	if (res != FR_OK)
-		return (1);
-
-	// WRITE SAMPLE LIST HTML FILE
-	flags[RewriteIndex] = LAVENDER;
-	html_res = write_samplelist();
-	return (html_res);
+	// CLOSE INDEX FILE
+	f_sync(&temp_file);
+	f_close(&temp_file);
+	return FR_OK;
 }
 
 // WRITE SAMPLE LIST HTML
 // previous files are replaced
-uint8_t write_samplelist(void) {
+FRESULT SampleIndex::write_samplelist(void) {
 
 	FIL temp_file;
 	FRESULT res;
@@ -213,28 +205,26 @@ uint8_t write_samplelist(void) {
 	// create file
 	res = f_open(&temp_file, SAMPLELIST_FILE, FA_WRITE | FA_CREATE_ALWAYS);
 	if (res != FR_OK)
-		return (1);
+		return res;
+
 	f_sync(&temp_file);
 
 	// WRITE 'SAMPLES' INFO TO SAMPLE LIST
-	// f_printf(&temp_file, "<!DOCTYPE html>\n<html>\n<body style=\"padding-left: 100px;
-	// background-color:#F8F9FD;\">\n<br>Firmware Version: %d.%d<br>\n<h1>SAMPLE
-	// LIST</h1><br>\n",FW_MAJOR_VERSION,FW_MINOR_VERSION);
 	f_printf(&temp_file,
 			 "<!DOCTYPE html>\n<html>\n\
 <head>\n<style type=\"text/css\">\n@media print\n{\n   div{page-break-inside: avoid;}\n   body {font-size:7pt;}\n   h2 {font-size:11pt;}\n   h1 {font-size:13pt;}\n}\n</style>\n</head>\n\
 <body style=\"padding-left: 100px; background-color:#F8F9FD;\">\n<br>Firmware Version: %d.%d<br>\n<h1>SAMPLE LIST</h1><br>\n",
-			 FW_MAJOR_VERSION,
-			 FW_MINOR_VERSION);
+			 FirmwareMajorVersion,
+			 FirmwareMinorVersion);
 	f_sync(&temp_file);
 
 	// For each bank
-	for (i = 0; i < MAX_NUM_BANKS; i++) {
+	for (i = 0; i < MaxNumBanks; i++) {
 
 		// check if bank is empty
 		bank_is_empty = 1;
 		j = 0;
-		while (j < NUM_SAMPLES_PER_BANK) {
+		while (j < NumSamplesPerBank) {
 			if (samples[i][j].filename[0] != 0) {
 				bank_is_empty = 0;
 				break;
@@ -255,7 +245,7 @@ uint8_t write_samplelist(void) {
 			f_sync(&temp_file);
 
 			// Print sample name to sample list, for each sample in bank
-			for (j = 0; j < NUM_SAMPLES_PER_BANK; j++) {
+			for (j = 0; j < NumSamplesPerBank; j++) {
 				seconds = (samples[i][j].sampleSize / samples[i][j].blockAlign) / samples[i][j].sampleRate;
 				minutes = seconds / 60;
 				seconds -= minutes * 60;
@@ -282,10 +272,10 @@ uint8_t write_samplelist(void) {
 
 	// CLOSE FILE
 	f_close(&temp_file);
-	return (0);
+	return FR_OK;
 }
 
-FRESULT backup_sampleindex_file(void) {
+FRESULT SampleIndex::backup_sampleindex_file(void) {
 	// ToDo: could just duplicate data and open resulting pointer
 	// ... if dup is not available
 	// FILE *fp2 = fdopen (dup (fileno (fp)), "r");
@@ -293,16 +283,16 @@ FRESULT backup_sampleindex_file(void) {
 	FIL indexfile, backupindex;
 	FRESULT res_index, res_bak;
 	char read_buff[512];
-	uint32_t bytes_read, bytes_written;
-	char idx_full_path[_MAX_LFN + 1];
-	char bak_full_path[_MAX_LFN + 1];
+	UINT bytes_read, bytes_written;
+	char idx_full_path[FF_MAX_LFN + 1];
+	char bak_full_path[FF_MAX_LFN + 1];
 
 	// Open index
 	str_cat(idx_full_path, SYS_DIR_SLASH, SAMPLE_INDEX_FILE);
 	res_index = f_open(&indexfile, idx_full_path, FA_READ);
 	if (res_index != FR_OK) {
 		f_close(&indexfile);
-		return (res_index);
+		return res_index;
 	}
 
 	// Open Backup file
@@ -311,7 +301,7 @@ FRESULT backup_sampleindex_file(void) {
 	if (res_bak != FR_OK) {
 		f_close(&indexfile);
 		f_close(&backupindex);
-		return (res_bak);
+		return res_bak;
 	}
 
 	while (1) {
@@ -326,32 +316,32 @@ FRESULT backup_sampleindex_file(void) {
 		{
 			f_close(&indexfile);
 			f_close(&backupindex);
-			return (FR_INT_ERR); // ToDo: there should be a way to report this error more accurately
+			return FR_INT_ERR; // ToDo: there should be a way to report this error more accurately
 		}
 
 		if (f_eof(&indexfile)) {
 			f_close(&indexfile);
 			f_close(&backupindex);
-			return (FR_OK);
+			return FR_OK;
 		}
 	}
 }
 
 // Returns 0 if invalid file (file can't be opened/read, or no EOF_TAG at end of file)
 // Returns 1 if we read EOF_TAG at the end of the file
-uint8_t check_sampleindex_valid(char *indexfilename) {
+bool SampleIndex::check_sampleindex_valid(const char *indexfilename) {
 	FIL temp_file;
 	FRESULT res;
-	char full_path[_MAX_LFN + 1];
-	char readdata[_MAX_LFN + 1];
+	char full_path[FF_MAX_LFN + 1];
+	char readdata[FF_MAX_LFN + 1];
 	uint8_t l;
-	uint32_t br;
+	UINT br;
 
 	str_cat(full_path, SYS_DIR_SLASH, SAMPLE_INDEX_FILE);
 	res = f_open(&temp_file, full_path, FA_READ);
 
 	if (res != FR_OK) {
-		return 0;
+		return false;
 	} // file can't open
 
 	// Verify it's a complete file, with EOF_TAG at the end
@@ -360,48 +350,50 @@ uint8_t check_sampleindex_valid(char *indexfilename) {
 	res = f_lseek(&temp_file, f_size(&temp_file) - l);
 	if (res != FR_OK) {
 		f_close(&temp_file);
-		return 0;
+		return false;
 	} // can't seek to end: file/disk error
 
 	res = f_read(&temp_file, readdata, l, &br);
 	if (res != FR_OK) {
 		f_close(&temp_file);
-		return 0;
+		return false;
 	} // can't read from file: file/disk error
 
 	if (br != l) {
 		f_close(&temp_file);
-		return 0;
+		return false;
 	} // didn't read proper number of bytes: disk/read error
 
 	// Check for EOF_TAG within last read buffer
+	readdata[br] = '\0';
 	if (!str_found(readdata, EOF_TAG)) {
 		f_close(&temp_file);
-		return 0;
+		return false;
 	} // no EOF_TAG found at end of file: index is incomplete
 
 	// Index file is ok
 	f_close(&temp_file);
-	return 1;
+	return true;
 }
 
 // Loads a sample index file
-// Sets samples[][] for all banks, or just one bank (specified with banks=bank# or banks=MAX_NUM_BANKS --> all banks)
+// Sets samples[][] for all banks, or just one bank (specified with banks=bank# or banks=MaxNumBanks --> all banks)
 //
 // Can request the normal index file, or the backup file (use_backup=USE_INDEX_FILE or USE_BACKUP_FILE)
 // Note: if we request backup file, but it's invalid/missing, then we exit with an error
 // On the other hand, if we request the index file but it's invalid/missing, then we use the backup file instead
 //
-uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
+// FIXME: This is illegible, rewrite
+FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 	FIL temp_file, temp_wav_file;
 	FRESULT res;
 	uint8_t head_load;
-	char read_buffer[_MAX_LFN + 1], folder_path[_MAX_LFN + 2], file_name[_MAX_LFN + 1], full_path[_MAX_LFN + 1];
+	char read_buffer[FF_MAX_LFN + 1], folder_path[FF_MAX_LFN + 2], file_name[FF_MAX_LFN + 1], full_path[FF_MAX_LFN + 1];
 	uint8_t cur_bank = 0, cur_sample = 0, arm_bank = 0, load_data = 0, loaded_header = 0, read_name = 0;
 	uint32_t num_buff = UINT32_MAX;
-	char token[_MAX_LFN + 1];
+	char token[FF_MAX_LFN + 1];
 	uint8_t l;
-	uint8_t force_reload = 2;
+	bool sample_was_loaded = false;
 	uint8_t skip_cur_bank = 0;
 	uint8_t separator = 0;
 	uint8_t invalid_banknum = 0;
@@ -411,24 +403,27 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 		if (!check_sampleindex_valid(SAMPLE_INDEX_FILE))
 			use_backup = USE_BACKUP_FILE;
 	} // If normal non-backup file requested but isn't a valid file, use the backup file instead
+
 	if (use_backup == USE_BACKUP_FILE) {
 		if (!check_sampleindex_valid(SAMPLE_BAK_FILE))
-			return (1);
+			return FR_INT_ERR;
 	} // If we requested the backup file (or if we requested the normal file, and it was invalid, Then see if the backup
 	  // file is valid. If not, then we exit with an error
+
 	if (use_backup) {
 		str_cat(full_path, SYS_DIR_SLASH, SAMPLE_BAK_FILE);
 	} else {
 		str_cat(full_path, SYS_DIR_SLASH, SAMPLE_INDEX_FILE);
 	}
+
 	res = f_open(&temp_file, full_path, FA_READ);
 	if (res != FR_OK)
-		return (1); // file not found
+		return FR_NO_FILE; // file not found
 
 	// Read File
 	while (!f_eof(&temp_file)) // until we reach the eof
 	{
-		f_gets(read_buffer, _MAX_LFN + 1, &temp_file); // Read next line
+		f_gets(read_buffer, FF_MAX_LFN + 1, &temp_file); // Read next line
 		if (read_buffer[str_len(read_buffer) - 1] == '\n')
 			read_buffer[str_len(read_buffer) - 1] = 0; // Remove \n from buffer (mac)
 		if (read_buffer[str_len(read_buffer) - 1] == '\r')
@@ -460,11 +455,11 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 				else if (!separator && arm_bank)
 				{
 					cur_bank = color_to_bank(token); // define bank number
-					if (banks != MAX_NUM_BANKS) {
+					if (banks != MaxNumBanks) {
 						if (banks != cur_bank)
 							skip_cur_bank = 1;
 					} // request bank to be skipped if it is not to be loaded
-					if (cur_bank >= MAX_NUM_BANKS) {
+					if (cur_bank >= MaxNumBanks) {
 						invalid_banknum = 1;
 					} // if bank number invalid, mark as such
 					str_tok(read_buffer, ' ', token);
@@ -516,7 +511,7 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 						// specifically assigned there)
 						while (samples[cur_bank][cur_sample].file_found) // until empty slot found
 						{
-							if (cur_sample < NUM_SAMPLES_PER_BANK - 1) {
+							if (cur_sample < NumSamplesPerBank - 1) {
 								cur_sample++;
 							} // move to next sample slot
 							else
@@ -524,7 +519,7 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 								load_data = 0;
 								read_name = 1;
 								break;
-							} // exit if cur_sample==NUM_SAMPLES_PER_BANK
+							} // exit if cur_sample==NumSamplesPerBank
 						}
 						if (!samples[cur_bank][cur_sample].file_found) // if empty slot found
 						{
@@ -554,8 +549,8 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 								if (!invalid_banknum) // Sanity check: cur_bank must be within range
 								{
 									str_cpy(samples[cur_bank][cur_sample].filename,
-											full_path); // open file_name (not read_buffer)
-									force_reload = 0;	// At least a sample was loaded
+											full_path);		  // open file_name (not read_buffer)
+									sample_was_loaded = true; // At least a sample was loaded
 									head_load =
 										load_sample_header(&samples[cur_bank][cur_sample],
 														   &temp_wav_file); // load sample information from .wav header
@@ -635,13 +630,13 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 							// find next available slot
 							while (samples[cur_bank][cur_sample].file_found) // until empty slot found
 							{
-								if (cur_sample < NUM_SAMPLES_PER_BANK - 1) {
+								if (cur_sample < NumSamplesPerBank - 1) {
 									cur_sample++;
 								} // move to next sample slot
 								else
 								{
 									break;
-								} // exit if cur_sample==NUM_SAMPLES_PER_BANK
+								} // exit if cur_sample==NumSamplesPerBank
 							}
 							if (samples[cur_bank][cur_sample].file_found) // if no empty slot
 							{
@@ -701,11 +696,11 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 						if (res == FR_OK) // file found
 						{
 							// Sanity check: cur_bank and cur_sample must be in range, or we risk memory corruption
-							if (!invalid_banknum && cur_sample < NUM_SAMPLES_PER_BANK) {
+							if (!invalid_banknum && cur_sample < NumSamplesPerBank) {
 								str_cpy(samples[cur_bank][cur_sample].filename,
 										full_path); // use whatever file_name was opened
 								samples[cur_bank][cur_sample].file_found = 1;
-								force_reload = 0; // At least a sample was loaded
+								sample_was_loaded = true; // At least a sample was loaded
 								head_load =
 									load_sample_header(&samples[cur_bank][cur_sample],
 													   &temp_wav_file); // load sample information from .wav header
@@ -720,7 +715,7 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 
 							// if header information couldn't load, treat file as if it couldn'tbe found
 							if (head_load != FR_OK) {
-								if (!invalid_banknum && cur_sample < NUM_SAMPLES_PER_BANK) {
+								if (!invalid_banknum && cur_sample < NumSamplesPerBank) {
 									samples[cur_bank][cur_sample].file_found = 0;
 								}
 								load_data = 0;
@@ -734,7 +729,7 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 
 						else if (res != FR_OK) // file not found
 						{
-							if (!invalid_banknum && cur_sample < NUM_SAMPLES_PER_BANK) {
+							if (!invalid_banknum && cur_sample < NumSamplesPerBank) {
 								str_cpy(samples[cur_bank][cur_sample].filename,
 										full_path); // Copy the file name into the sample struct element
 								samples[cur_bank][cur_sample].file_found =
@@ -823,6 +818,8 @@ uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 	// close sample index file
 	f_close(&temp_file);
 
-	// Assign samples in SD card to (previously empty) sample index
-	return (force_reload); // OK if at least a sample was loaded
+	// returns 0 if index is valid (one sample was loaded, at least)
+	return sample_was_loaded ? FR_OK : FR_INT_ERR;
 }
+
+} // namespace SamplerKit

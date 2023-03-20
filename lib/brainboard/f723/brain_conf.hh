@@ -13,7 +13,7 @@ namespace Brain
 // ADC Peripheral Conf:
 constexpr inline int16_t MinPotChange = 10;
 constexpr inline int16_t MinCVChange = 10;
-constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_28Cycles;
+constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_480Cycles; // 28Cycles;
 
 struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;

@@ -1,3 +1,4 @@
+#pragma once
 #include "audio_stream_conf.hh"
 #include "circular_buffer.hh"
 #include "elements.hh"
@@ -57,13 +58,13 @@ inline float calc_fast_perc_fade_rate(float length, float sample_rate) {
 
 // calc_resampled_cache_size()
 // Amount an imaginary pointer in the sample file would move with each audio block sent to the codec
-inline uint32_t calc_resampled_cache_size(Sample &sample, uint32_t resampled_buffer_size) {
+inline uint32_t calc_resampled_cache_size(const Sample &sample, uint32_t resampled_buffer_size) {
 	return ((resampled_buffer_size * sample.sampleByteSize) / 2);
 }
 
 // calc_resampled_buffer_size()
 // Amount play_buff[]->out changes with each audio block sent to the codec
-inline uint32_t calc_resampled_buffer_size(Sample &sample, float resample_rate) {
+inline uint32_t calc_resampled_buffer_size(const Sample &sample, float resample_rate) {
 	return ((uint32_t)((FramesPerBlock * sample.numChannels * 2) * resample_rate));
 }
 
@@ -85,7 +86,7 @@ inline int32_t calc_dist_to_end() {
 }
 
 // calc_start_point()
-inline uint32_t calc_start_point(float start_param, Sample *sample) {
+inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 	uint32_t zeropt;
 	uint32_t inst_size;
 

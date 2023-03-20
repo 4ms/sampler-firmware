@@ -15,6 +15,7 @@
 
 namespace SamplerKit
 {
+
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
@@ -42,6 +43,10 @@ struct Params {
 	bool enable_recording = false;
 	// No: EDIT_MODE, ASSIGN_MODE, ALLOW_SPLIT_MONITORING, VIDEO_DIM
 
+	// These are what's playing, even if the controls have selected something else
+	uint8_t sample_num_now_playing;
+	uint8_t sample_bank_now_playing;
+
 	uint32_t play_trig_timestamp = 0;
 
 	UserSettings settings;
@@ -50,7 +55,10 @@ struct Params {
 	Params(Controls &controls, Flags &flags, CalibrationStorage &system_calibrations)
 		: controls{controls}
 		, flags{flags}
-		, system_calibrations{system_calibrations} {}
+		, system_calibrations{system_calibrations} {
+
+		controls.start();
+	}
 
 	void update() {
 		controls.update();
@@ -156,10 +164,10 @@ private:
 		if (new_sample != sample) {
 			sample = new_sample;
 			flags.set(Flag::SampleChanged);
-			if (samples[bank][sample].filename[0] == '\0')
-				flags.set(Flag::SampleChangedInvalid);
-			else
-				flags.set(Flag::SampleChangedValid);
+			// if (samples[bank][sample].filename[0] == '\0')
+			// 	flags.set(Flag::SampleChangedInvalid);
+			// else
+			// 	flags.set(Flag::SampleChangedValid);
 		}
 	}
 
@@ -169,13 +177,13 @@ private:
 
 			int16_t diff = std::abs(pot.cur_val - pot.prev_val);
 			if (diff > Board::MinPotChange)
-				pot.track_moving_ctr = 250;
+				pot.track_moving_ctr = 250; // 250 for 6kHz = 42ms
 
 			if (pot.track_moving_ctr) {
 				pot.track_moving_ctr--;
 				pot.prev_val = pot.cur_val;
 				pot.delta = diff;
-				pot.moved = true;
+				// pot.moved = true;
 
 				if (controls.rev_button.is_pressed()) {
 					if (!pot.moved_while_rev_down)
@@ -211,7 +219,15 @@ private:
 	}
 
 	void update_button_modes() {
+		// if (flags.take(Flag::SkipProcessButtons)) return;
+
 		if (controls.play_button.just_went_low()) {
+			if (!looping)
+				flags.set(Flag::PlayBut);
+		}
+
+		if (controls.rev_button.just_went_low()) {
+			// latch the Rev+Pot pot values
 		}
 
 		if (controls.bank_button.is_just_released()) {
@@ -263,7 +279,7 @@ private:
 		bool is_catching_up = false;
 		bool moved_while_bank_down = false; // flag_pot_changed_infdown
 		bool moved_while_rev_down = false;	// flag_pot_changed_revdown
-		bool moved = false;					// flag_pot_changed
+											// bool moved = false;					// flag_pot_changed
 	};
 	std::array<PotState, NumPots> pot_state;
 

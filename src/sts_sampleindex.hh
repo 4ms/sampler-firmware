@@ -1,7 +1,7 @@
 /*
- * sts_filesystem.c - Bank and folder system for STS
+ * sts_sampleindex.c - interface to the sample index file
  *
- * Author: Dan Green (danngreen1@gmail.com)
+ * Author: Hugo Paris (hugoplho@gmail.com), Dan Green (danngreen1@gmail.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,55 +27,29 @@
  */
 
 #pragma once
-#include "bank.hh"
+
 #include "ff.h"
-#include "lut/LED_palette.h"
 #include "sample_file.hh"
-#include "sdcard.hh"
-#include "sts_sampleindex.hh"
 
 namespace SamplerKit
 {
+struct SampleIndex {
+#define USE_BACKUP_FILE 1
+#define USE_INDEX_FILE 0
 
-// TODO: constexpr these, move them into SampleBankFiles
+	SampleIndex(SampleList &samples)
+		: samples{samples} {}
 
-#define TMP_DIR "_tmp"
-#define TMP_DIR_SLASH "_tmp/"
+	FRESULT write_sampleindex_file();
+	FRESULT write_samplelist();
+	FRESULT index_write_wrapper();
+	FRESULT backup_sampleindex_file();
+	FRESULT load_sampleindex_file(uint8_t use_backup, uint8_t banks);
 
-#define RENAME_TMP_FILE "sts-renaming-queue.tmp"
-#define ERROR_LOG_FILE "error-log.txt"
-#define SETTINGS_FILE "settings.txt"
-
-struct SampleBankFiles {
-
-	SampleBankFiles(Sdcard &sd, SampleList &samples, BankManager &banks)
-		: sd{sd}
-		, samples{samples}
-		, banks{banks}
-		, index{samples} {}
-
-	uint8_t new_filename(uint8_t bank, uint8_t sample_num, char *path);
-
-	void load_new_folders();
-	void load_missing_files();
-
-	uint8_t load_banks_by_color_prefix();
-	uint8_t load_banks_by_default_colors();
-	uint8_t load_banks_with_noncolors();
-
-	uint8_t load_all_banks(bool force_reload = false);
-
-	uint8_t load_bank_from_disk(Bank &sample_bank, char *path_noslash);
-
-	uint8_t dir_contains_assigned_samples(const char *path);
+	bool check_sampleindex_valid(const char *indexfilename);
 
 private:
-	Sdcard &sd;
 	SampleList &samples;
-	BankManager &banks;
-	SampleIndex index;
-	LEDPalette startup_state;
-
-	void load_empty_slots();
 };
+
 } // namespace SamplerKit

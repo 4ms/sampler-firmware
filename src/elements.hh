@@ -28,6 +28,10 @@ enum TrigInJackElement : uint32_t { PlayRecJack, RevJack };
 
 enum TrigOutElement : uint32_t { EndOutJack };
 
+// Settings:
+enum { FirmwareMajorVersion = 0 };
+enum { FirmwareMinorVersion = 1 };
+
 enum { MaxNumBanks = 60 };
 enum { NumSamplesPerBank = 10 };
 enum { LEDUpdateRateHz = 200 };
@@ -52,5 +56,5 @@ constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 3072;
 // 9216 = 512 * 18 = 24 * 384
 constexpr inline uint32_t READ_BLOCK_SIZE = 9216;
 constexpr inline float PERC_ENV_FACTOR = 40000.0f;
-constexpr inline float MAX_RS = 4.f;
+constexpr inline float MAX_RS = 20.f;
 } // namespace SamplerKit

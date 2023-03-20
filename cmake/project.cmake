@@ -121,6 +121,11 @@ function(create_target target)
     ${root}/src/wavefmt.cc
     ${root}/src/sample_file.cc
     ${root}/src/str_util.c
+    ${root}/src/sts_filesystem.cc
+    ${root}/src/sts_sampleindex.cc
+    ${root}/src/bank_util.cc
+    ${root}/src/bank.cc
+    ${root}/src/resample.cc
     # Printf:
     ${root}/lib/printf/printf.c
     # FatFS:

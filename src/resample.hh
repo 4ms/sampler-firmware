@@ -1,7 +1,7 @@
 /*
- * sts_sampleindex.c - interface to the sample index file
+ * resample.h - Hermetian resampling algorithm, optimized for speed (not code size or readability!)
  *
- * Author: Hugo Paris (hugoplho@gmail.com), Dan Green (danngreen1@gmail.com)
+ * Author: Dan Green (danngreen1@gmail.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,34 +28,16 @@
 
 #pragma once
 
-#include "ff.h"
+#include "circular_buffer.hh"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace SamplerKit
+{
 
-#define USE_BACKUP_FILE 1
-#define USE_INDEX_FILE 0
-#define ALL_BANKS MAX_NUM_BANKS
+void resample_read16_avg(
+	float rs, CircularBuffer *buf, uint32_t buff_len, uint8_t block_align, int32_t *out, bool rev, bool flush);
+void resample_read16_left(
+	float rs, CircularBuffer *buf, uint32_t buff_len, uint8_t block_align, int32_t *out, bool rev, bool flush);
+void resample_read16_right(
+	float rs, CircularBuffer *buf, uint32_t buff_len, uint8_t block_align, int32_t *out, bool rev, bool flush);
 
-#define SAMPLE_SLOT 1
-#define PLAY_START 2
-#define PLAY_SIZE 3
-#define PLAY_GAIN 4
-
-#define PLAYDATTAG_SLOT "- sample slot"
-#define PLAYDATTAG_START "- play start"
-#define PLAYDATTAG_SIZE "- play size"
-#define PLAYDATTAG_GAIN "- play gain"
-
-FRESULT write_sampleindex_file(void);
-uint8_t write_samplelist(void);
-uint8_t index_write_wrapper(void);
-FRESULT backup_sampleindex_file(void);
-uint8_t load_sampleindex_file(uint8_t use_backup, uint8_t banks);
-
-uint8_t check_sampleindex_valid(char *indexfilename);
-
-#ifdef __cplusplus
-}
-#endif
+} // namespace SamplerKit

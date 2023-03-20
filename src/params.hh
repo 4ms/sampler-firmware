@@ -272,6 +272,20 @@ private:
 		if (last_bank != bank) {
 			last_bank = bank;
 		}
+		if (flags.take(Flag::StartupLoadingIndex))
+			controls.bank_led.breathe(Colors::orange, 1);
+
+		if (flags.take(Flag::StartupNewIndex))
+			controls.bank_led.breathe(Colors::white, 1);
+
+		if (flags.take(Flag::StartupWritingIndex))
+			controls.bank_led.breathe(Colors::magenta, 1);
+
+		if (flags.take(Flag::StartupWritingHTML))
+			controls.bank_led.breathe(Colors::purple, 1);
+
+		if (flags.take(Flag::StartupDone))
+			controls.bank_led.reset_breathe();
 	}
 
 private:

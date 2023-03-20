@@ -1,4 +1,6 @@
+#include "util/colors.hh"
 #include <cstdint>
+
 enum LEDPalette {
 	OFF,
 

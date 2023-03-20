@@ -321,11 +321,9 @@ uint8_t BankManager::prev_disabled_bank(uint8_t bank) {
 // If the bank has at least one slot with a filename and file_found==1, then enable the bank
 // Otherwise disable it
 void BankManager::check_enabled_banks(void) {
-	uint32_t sample_num, bank;
-
-	for (bank = 0; bank < MaxNumBanks; bank++) {
+	for (uint32_t bank = 0; bank < MaxNumBanks; bank++) {
 		bank_status[bank] = 0; // does not exist
-		for (sample_num = 0; sample_num < NumSamplesPerBank; sample_num++) {
+		for (uint32_t sample_num = 0; sample_num < NumSamplesPerBank; sample_num++) {
 			if (samples[bank][sample_num].filename[0] != 0 && samples[bank][sample_num].file_found == 1) {
 				bank_status[bank] = 1;
 				break;

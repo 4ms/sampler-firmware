@@ -49,7 +49,7 @@ namespace SamplerKit
 {
 
 // TODO get a param that lets us set the LED color. StartupState?
-uint8_t SampleBankFiles::load_all_banks(bool force_reload) {
+uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	/*
 	 * Startup procedure: All button LEDs turn colors to indicate present operation:
 	 * Load index file: WHITE
@@ -161,7 +161,7 @@ uint8_t SampleBankFiles::load_all_banks(bool force_reload) {
 // Go through all enabled banks, looking for empty sample slots
 // Search within the bank's folder, looking for a file to fill the slot
 //
-void SampleBankFiles::load_empty_slots(void) {
+void SampleIndexLoader::load_empty_slots(void) {
 	uint8_t bank, samplenum;
 	char bankpath[FF_MAX_LFN + 1];
 	char bankpath_noslash[FF_MAX_LFN + 1];
@@ -232,7 +232,7 @@ void SampleBankFiles::load_empty_slots(void) {
 //    --Second pass: Look for a .wav file that isn't assigned in this bank (but may be assigned in some other bank)
 //  - If still none found, keep file_found=0 and exit
 //
-void SampleBankFiles::load_missing_files(void) {
+void SampleIndexLoader::load_missing_files(void) {
 	uint8_t bank, samplenum;
 	char path[FF_MAX_LFN + 1];
 	char path_noslash[FF_MAX_LFN + 1];
@@ -340,7 +340,7 @@ void SampleBankFiles::load_missing_files(void) {
 // valid memory location This is important because path="Blue" could return a false positive for "Blue
 // Loops/mysound.wav", when we really are looking for "Blue/*.wav" If we want to check the root dir, give "/" for
 // path. This will search for samples who's entry starts with "/", or have no slash in their full path
-uint8_t SampleBankFiles::dir_contains_assigned_samples(const char *path) {
+uint8_t SampleIndexLoader::dir_contains_assigned_samples(const char *path) {
 	uint8_t bank, samplenum;
 	uint8_t l;
 
@@ -362,7 +362,7 @@ uint8_t SampleBankFiles::dir_contains_assigned_samples(const char *path) {
 //
 //
 //
-void SampleBankFiles::load_new_folders(void) {
+void SampleIndexLoader::load_new_folders(void) {
 	DIR root_dir, test_dir;
 	FRESULT res;
 	char foldername[FF_MAX_LFN + 1];
@@ -473,7 +473,7 @@ void SampleBankFiles::load_new_folders(void) {
 // and see if each one is an actual folder
 // If so, open it up.
 //
-uint8_t SampleBankFiles::load_banks_by_default_colors(void) {
+uint8_t SampleIndexLoader::load_banks_by_default_colors(void) {
 	uint8_t bank;
 	char bankname[FF_MAX_LFN], bankname_case[FF_MAX_LFN];
 	uint8_t banks_loaded;
@@ -507,7 +507,7 @@ uint8_t SampleBankFiles::load_banks_by_default_colors(void) {
 	return banks_loaded;
 }
 
-uint8_t SampleBankFiles::load_banks_by_color_prefix(void) {
+uint8_t SampleIndexLoader::load_banks_by_color_prefix(void) {
 	uint8_t bank;
 	char foldername[FF_MAX_LFN];
 	char default_bankname[FF_MAX_LFN];
@@ -639,7 +639,7 @@ uint8_t SampleBankFiles::load_banks_by_color_prefix(void) {
 	return banks_loaded;
 }
 
-uint8_t SampleBankFiles::load_banks_with_noncolors(void) {
+uint8_t SampleIndexLoader::load_banks_with_noncolors(void) {
 	uint8_t bank;
 	uint8_t len;
 	char foldername[FF_MAX_LFN];
@@ -731,7 +731,7 @@ uint8_t SampleBankFiles::load_banks_with_noncolors(void) {
 // Returns number of samples loaded (0 if folder not found, and sample[bank][] will be cleared)
 //
 
-uint8_t SampleBankFiles::load_bank_from_disk(Bank &sample_bank, char *path_noslash) {
+uint8_t SampleIndexLoader::load_bank_from_disk(Bank &sample_bank, char *path_noslash) {
 	uint32_t i;
 	uint32_t sample_num;
 
@@ -800,7 +800,7 @@ uint8_t SampleBankFiles::load_bank_from_disk(Bank &sample_bank, char *path_nosla
 #define SLOT_DIGITS 2 /* number of digits in the Slot number: since we have max 10 slots, we need 2 digits */
 #define TAKE_DIGITS 3 /* number of digits in the Take number: 3 means "001", 4 means "0001", etc. */
 #define WAV_EXT ".wav"
-uint8_t SampleBankFiles::new_filename(uint8_t bank, uint8_t sample_num, char *path) {
+uint8_t SampleIndexLoader::new_filename(uint8_t bank, uint8_t sample_num, char *path) {
 	uint8_t i;
 	FRESULT res;
 	DIR dir;

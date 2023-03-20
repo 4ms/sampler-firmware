@@ -3,10 +3,11 @@
 #include "circular_buffer.hh"
 #include "params.hh"
 #include "resample.hh"
-#include "sampler.hh"
 #include "sampler_calcs.hh"
 #include "ssat.h"
 #include "util/zip.hh"
+
+#include "sampler_modes.hh"
 
 namespace SamplerKit
 {
@@ -24,11 +25,11 @@ public:
 	float env_level;
 	float env_rate = 0.f;
 
-	SamplerAudio(Params &params,
-				 SampleList &samples,
+	SamplerAudio(SamplerModes &sampler_modes,
+				 Params &params,
 				 Flags &flags,
-				 std::array<CircularBuffer, NumSamplesPerBank> &splay_buff,
-				 SamplerModes &sampler_modes)
+				 SampleList &samples,
+				 std::array<CircularBuffer, NumSamplesPerBank> &splay_buff)
 		: params{params}
 		, samples{samples}
 		, flags{flags}

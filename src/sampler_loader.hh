@@ -27,7 +27,6 @@ public:
 				 Params &params,
 				 Flags &flags,
 				 Sdcard &sd,
-				 SampleList &samples,
 				 BankManager &banks,
 				 std::array<CircularBuffer, NumSamplesPerBank> &splay_buff,
 				 uint32_t &g_error)
@@ -35,7 +34,7 @@ public:
 		, params{params}
 		, flags{flags}
 		, sd{sd}
-		, samples{samples}
+		, samples{banks.samples}
 		, banks{banks}
 		, g_error{g_error} {
 		for (unsigned i = 0; i < NumSamplesPerBank; i++)

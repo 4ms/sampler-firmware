@@ -46,9 +46,9 @@ namespace SamplerKit
 #define ERROR_LOG_FILE "error-log.txt"
 #define SETTINGS_FILE "settings.txt"
 
-struct SampleBankFiles {
+struct SampleIndexLoader {
 
-	SampleBankFiles(Sdcard &sd, SampleList &samples, BankManager &banks)
+	SampleIndexLoader(Sdcard &sd, SampleList &samples, BankManager &banks)
 		: sd{sd}
 		, samples{samples}
 		, banks{banks}

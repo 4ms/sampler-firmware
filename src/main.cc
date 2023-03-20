@@ -9,8 +9,6 @@
 #include "hardware_tests/hardware_tests.hh"
 #include "params.hh"
 #include "sampler.hh"
-#include "sampler_audio.hh"
-#include "sampler_loader.hh"
 #include "sdcard.hh"
 #include "system.hh"
 #include "test_audio.hh"
@@ -46,35 +44,25 @@ void main() {
 
 	UserSettingsStorage settings_storage{params.settings, sd};
 
+	// Load sample index file (map files to sample slots and banks)
 	SampleList samples;
 	BankManager banks{samples};
+	// TODO: show progress of loading sample index: use flags?
+	SampleIndexLoader index_loader{sd, samples, banks};
+	index_loader.load_all_banks();
 
-	// TODO: show progress of loading sample index
-	SampleBankFiles sample_bank_files{sd, samples, banks};
-	sample_bank_files.load_all_banks();
-
-	///////////Sampler class:
-	std::array<CircularBuffer, NumSamplesPerBank> play_buff;
-	uint32_t g_error = 0;
-	SamplerModes sampler_modes{params, flags, sd, samples, banks, play_buff, g_error};
-
-	SamplerAudio sampler{params, samples, flags, play_buff, sampler_modes};
-	AudioStream audio([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.update(in, out); });
-
-	SampleLoader loader{sampler_modes, params, flags, sd, samples, banks, play_buff, g_error};
-	//////////
-
-	// TODO Tasks:
-	// Trig Jack(TIM5)? 12kHz
+	Sampler sampler{params, flags, sd, banks};
+	AudioStream audio_stream([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.audio.update(in, out); });
 
 	Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
 	params_update_task.start();
-	loader.start();
-	audio.start();
+	sampler.start();
+	audio_stream.start();
 
+	// TODO Tasks:
+	// Trig Jack(TIM5)? 12kHz
 	while (true) {
-		sampler_modes.process_mode_flags();
-		loader.update();
+		sampler.update();
 
 		__NOP();
 	}

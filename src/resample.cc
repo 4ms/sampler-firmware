@@ -28,6 +28,7 @@
 
 #include "resample.hh"
 #include "circular_buffer.hh"
+#include <algorithm>
 
 namespace SamplerKit
 {
@@ -55,27 +56,28 @@ static inline void inc_addr(CircularBuffer *buf, uint8_t blockAlign, bool rev) {
 	}
 }
 
-static inline int16_t get_16b_sample_avg(uint32_t addr) {
-	uint32_t rd;
-	int16_t a, b;
+static inline int32_t get_16b_sample_avg(uint32_t addr) {
 
 	wait_memory_ready();
 
-	rd = (*((uint32_t *)addr));
+	uint32_t rd = (*((uint32_t *)addr));
 
-	a = (int16_t)(rd >> 16);
-	b = (int16_t)(rd & 0x0000FFFF);
-	return ((a + b) >> 1);
+	int16_t a = (int16_t)(rd >> 16);
+	int16_t b = (int16_t)(rd & 0x0000FFFF);
+	int32_t t = a + b;
+	return t * 128; //*256 and averaged is /2
 }
 
-static inline int16_t get_16b_sample_right(uint32_t addr) {
+static inline int32_t get_16b_sample_right(uint32_t addr) {
 	wait_memory_ready();
-	return (*((int16_t *)(addr + 2)));
+	int16_t r = *((int16_t *)(addr + 2));
+	return ((int32_t)r) * 256;
 }
 
-static inline int16_t get_16b_sample_left(uint32_t addr) {
+static inline int32_t get_16b_sample_left(uint32_t addr) {
 	wait_memory_ready();
-	return (*((int16_t *)addr));
+	int16_t r = *((int16_t *)addr);
+	return ((int32_t)r) * 256;
 }
 
 // FIXME:
@@ -90,7 +92,6 @@ void resample_read16_avg(
 	static float xm1[4], x0[4], x1[4], x2[4];
 	float a, b, c;
 	uint32_t outpos;
-	float t_out;
 	uint8_t ch;
 
 	ch = 0;
@@ -193,13 +194,14 @@ void resample_read16_avg(
 
 			// calculate as many fractionally placed output points as we need
 			while (fractional_pos[ch] < 1.f && outpos < buff_len) {
-				t_out = (((a * fractional_pos[ch]) + b) * fractional_pos[ch] + c) * fractional_pos[ch] + x0[ch];
-				if (t_out >= 32767.f)
-					out[outpos++] = 32767;
-				else if (t_out <= -32767.f)
-					out[outpos++] = -32767;
-				else
-					out[outpos++] = t_out;
+				float t_out = (((a * fractional_pos[ch]) + b) * fractional_pos[ch] + c) * fractional_pos[ch] + x0[ch];
+				out[outpos++] = (int32_t)(std::clamp(t_out, -32768.f * 256.f, 32767.f * 256.f));
+				// if (t_out >= 32767.f*256)
+				// 	out[outpos++] = 32767*256;
+				// else if (t_out <= -32767.f*256)
+				// 	out[outpos++] = -32767*256;
+				// else
+				// 	out[outpos++] = t_out*256;
 
 				fractional_pos[ch] += rs;
 			}
@@ -317,12 +319,13 @@ void resample_read16_right(
 			// calculate as many fractionally placed output points as we need
 			while (fractional_pos[ch] < 1.f && outpos < buff_len) {
 				t_out = (((a * fractional_pos[ch]) + b) * fractional_pos[ch] + c) * fractional_pos[ch] + x0[ch];
-				if (t_out >= 32767.f)
-					out[outpos++] = 32767;
-				else if (t_out <= -32767.f)
-					out[outpos++] = -32767;
-				else
-					out[outpos++] = t_out;
+				out[outpos++] = (int32_t)(std::clamp(t_out, -32768.f * 256.f, 32767.f * 256.f));
+				// if (t_out >= 32767.f)
+				// 	out[outpos++] = 32767;
+				// else if (t_out <= -32767.f)
+				// 	out[outpos++] = -32767;
+				// else
+				// 	out[outpos++] = t_out;
 
 				fractional_pos[ch] += rs;
 			}
@@ -440,12 +443,13 @@ void resample_read16_left(
 			// calculate as many fractionally placed output points as we need
 			while (fractional_pos[ch] < 1.f && outpos < buff_len) {
 				t_out = (((a * fractional_pos[ch]) + b) * fractional_pos[ch] + c) * fractional_pos[ch] + x0[ch];
-				if (t_out >= 32767.f)
-					out[outpos++] = 32767;
-				else if (t_out <= -32767.f)
-					out[outpos++] = -32767;
-				else
-					out[outpos++] = t_out;
+				out[outpos++] = (int32_t)(std::clamp(t_out, -32768.f * 256.f, 32767.f * 256.f));
+				// if (t_out >= 32767.f)
+				// 	out[outpos++] = 32767;
+				// else if (t_out <= -32767.f)
+				// 	out[outpos++] = -32767;
+				// else
+				// 	out[outpos++] = t_out;
 
 				fractional_pos[ch] += rs;
 			}

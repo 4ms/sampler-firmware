@@ -13,11 +13,11 @@ namespace SamplerKit
 {
 
 class SamplerAudio {
-	Params &params;
-	SampleList &samples;
-	Flags &flags;
-	CircularBuffer *play_buff[NumSamplesPerBank];
 	SamplerModes &sampler_modes;
+	Params &params;
+	Flags &flags;
+	SampleList &samples;
+	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
 
 	using ChanBuff = std::array<AudioStreamConf::SampleT, AudioStreamConf::BlockSize>;
 
@@ -30,13 +30,11 @@ public:
 				 Flags &flags,
 				 SampleList &samples,
 				 std::array<CircularBuffer, NumSamplesPerBank> &splay_buff)
-		: params{params}
-		, samples{samples}
+		: sampler_modes{sampler_modes}
+		, params{params}
 		, flags{flags}
-		, sampler_modes{sampler_modes} {
-		for (unsigned i = 0; i < NumSamplesPerBank; i++)
-			play_buff[i] = &(splay_buff[i]);
-	}
+		, samples{samples}
+		, play_buff{splay_buff} {}
 
 	void update(const AudioStreamConf::AudioInBlock &inblock, AudioStreamConf::AudioOutBlock &outblock) {
 		// record_audio_to_buffer(inblock);
@@ -111,16 +109,16 @@ public:
 				rs = MAX_RS / (float)s_sample.numChannels;
 
 			if (s_sample.numChannels == 2) {
-				uint32_t t_u32 = play_buff[samplenum]->out;
-				resample_read16_left(rs, play_buff[samplenum], outL.size(), 4, outL.data(), params.reverse, flush);
+				uint32_t t_u32 = play_buff[samplenum].out;
+				resample_read16_left(rs, &play_buff[samplenum], outL.size(), 4, outL.data(), params.reverse, flush);
 
-				play_buff[samplenum]->out = t_u32;
-				resample_read16_right(rs, play_buff[samplenum], outR.size(), 4, outR.data(), params.reverse, flush);
+				play_buff[samplenum].out = t_u32;
+				resample_read16_right(rs, &play_buff[samplenum], outR.size(), 4, outR.data(), params.reverse, flush);
 
 			} else {
 				// MONO: read left channel and copy to right
 				bool flush = flags.read(Flag::PlayBuffDiscontinuity);
-				resample_read16_left(rs, play_buff[samplenum], outL.size(), 2, outL.data(), params.reverse, flush);
+				resample_read16_left(rs, &play_buff[samplenum], outL.size(), 2, outL.data(), params.reverse, flush);
 				for (unsigned i = 0; i < outL.size(); i++)
 					outR[i] = outL[i];
 			}
@@ -129,9 +127,9 @@ public:
 				rs = MAX_RS;
 
 			if (s_sample.numChannels == 2)
-				resample_read16_avg(rs, play_buff[samplenum], outL.size(), 4, outL.data(), params.reverse, flush);
+				resample_read16_avg(rs, &play_buff[samplenum], outL.size(), 4, outL.data(), params.reverse, flush);
 			else
-				resample_read16_left(rs, play_buff[samplenum], outL.size(), 2, outL.data(), params.reverse, flush);
+				resample_read16_left(rs, &play_buff[samplenum], outL.size(), 2, outL.data(), params.reverse, flush);
 		}
 
 		// TODO: if writing a flag gets expensive, then we could refactor this
@@ -187,6 +185,7 @@ public:
 			env_level = 0.f;
 		if (flags.take(Flag::StartFadeDown))
 			env_level = 1.f;
+
 		uint8_t samplenum = params.sample_num_now_playing;
 		uint8_t banknum = params.sample_bank_now_playing;
 		Sample *s_sample = &(samples[banknum][samplenum]);
@@ -223,7 +222,6 @@ public:
 												fast_perc_fade_rate;
 
 		switch (sampler_modes.play_state) {
-
 			case (SamplerModes::RETRIG_FADEDOWN):
 				// DEBUG0_ON;
 				env_rate =

@@ -3,7 +3,7 @@
 #include "circular_buffer.hh"
 #include "flags.hh"
 #include "params.hh"
-#include "sampler.hh"
+#include "sampler_modes.hh"
 #include "sdcard.hh"
 
 namespace SamplerKit
@@ -16,12 +16,12 @@ class SampleLoader {
 	Sdcard &sd;
 	SampleList &samples;
 	BankManager &banks;
-	CircularBuffer *play_buff[NumSamplesPerBank];
+	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
 	uint32_t &g_error;
 
 	mdrivlib::Timekeeper sdcard_update_task;
 	bool time_to_update = false;
-	//
+
 public:
 	SampleLoader(SamplerModes &sampler_modes,
 				 Params &params,
@@ -36,10 +36,8 @@ public:
 		, sd{sd}
 		, samples{banks.samples}
 		, banks{banks}
+		, play_buff{splay_buff}
 		, g_error{g_error} {
-		for (unsigned i = 0; i < NumSamplesPerBank; i++)
-			play_buff[i] = &(splay_buff[i]);
-
 		sdcard_update_task.init({.TIMx = TIM7, .period_ns = 1'000'000'000 / 1400, .priority1 = 1, .priority2 = 0},
 								[this]() { time_to_update = true; });
 	}
@@ -83,7 +81,7 @@ public:
 
 			// FixMe: Calculate play_buff_bufferedamt after play_buff changes, not here, then make bufferedmat private
 			// again
-			s.play_buff_bufferedamt[samplenum] = play_buff[samplenum]->distance(params.reverse);
+			s.play_buff_bufferedamt[samplenum] = play_buff[samplenum].distance(params.reverse);
 
 			//
 			// Try to recover from a file read error
@@ -131,8 +129,8 @@ public:
 			active_buff_size = pre_buff_size * 4;
 
 			if (active_buff_size >
-				((play_buff[samplenum]->size * 7) / 10)) // limit amount of buffering ahead to 70% of buffer size
-				active_buff_size = ((play_buff[samplenum]->size * 7) / 10);
+				((play_buff[samplenum].size * 7) / 10)) // limit amount of buffering ahead to 70% of buffer size
+				active_buff_size = ((play_buff[samplenum].size * 7) / 10);
 
 			if (!s.is_buffered_to_file_end[samplenum] &&
 				((s.play_state == SamplerModes::PREBUFFERING && (s.play_buff_bufferedamt[samplenum] < pre_buff_size)) ||
@@ -239,7 +237,7 @@ public:
 						// Jump back in play_buff by the amount just read (re-sized from file addresses to buffer
 						// address)
 						if (params.reverse)
-							play_buff[samplenum]->offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
+							play_buff[samplenum].offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
 
 						err = 0;
 
@@ -249,39 +247,39 @@ public:
 
 						// 16 bit
 						if (s_sample->sampleByteSize == 2)
-							err = play_buff[samplenum]->memory_write_16as16(tmp_buff_u32, rd >> 2, 0);
+							err = play_buff[samplenum].memory_write_16as16(tmp_buff_u32, rd >> 2, 0);
 
 						// 24bit (rd must be a multiple of 3)
 						else if (s_sample->sampleByteSize == 3)
-							err = play_buff[samplenum]->memory_write_24as16((uint8_t *)tmp_buff_u32, rd, 0);
+							err = play_buff[samplenum].memory_write_24as16((uint8_t *)tmp_buff_u32, rd, 0);
 
 						// 8bit
 						else if (s_sample->sampleByteSize == 1)
-							err = play_buff[samplenum]->memory_write_8as16((uint8_t *)tmp_buff_u32, rd, 0);
+							err = play_buff[samplenum].memory_write_8as16((uint8_t *)tmp_buff_u32, rd, 0);
 
 						// 32-bit float (rd must be a multiple of 4)
 						else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 3)
-							err = play_buff[samplenum]->memory_write_32fas16((float *)tmp_buff_u32, rd >> 2, 0);
+							err = play_buff[samplenum].memory_write_32fas16((float *)tmp_buff_u32, rd >> 2, 0);
 
 						// 32-bit int rd must be a multiple of 4
 						else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 1)
-							err = play_buff[samplenum]->memory_write_32ias16((uint8_t *)tmp_buff_u32, rd, 0);
+							err = play_buff[samplenum].memory_write_32ias16((uint8_t *)tmp_buff_u32, rd, 0);
 
 						// Update the cache addresses
 						if (params.reverse) {
 							// Ignore head crossing error if we are reversing and ended up with in==out (that's
 							// normal for the first reading)
-							if (err && (play_buff[samplenum]->in == play_buff[samplenum]->out))
+							if (err && (play_buff[samplenum].in == play_buff[samplenum].out))
 								err = 0;
 
 							//
 							// Jump back again in play_buff by the amount just read (re-sized from file addresses to
 							// buffer address) This ensures play_buff[]->in points to the buffer seam
 							//
-							play_buff[samplenum]->offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
+							play_buff[samplenum].offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
 
 							s.cache[samplenum].low = s.sample_file_curpos[samplenum];
-							s.cache[samplenum].map_pt = play_buff[samplenum]->in;
+							s.cache[samplenum].map_pt = play_buff[samplenum].in;
 
 							if ((s.cache[samplenum].high - s.cache[samplenum].low) > s.cache[samplenum].size)
 								s.cache[samplenum].high = s.cache[samplenum].low + s.cache[samplenum].size;
@@ -290,7 +288,7 @@ public:
 							s.cache[samplenum].high = s.sample_file_curpos[samplenum];
 
 							if ((s.cache[samplenum].high - s.cache[samplenum].low) > s.cache[samplenum].size) {
-								s.cache[samplenum].map_pt = play_buff[samplenum]->in;
+								s.cache[samplenum].map_pt = play_buff[samplenum].in;
 								s.cache[samplenum].low = s.cache[samplenum].high - s.cache[samplenum].size;
 							}
 						}
@@ -360,6 +358,7 @@ public:
 				{
 					if (s.play_state != SamplerModes::SILENT && s.play_state != SamplerModes::PREBUFFERING) {
 						if (s.play_state == SamplerModes::PLAYING_PERC)
+
 							s.play_state = SamplerModes::REV_PERC_FADEDOWN;
 						else {
 							s.play_state = SamplerModes::PLAY_FADEDOWN;

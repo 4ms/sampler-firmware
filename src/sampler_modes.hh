@@ -45,7 +45,7 @@ public:
 		PAD_SILENCE,
 	} play_state = SILENT;
 
-	CircularBuffer *play_buff[NumSamplesPerBank];
+	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
 
 	// These are used in audio, but probably could move elsewhere
 	// file position where we began playback.
@@ -81,23 +81,22 @@ public:
 		, sd{sd}
 		, samples{banks.samples}
 		, banks{banks}
+		, play_buff{splay_buff}
 		, g_error{g_error} {
 
 		Memory::clear();
 		// TODO: init_recbuff();
 		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
-			play_buff[i] = &(splay_buff[i]);
+			play_buff[i].min = PLAY_BUFF_START + (i * PLAY_BUFF_SLOT_SIZE);
+			play_buff[i].max = play_buff[i].min + PLAY_BUFF_SLOT_SIZE;
+			play_buff[i].size = PLAY_BUFF_SLOT_SIZE;
 
-			play_buff[i]->min = PLAY_BUFF_START + (i * PLAY_BUFF_SLOT_SIZE);
-			play_buff[i]->max = play_buff[i]->min + PLAY_BUFF_SLOT_SIZE;
-			play_buff[i]->size = PLAY_BUFF_SLOT_SIZE;
+			play_buff[i].in = play_buff[i].min;
+			play_buff[i].out = play_buff[i].min;
 
-			play_buff[i]->in = play_buff[i]->min;
-			play_buff[i]->out = play_buff[i]->min;
+			play_buff[i].wrapping = 0;
 
-			play_buff[i]->wrapping = 0;
-
-			cache[i].map_pt = play_buff[i]->min;
+			cache[i].map_pt = play_buff[i].min;
 			cache[i].low = 0;
 			cache[i].high = 0;
 			cached_rev_state[i] = 0;
@@ -206,7 +205,7 @@ public:
 
 			cache[samplenum].low = 0;
 			cache[samplenum].high = 0;
-			cache[samplenum].map_pt = play_buff[samplenum]->min;
+			cache[samplenum].map_pt = play_buff[samplenum].min;
 		}
 
 		// Calculate our actual resampling rate
@@ -227,8 +226,8 @@ public:
 		if ((cache[samplenum].high > cache[samplenum].low) && (cache[samplenum].low <= sample_file_startpos) &&
 			(sample_file_startpos <= cache[samplenum].high))
 		{
-			play_buff[samplenum]->out = cache[samplenum].map_cache_to_buffer(
-				sample_file_startpos, s_sample->sampleByteSize, play_buff[samplenum]);
+			play_buff[samplenum].out = cache[samplenum].map_cache_to_buffer(
+				sample_file_startpos, s_sample->sampleByteSize, &play_buff[samplenum]);
 
 			env_level = 0.f;
 			if (params.length <= 0.5f)
@@ -241,7 +240,7 @@ public:
 			// Set state to silent so we don't run play_audio_buffer(), which could result in a glitch since the
 			// playbuff and cache values are being changed
 			play_state = SILENT;
-			play_buff[samplenum]->init();
+			play_buff[samplenum].init();
 
 			// Seek to the file position where we will start reading
 			sample_file_curpos[samplenum] = sample_file_startpos;
@@ -276,8 +275,8 @@ public:
 
 			cache[samplenum].low = sample_file_startpos;
 			cache[samplenum].high = sample_file_startpos;
-			cache[samplenum].map_pt = play_buff[samplenum]->min;
-			cache[samplenum].size = (play_buff[samplenum]->size >> 1) * s_sample->sampleByteSize;
+			cache[samplenum].map_pt = play_buff[samplenum].min;
+			cache[samplenum].size = (play_buff[samplenum].size >> 1) * s_sample->sampleByteSize;
 			is_buffered_to_file_end[samplenum] = 0;
 
 			play_state = PREBUFFERING;
@@ -332,7 +331,7 @@ public:
 			// int32_t dist_to_end = calc_dist_to_end(s_sample, banknum);
 			// Find out where the audio output data is relative to the start of the cache
 			uint32_t sample_file_playpos = cache[samplenum].map_buffer_to_cache(
-				play_buff[samplenum]->out, s_sample.sampleByteSize, play_buff[samplenum]);
+				play_buff[samplenum].out, s_sample.sampleByteSize, &play_buff[samplenum]);
 
 			// Calculate the distance left to the end that we should be playing
 			// TODO: check if playpos is in bounds of startpos as well
@@ -356,7 +355,7 @@ public:
 					flags.clear(Flag::ChangePlaytoPerc);
 			} else {
 				// Check if we are about to hit buffer underrun
-				play_buff_bufferedamt[samplenum] = play_buff[samplenum]->distance(params.reverse);
+				play_buff_bufferedamt[samplenum] = play_buff[samplenum].distance(params.reverse);
 
 				if (!is_buffered_to_file_end[samplenum] && play_buff_bufferedamt[samplenum] <= resampled_buffer_size) {
 					// buffer underrun: tried to read too much out. Try to recover!
@@ -381,11 +380,11 @@ public:
 		// This gets us ready to read new data to the opposite end of the cache.
 		if (new_dir) {
 			sample_file_curpos[samplenum] = cache[samplenum].low;
-			play_buff[samplenum]->in = cache[samplenum].map_pt; // cache_map_pt is the map of cache_low
+			play_buff[samplenum].in = cache[samplenum].map_pt; // cache_map_pt is the map of cache_low
 		} else {
 			sample_file_curpos[samplenum] = cache[samplenum].high;
-			play_buff[samplenum]->in = cache[samplenum].map_cache_to_buffer(
-				cache[samplenum].high, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
+			play_buff[samplenum].in = cache[samplenum].map_cache_to_buffer(
+				cache[samplenum].high, samples[banknum][samplenum].sampleByteSize, &play_buff[samplenum]);
 		}
 
 		// Swap the endpos with the startpos
@@ -432,8 +431,8 @@ private:
 			{
 				// See if the endpos is within the cache, then we can just play from that point
 				if ((sample_file_endpos >= cache[samplenum].low) && (sample_file_endpos <= cache[samplenum].high)) {
-					play_buff[samplenum]->out = cache[samplenum].map_cache_to_buffer(
-						sample_file_endpos, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
+					play_buff[samplenum].out = cache[samplenum].map_cache_to_buffer(
+						sample_file_endpos, samples[banknum][samplenum].sampleByteSize, &play_buff[samplenum]);
 				} else {
 					// Otherwise we have to make a new cache, so run start_playing()
 					params.reverse = !params.reverse;
@@ -498,7 +497,7 @@ private:
 
 			is_buffered_to_file_end[samplenum] = 0;
 
-			play_buff[samplenum]->init();
+			play_buff[samplenum].init();
 		}
 	}
 };

@@ -4,6 +4,7 @@
 #include "controls.hh"
 #include "elements.hh"
 #include "flags.hh"
+#include "lut/LED_palette.h"
 #include "lut/pitch_pot_lut.h"
 #include "sample_file.hh"
 #include "sample_pot_detents.hh"
@@ -267,6 +268,10 @@ private:
 		// TODO: Play LED
 
 		// TODO: Bank LED
+		static uint32_t last_bank = 0;
+		if (last_bank != bank) {
+			last_bank = bank;
+		}
 	}
 
 private:

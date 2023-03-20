@@ -92,7 +92,8 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	if (!force_reload) // sampleindex file was ok
 	{
 		// Look for new folders and missing files
-		startup_state = ORANGE;
+		// startup_state = ORANGE;
+		flags.set(Flag::StartupLoadingIndex);
 
 		// Update the list of banks that are enabled
 		// Banks with no file_found will be disabled (but filenames will be preserved, for use in
@@ -114,7 +115,8 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	{
 
 		// Ignore index and create new banks from disk:
-		startup_state = WHITE;
+		// startup_state = WHITE;
+		flags.set(Flag::StartupNewIndex);
 
 		// First pass: load all the banks that have default folder names
 		load_banks_by_default_colors();
@@ -137,16 +139,19 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 	// WRITE INDEX FILE
 	startup_state = LEDPalette::MAGENTA;
+	flags.set(Flag::StartupWritingIndex);
 	res = index.write_sampleindex_file();
 	if (res != FR_OK)
 		return FR_OK;
 
 	// WRITE SAMPLE LIST HTML FILE
 	startup_state = LEDPalette::LAVENDER;
+	flags.set(Flag::StartupWritingHTML);
 	res = index.write_samplelist();
 
 	// Done re-indexing (buttons are normal)
 	startup_state = LEDPalette::OFF;
+	flags.set(Flag::StartupDone);
 
 	// check if there was an error writing to index file
 	// ToDo: push this to error log

@@ -29,7 +29,8 @@
 #pragma once
 #include "bank.hh"
 #include "ff.h"
-#include "lut/LED_palette.h"
+#include "flags.hh"
+#include "palette.hh"
 #include "sample_file.hh"
 #include "sdcard.hh"
 #include "sts_sampleindex.hh"
@@ -48,11 +49,12 @@ namespace SamplerKit
 
 struct SampleIndexLoader {
 
-	SampleIndexLoader(Sdcard &sd, SampleList &samples, BankManager &banks)
+	SampleIndexLoader(Sdcard &sd, SampleList &samples, BankManager &banks, Flags &flags)
 		: sd{sd}
 		, samples{samples}
 		, banks{banks}
-		, index{samples} {}
+		, index{samples}
+		, flags{flags} {}
 
 	uint8_t new_filename(uint8_t bank, uint8_t sample_num, char *path);
 
@@ -74,6 +76,7 @@ private:
 	SampleList &samples;
 	BankManager &banks;
 	SampleIndex index;
+	Flags &flags;
 	LEDPalette startup_state;
 
 	void load_empty_slots();

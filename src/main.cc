@@ -41,6 +41,8 @@ void main() {
 
 	Flags flags;
 	Params params{controls, flags, system_calibrations};
+	Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
+	params_update_task.start();
 
 	UserSettingsStorage settings_storage{params.settings, sd};
 
@@ -54,8 +56,6 @@ void main() {
 	Sampler sampler{params, flags, sd, banks};
 	AudioStream audio_stream([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.audio.update(in, out); });
 
-	Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
-	params_update_task.start();
 	sampler.start();
 	audio_stream.start();
 

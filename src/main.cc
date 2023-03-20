@@ -27,7 +27,6 @@ void main() {
 	using AudioOutBlock = AudioStreamConf::AudioOutBlock;
 
 	Controls controls;
-
 	if (Board::PlayButton::PinT::read() && Board::RevButton::PinT::read()) {
 		HWTests::run(controls);
 	}
@@ -39,12 +38,13 @@ void main() {
 	Sdcard sd;
 	sd.reload_disk();
 
+	UserSettingsStorage settings_storage{sd};
+
 	Flags flags;
-	Params params{controls, flags, system_calibrations};
+	Params params{controls, flags, system_calibrations, settings_storage.settings};
+
 	Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
 	params_update_task.start();
-
-	UserSettingsStorage settings_storage{params.settings, sd};
 
 	// Load sample index file (map files to sample slots and banks)
 	SampleList samples;
@@ -62,6 +62,8 @@ void main() {
 	// Trig Jack(TIM5)? 12kHz
 	while (true) {
 		sampler.update();
+
+		// settings_storage.handle_events();
 
 		__NOP();
 	}

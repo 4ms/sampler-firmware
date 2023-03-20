@@ -25,6 +25,7 @@ struct Params {
 	Controls &controls;
 	Flags &flags;
 	CalibrationStorage &system_calibrations;
+	UserSettings &settings;
 
 	// i_param[]:
 	uint32_t bank = 0;
@@ -50,14 +51,15 @@ struct Params {
 
 	uint32_t play_trig_timestamp = 0;
 
-	UserSettings settings;
 	OperationMode op_mode = OperationMode::Normal;
 
-	Params(Controls &controls, Flags &flags, CalibrationStorage &system_calibrations)
+	Params(Controls &controls, Flags &flags, CalibrationStorage &system_calibrations, UserSettings &settings)
 		: controls{controls}
 		, flags{flags}
-		, system_calibrations{system_calibrations} {
-
+		, system_calibrations{system_calibrations}
+		, settings{settings} {
+		bank = settings.startup_bank;
+		// TODO: need BankManager to check if startup bank is enabled
 		controls.start();
 	}
 

@@ -7,8 +7,8 @@
 namespace SamplerKit
 {
 
-class UserSettingsStorage {
-	UserSettings &settings;
+struct UserSettingsStorage {
+	UserSettings settings;
 	Sdcard &sd;
 
 	enum Settings {
@@ -29,10 +29,8 @@ class UserSettingsStorage {
 		AutoIncRecSlot,
 	};
 
-public:
-	UserSettingsStorage(UserSettings &settings, Sdcard &sd)
-		: settings{settings}
-		, sd{sd} {
+	UserSettingsStorage(Sdcard &sd)
+		: sd{sd} {
 		set_default_user_settings();
 		read_user_settings();
 		settings.update_timing_calcs();

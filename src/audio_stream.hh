@@ -4,6 +4,7 @@
 #include "conf/codec_conf.hh"
 #include "conf/rcc_conf.hh"
 // #include "drivers/callable.hh"
+#include "debug.hh"
 #include "drivers/codec_PCM3060.hh"
 #include "drivers/i2c.hh"
 #include <functional>
@@ -49,7 +50,9 @@ private:
 	AudioProcessFunction _process_func;
 	template<uint32_t buffer_half>
 	void _process() {
+		Debug::Pin3::high();
 		_process_func(audio_in_dma_buffer[1 - buffer_half], audio_out_dma_buffer[buffer_half]);
+		Debug::Pin3::low();
 	}
 };
 

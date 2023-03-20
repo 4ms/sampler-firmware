@@ -22,8 +22,9 @@ class SamplerModes {
 	SampleList &samples;
 	BankManager &banks;
 
-	static const inline uint32_t PLAY_BUFF_START = Board::MemoryStartAddr;
-	static constexpr uint32_t PLAY_BUFF_SLOT_SIZE = 0x0012'0000; // 1.15MB
+	// static const inline uint32_t PLAY_BUFF_START = Board::MemoryStartAddr;
+	// static const inline uint32_t PLAY_BUFF_SLOT_SIZE = Board::MemorySizeBytes / NumSamplesPerBank / 2;
+	// 0x0006'0000; //
 
 	float env_level;
 	float env_rate = 0.f;
@@ -86,10 +87,11 @@ public:
 
 		Memory::clear();
 		// TODO: init_recbuff();
+		const auto slot_size = Brain::MemorySizeBytes / NumSamplesPerBank / 2;
 		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
-			play_buff[i].min = PLAY_BUFF_START + (i * PLAY_BUFF_SLOT_SIZE);
-			play_buff[i].max = play_buff[i].min + PLAY_BUFF_SLOT_SIZE;
-			play_buff[i].size = PLAY_BUFF_SLOT_SIZE;
+			play_buff[i].min = Brain::MemoryStartAddr + (i * slot_size);
+			play_buff[i].max = play_buff[i].min + slot_size;
+			play_buff[i].size = slot_size;
 
 			play_buff[i].in = play_buff[i].min;
 			play_buff[i].out = play_buff[i].min;

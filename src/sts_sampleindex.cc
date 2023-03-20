@@ -34,6 +34,12 @@
 namespace SamplerKit
 {
 
+// static void pr_dbg(...) {}
+template<typename... Ts>
+static void pr_dbg(Ts... args) {
+	printf_(args...);
+}
+
 #define ALL_BANKS MaxNumBanks
 
 #define SAMPLE_SLOT 1
@@ -417,8 +423,12 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 	}
 
 	res = f_open(&temp_file, full_path, FA_READ);
-	if (res != FR_OK)
+	if (res != FR_OK) {
+		pr_dbg("Index file not found: %255s\n", full_path);
 		return FR_NO_FILE; // file not found
+	}
+
+	pr_dbg("Using index file: %255s\n", full_path);
 
 	// Read File
 	while (!f_eof(&temp_file)) // until we reach the eof
@@ -428,15 +438,18 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 			read_buffer[str_len(read_buffer) - 1] = 0; // Remove \n from buffer (mac)
 		if (read_buffer[str_len(read_buffer) - 1] == '\r')
 			read_buffer[str_len(read_buffer) - 1] = 0; // Remove \r from end of buffer as needed (PC)
-		if (str_found(read_buffer, EOF_TAG))
+		if (str_found(read_buffer, EOF_TAG)) {
+			pr_dbg("End of File\n");
 			break; // Check if it's the end of the file
-		if ((read_name < 1) && (load_data == 0))
-			str_tok(read_buffer,
-					' ',
-					token); // tokenize at space if we're not trying to read_name which is both [reading name] and
-							// [reading play  data] cases
-		else
-			str_cpy(token, read_buffer);					// otherwise, copy read buffer into token
+		}
+		if ((read_name < 1) && (load_data == 0)) {
+			str_tok(read_buffer, ' ', token);
+			// tokenize at space if we're not trying to read_name which is both [reading name] and
+			// [reading play  data] cases
+		} else
+			str_cpy(token, read_buffer); // otherwise, copy read buffer into token
+
+		pr_dbg("Token: %s\n", token);
 		separator = str_cmp(token, "--------------------"); // set separator value
 
 		// Read full line from file
@@ -455,6 +468,7 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 				else if (!separator && arm_bank)
 				{
 					cur_bank = color_to_bank(token); // define bank number
+					pr_dbg("Processing bank: %12s, %d\n", token, cur_bank);
 					if (banks != MaxNumBanks) {
 						if (banks != cur_bank)
 							skip_cur_bank = 1;
@@ -488,6 +502,7 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 
 				// save file name
 				str_cpy(file_name, token);
+				pr_dbg("Filename: %255s\n", file_name);
 
 				// move on to reading data only if file name is valid
 				if (file_name[0] != '-') {
@@ -546,22 +561,23 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 							}
 							if (res == FR_OK) // file found
 							{
+								pr_dbg("File found: %255s\n", full_path);
 								if (!invalid_banknum) // Sanity check: cur_bank must be within range
 								{
 									str_cpy(samples[cur_bank][cur_sample].filename,
 											full_path);		  // open file_name (not read_buffer)
 									sample_was_loaded = true; // At least a sample was loaded
-									head_load =
-										load_sample_header(&samples[cur_bank][cur_sample],
-														   &temp_wav_file); // load sample information from .wav header
-									f_close(&temp_wav_file);				// close wav file
+									head_load = load_sample_header(&samples[cur_bank][cur_sample], &temp_wav_file);
+									f_close(&temp_wav_file); // close wav file
 									if (head_load != FR_OK) {
 										load_data = 0;
 										read_name = 1;
+										pr_dbg("Failed to load\n");
 										break;
 									} // if header information couldn't load, treat file as if it couldn'tbe found
 									else
 									{
+										pr_dbg("Loaded OK\n");
 										samples[cur_bank][cur_sample].file_found = 1;
 										load_data = PLAY_START;
 									} // othewise set file as found and move on to next play data
@@ -573,10 +589,11 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 								}					 // exit if cur_bank out of range
 							} else if (res != FR_OK) // file not found
 							{
+								pr_dbg("File not found: %255s\n", full_path);
 								if (!invalid_banknum) {
-									str_cpy(samples[cur_bank][cur_sample].filename,
-											full_path); // Copy the file name into the sample struct element - This is
-														// used to find the missing file, or other files in its folder
+									str_cpy(samples[cur_bank][cur_sample].filename, full_path);
+									// Copy the file name into the sample struct element - This is
+									// used to find the missing file, or other files in its folder
 									samples[cur_bank][cur_sample].file_found = 0; // Mark file as not found
 								} else {
 									f_close(&temp_wav_file);

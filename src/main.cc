@@ -49,8 +49,7 @@ void main() {
 	// Load sample index file (map files to sample slots and banks)
 	SampleList samples;
 	BankManager banks{samples};
-	// TODO: show progress of loading sample index: use flags?
-	SampleIndexLoader index_loader{sd, samples, banks};
+	SampleIndexLoader index_loader{sd, samples, banks, flags};
 	index_loader.load_all_banks();
 
 	Sampler sampler{params, flags, sd, banks};

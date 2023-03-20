@@ -2,7 +2,7 @@
 #include "sampler_audio.hh"
 #include "sampler_loader.hh"
 #include "sampler_modes.hh"
-#pragma once
+
 namespace SamplerKit
 {
 

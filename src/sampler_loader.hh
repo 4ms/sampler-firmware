@@ -305,7 +305,7 @@ public:
 			if ((s.is_buffered_to_file_end[samplenum] || s.play_buff_bufferedamt[samplenum] >= pre_buff_size) &&
 				s.play_state == SamplerModes::PREBUFFERING)
 			{
-				// FIXME: need to set env_level to 0 here... can we do it in audio when it first sees PLAY_FADEUP?
+				flags.set(Flag::StartFadeUp);
 				//  env_level = 0.f;
 				if (params.length <= 0.5f)
 					s.play_state = params.reverse ? SamplerModes::PLAYING_PERC : SamplerModes::PERC_FADEUP;
@@ -363,7 +363,7 @@ public:
 							s.play_state = SamplerModes::REV_PERC_FADEDOWN;
 						else {
 							s.play_state = SamplerModes::PLAY_FADEDOWN;
-							// FIXME: set to 1
+							flags.set(Flag::StartFadeDown);
 							// env_level = 1.f;
 						}
 
@@ -389,7 +389,7 @@ public:
 							s.play_state = SamplerModes::REV_PERC_FADEDOWN;
 						else {
 							s.play_state = SamplerModes::PLAY_FADEDOWN;
-							// FIXME: set to 1
+							flags.set(Flag::StartFadeDown);
 							// env_level = 1.f;
 						}
 					}
@@ -403,7 +403,7 @@ public:
 								s.play_state = SamplerModes::REV_PERC_FADEDOWN;
 							else {
 								s.play_state = SamplerModes::PLAY_FADEDOWN;
-								// FIXME: set to 1
+								flags.set(Flag::StartFadeDown);
 								// env_level = 1.f;
 							}
 						}

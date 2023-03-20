@@ -183,6 +183,10 @@ public:
 		int i;
 		float env;
 
+		if (flags.take(Flag::StartFadeUp))
+			env_level = 0.f;
+		if (flags.take(Flag::StartFadeDown))
+			env_level = 1.f;
 		uint8_t samplenum = params.sample_num_now_playing;
 		uint8_t banknum = params.sample_bank_now_playing;
 		Sample *s_sample = &(samples[banknum][samplenum]);

@@ -22,6 +22,9 @@ enum class Flag : uint32_t {
 	PlaySampleChanged,
 	PlaySampleChangedValid,
 	PlaySampleChangedEmpty,
+
+	StartFadeUp,   // env_level => 0
+	StartFadeDown, // env_level => 1
 	NUM_FLAGS
 };
 

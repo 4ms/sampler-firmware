@@ -125,7 +125,6 @@ function(create_target target)
     ${root}/src/sts_sampleindex.cc
     ${root}/src/bank_util.cc
     ${root}/src/bank.cc
-    ${root}/src/resample.cc
     # Printf:
     ${root}/lib/printf/printf.c
     # FatFS:

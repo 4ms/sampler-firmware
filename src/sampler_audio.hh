@@ -116,15 +116,15 @@ public:
 
 			if (s_sample.numChannels == 2) {
 				uint32_t t_u32 = play_buff[samplenum].out;
-				resample_read16_left(rs, &play_buff[samplenum], outL.size(), 4, outL.data(), params.reverse, flush);
+				resample_read<WavChan::Left>(rs, &play_buff[samplenum], outL, params.reverse, flush);
 
 				play_buff[samplenum].out = t_u32;
-				resample_read16_right(rs, &play_buff[samplenum], outR.size(), 4, outR.data(), params.reverse, flush);
+				resample_read<WavChan::Right>(rs, &play_buff[samplenum], outR, params.reverse, flush);
 
 			} else {
 				// MONO: read left channel and copy to right
 				bool flush = flags.read(Flag::PlayBuffDiscontinuity);
-				resample_read16_left(rs, &play_buff[samplenum], outL.size(), 2, outL.data(), params.reverse, flush);
+				resample_read<WavChan::Mono>(rs, &play_buff[samplenum], outL, params.reverse, flush);
 				for (unsigned i = 0; i < outL.size(); i++)
 					outR[i] = outL[i];
 			}
@@ -133,9 +133,9 @@ public:
 				rs = MAX_RS;
 
 			if (s_sample.numChannels == 2)
-				resample_read16_avg(rs, &play_buff[samplenum], outL.size(), 4, outL.data(), params.reverse, flush);
+				resample_read<WavChan::Average>(rs, &play_buff[samplenum], outL, params.reverse, flush);
 			else
-				resample_read16_left(rs, &play_buff[samplenum], outL.size(), 2, outL.data(), params.reverse, flush);
+				resample_read<WavChan::Mono>(rs, &play_buff[samplenum], outL, params.reverse, flush);
 		}
 
 		// TODO: if writing a flag gets expensive, then we could refactor this

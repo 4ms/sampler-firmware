@@ -25,6 +25,7 @@ struct System {
 		Console::init();
 
 		__HAL_DBGMCU_FREEZE_TIM6();
+		__HAL_DBGMCU_FREEZE_TIM7();
 	}
 };
 

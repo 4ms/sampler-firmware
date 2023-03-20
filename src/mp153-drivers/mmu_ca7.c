@@ -107,7 +107,9 @@ void MMU_CreateTranslationTable(void) {
 
 	// ROM should be Cod (RO), but that seems to interfere with debugger loading an elf file, so setting it to Normal:
 	// Todo: Investigate this
-	MMU_TTSection(TTB_BASE, A7_CODE, A7_CODE_SZ / 0x100000, Sect_Normal);
+	uint32_t aligned_a7_code_start = A7_CODE & 0xFFFFFF00;
+	uint32_t aligned_a7_code_size = A7_CODE_END - aligned_a7_code_start;
+	MMU_TTSection(TTB_BASE, aligned_a7_code_start, aligned_a7_code_size / 0x100000, Sect_Normal);
 
 	MMU_TTSection(TTB_BASE, A7_RAM, A7_RAM_SZ / 0x100000, Sect_Normal_RW);
 	// MMU_TTSection(TTB_BASE, __RAM2_BASE, __RAM2_SZ / 0x100000, Sect_Normal_RW);

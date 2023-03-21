@@ -77,7 +77,6 @@ private:
 	BankManager &banks;
 	SampleIndex index;
 	Flags &flags;
-	LEDPalette startup_state;
 
 	void load_empty_slots();
 };

@@ -4,13 +4,14 @@
 #include "controls.hh"
 #include "elements.hh"
 #include "flags.hh"
-#include "lut/LED_palette.h"
 #include "lut/pitch_pot_lut.h"
+#include "palette.hh"
 #include "sample_file.hh"
 #include "sample_pot_detents.hh"
 #include "settings.hh"
 #include "timing_calcs.hh"
 #include "tuning_calcs.hh"
+#include "util/colors.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
 
@@ -300,6 +301,8 @@ private:
 		static uint32_t last_bank = 0;
 		if (last_bank != bank) {
 			last_bank = bank;
+			controls.bank_led.set_color(BankColors[bank % 10]);
+			// TODO: flash bank LED
 		}
 		if (flags.take(Flag::StartupLoadingIndex))
 			controls.bank_led.breathe(Colors::orange, 1);

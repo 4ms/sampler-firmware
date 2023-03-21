@@ -8,10 +8,11 @@ struct Disabled {
 	static void low() {}
 };
 
-using Pin0 = Disabled;
-using Pin1 = mdrivlib::FPin<Brain::Pin::Debug1.gpio, Brain::Pin::Debug1.pin>;
-using Pin2 = mdrivlib::FPin<Brain::Pin::Debug2.gpio, Brain::Pin::Debug2.pin>;
-using Pin3 = mdrivlib::FPin<Brain::Pin::Debug3.gpio, Brain::Pin::Debug3.pin>;
+// using Pin0 = Disabled;
+using Pin0 = mdrivlib::FPin<Brain::Pin::Debug1.gpio, Brain::Pin::Debug1.pin>;
+using Pin1 = mdrivlib::FPin<Brain::Pin::Debug2.gpio, Brain::Pin::Debug2.pin>;
+using Pin2 = mdrivlib::FPin<Brain::Pin::Debug3.gpio, Brain::Pin::Debug3.pin>;
+using Pin3 = Disabled;
 
 }; // namespace Debug
 

@@ -54,40 +54,7 @@ static void pr_dbg(...) {}
 // 	printf_(args...);
 // }
 
-// TODO get a param that lets us set the LED color. StartupState?
 uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
-	/*
-	 * Startup procedure: All button LEDs turn colors to indicate present operation:
-	 * Load index file: WHITE
-	 * Look for missing files and new folders: YELLOW
-	 * --Or: No index found, create all new banks from folders: BLUE
-	 * Write index file: RED
-	 * Write html file: ORANGE
-	 * Done: OFF
-	 */
-
-	// TODO: Show firmware version on startup, not from in load_all_banks()
-	//  Load the index file:
-	//  if (FW_MINOR_VERSION == 0)
-	//  	flags[RewriteIndex] = YELLOW;
-	//  else if (FW_MINOR_VERSION == 1)
-	//  	flags[RewriteIndex] = GREEN;
-	//  else if (FW_MINOR_VERSION == 2)
-	//  	flags[RewriteIndex] = CYAN;
-	//  else if (FW_MINOR_VERSION == 3)
-	//  	flags[RewriteIndex] = BLUE;
-	//  else if (FW_MINOR_VERSION == 4)
-	//  	flags[RewriteIndex] = PINK;
-	//  else if (FW_MINOR_VERSION == 5)
-	//  	flags[RewriteIndex] = RED;
-	//  else if (FW_MINOR_VERSION == 6)
-	//  	flags[RewriteIndex] = ORANGE;
-	//  else if (FW_MINOR_VERSION == 7)
-	//  	flags[RewriteIndex] = AQUA;
-	//  else if (FW_MINOR_VERSION == 8)
-	//  	flags[RewriteIndex] = DIM_RED;
-	//  else if (FW_MINOR_VERSION == 9)
-	//  	flags[RewriteIndex] = CYANER;
 
 	// Load the index file, marking files found or not found with samples[][].file_found = 1/0;
 	if (!force_reload)

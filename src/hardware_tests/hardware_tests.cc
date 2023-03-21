@@ -100,6 +100,8 @@ void run(Controls &controls) {
 
 	//////////////////////////////
 	print_test_name("Pot and CV jack Test");
+	controls.start();
+
 	printf_("Turn each pot from low to high to center\n");
 	printf_("After the pots, patch Out L into Pitch CV (bi-polar CV)\n");
 	printf_("Then patch Out R into the other CV jacks (uni-polar CV)\n");

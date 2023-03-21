@@ -47,3 +47,16 @@ constexpr uint32_t LED_PALETTE[][3] = {
 	{150, 0, 0}		  // MED_RED
 
 };
+
+constexpr Color BankColors[] = {
+	Colors::white,
+	Colors::red,
+	Colors::orange,
+	Colors::yellow,
+	Colors::green,
+	Colors::cyan,
+	Colors::blue,
+	Colors::magenta,
+	Colors::purple,
+	Colors::grey,
+};

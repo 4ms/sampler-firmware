@@ -241,9 +241,16 @@ private:
 		if (controls.play_button.is_just_pressed()) {
 			if (!looping)
 				flags.set(Flag::PlayBut);
+			// else???
 		}
+
 		if (controls.play_button.is_pressed()) {
-			// press ocunt
+			if (controls.play_button.how_long_held() > (Board::ParamUpdateHz / 2)) // 0.5 sec
+			{
+				flags.set(Flag::ToggleLooping);
+				// TODO: is it OK that looping will toggle every 0.5s if we hold Play?
+				controls.play_button.reset_hold_ctr();
+		}
 		}
 
 		if (controls.rev_button.just_went_low()) {

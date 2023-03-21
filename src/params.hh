@@ -253,13 +253,15 @@ private:
 		}
 		}
 
-		if (controls.rev_button.just_went_low()) {
+		if (controls.rev_button.is_just_released()) {
 			// latch the Rev+Pot pot values
 		}
 
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
 				// TODO: handle change bank
+				// Set flag for SamplerModes to handle?
+				// Or we need BankManager in Params
 			}
 
 			ignore_bank_release = false;

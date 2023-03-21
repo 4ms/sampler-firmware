@@ -89,8 +89,7 @@ public:
 	void play_audio_from_buffer(ChanBuff &outL, ChanBuff &outR) {
 
 		// Fill buffer with silence and return if we're not playing
-		if (sampler_modes.play_state == SamplerModes::PREBUFFERING || sampler_modes.play_state == SamplerModes::SILENT)
-		{
+		if (params.play_state == PlayStates::PREBUFFERING || params.play_state == PlayStates::SILENT) {
 			for (auto [L, R] : zip(outL, outR)) {
 				L = 0;
 				R = 0;
@@ -227,8 +226,8 @@ public:
 												params.settings.fade_down_rate :
 												fast_perc_fade_rate;
 
-		switch (sampler_modes.play_state) {
-			case (SamplerModes::RETRIG_FADEDOWN):
+		switch (params.play_state) {
+			case (PlayStates::RETRIG_FADEDOWN):
 				// DEBUG0_ON;
 				env_rate =
 					params.settings.fadeupdown_env ? fast_retrig_fade_rate : (1.0f / (float)AudioStreamConf::BlockSize);
@@ -242,24 +241,24 @@ public:
 					if (!flags.read(Flag::PlayTrigDelaying))
 						flags.set(Flag::PlayBut);
 
-					sampler_modes.play_state = SamplerModes::SILENT;
+					params.play_state = PlayStates::SILENT;
 				}
 				break;
 
-			case (SamplerModes::PLAY_FADEUP):
+			case (PlayStates::PLAY_FADEUP):
 				if (params.settings.fadeupdown_env) {
 					env_rate = params.settings.fade_up_rate;
 					env_level = fade(outL, outR, gain, env_level, env_rate);
 					if (env_level >= 1.f)
-						sampler_modes.play_state = SamplerModes::PLAYING;
+						params.play_state = PlayStates::PLAYING;
 
 				} else {
 					apply_gain(outL, outR, gain);
-					sampler_modes.play_state = SamplerModes::PLAYING;
+					params.play_state = PlayStates::PLAYING;
 				}
 				break;
 
-			case (SamplerModes::PERC_FADEUP):
+			case (PlayStates::PERC_FADEUP):
 				env_rate = fast_perc_fade_rate;
 				if (params.settings.perc_env) {
 					env_level = fade(outL, outR, gain, env_level, env_rate);
@@ -269,18 +268,18 @@ public:
 					env_level += env_rate * AudioStreamConf::BlockSize;
 				}
 				if (env_level >= 1.f) {
-					sampler_modes.play_state = SamplerModes::PLAYING_PERC;
+					params.play_state = PlayStates::PLAYING_PERC;
 					env_level = 1.f;
 				}
 				break;
 
-			case (SamplerModes::PLAYING):
+			case (PlayStates::PLAYING):
 				apply_gain(outL, outR, gain);
 				if (length <= 0.5f)
 					flags.set(Flag::ChangePlaytoPerc);
 				break;
 
-			case (SamplerModes::PLAY_FADEDOWN):
+			case (PlayStates::PLAY_FADEDOWN):
 				if (params.settings.fadeupdown_env) {
 					env_rate = params.settings.fade_down_rate;
 					env_level = fade(outL, outR, gain, env_level, -1.f * env_rate);
@@ -296,11 +295,11 @@ public:
 					if (params.looping && !flags.read(Flag::PlayTrigDelaying))
 						flags.set(Flag::PlayBut);
 
-					sampler_modes.play_state = SamplerModes::SILENT;
+					params.play_state = PlayStates::SILENT;
 				}
 				break;
 
-			case (SamplerModes::PLAYING_PERC):
+			case (PlayStates::PLAYING_PERC):
 				env_rate = (params.reverse ? 1.f : -1.f) / (length * PERC_ENV_FACTOR);
 				if (params.settings.perc_env) {
 					env_level = fade(outL, outR, gain, env_level, env_rate);
@@ -313,13 +312,13 @@ public:
 
 				// After fading up to full amplitude in a reverse percussive playback, fade back down to silence:
 				if ((env_level >= 1.0f) && (params.reverse)) {
-					sampler_modes.play_state = SamplerModes::REV_PERC_FADEDOWN;
+					params.play_state = PlayStates::REV_PERC_FADEDOWN;
 					env_level = 1.f;
 				} else
 					check_perc_ending();
 				break;
 
-			case (SamplerModes::REV_PERC_FADEDOWN):
+			case (PlayStates::REV_PERC_FADEDOWN):
 				// Fade down to silence before going to PAD_SILENCE mode or ending the playback
 				// (this prevents a click if the sample data itself doesn't cleanly fade out)
 				env_rate = -1.f * fast_perc_fade_rate;
@@ -333,12 +332,12 @@ public:
 				// If the end point is the end of the sample data (which happens if the file is very short, or if we're
 				// at the end of it) Then pad it with silence so we keep a constant End Out period when looping
 				if (env_level <= 0.f && sampler_modes.sample_file_endpos == s_sample->inst_end)
-					sampler_modes.play_state = SamplerModes::PAD_SILENCE;
+					params.play_state = PlayStates::PAD_SILENCE;
 				else
 					check_perc_ending();
 				break;
 
-			case (SamplerModes::PAD_SILENCE):
+			case (PlayStates::PAD_SILENCE):
 				for (i = 0; i < AudioStreamConf::BlockSize; i++) {
 					outL[i] = 0;
 					outR[i] = 0;
@@ -363,7 +362,7 @@ public:
 			if (params.looping && !flags.read(Flag::PlayTrigDelaying))
 				flags.set(Flag::PlayTrig);
 
-			sampler_modes.play_state = SamplerModes::SILENT;
+			params.play_state = PlayStates::SILENT;
 		}
 	}
 

@@ -72,8 +72,8 @@ public:
 		check_change_sample();
 		check_change_bank();
 
-		if ((s.play_state != SamplerModes::SILENT) && (s.play_state != SamplerModes::PLAY_FADEDOWN) &&
-			(s.play_state != SamplerModes::RETRIG_FADEDOWN))
+		if ((params.play_state != PlayStates::SILENT) && (params.play_state != PlayStates::PLAY_FADEDOWN) &&
+			(params.play_state != PlayStates::RETRIG_FADEDOWN))
 		{
 			samplenum = params.sample_num_now_playing;
 			banknum = params.sample_bank_now_playing;
@@ -90,7 +90,7 @@ public:
 				res = reload_sample_file(&s.fil[samplenum], s_sample, sd);
 				if (res != FR_OK) {
 					g_error |= FILE_OPEN_FAIL;
-					s.play_state = SamplerModes::SILENT;
+					params.play_state = PlayStates::SILENT;
 					return;
 				}
 
@@ -98,7 +98,7 @@ public:
 				if (res != FR_OK) {
 					g_error |= FILE_CANNOT_CREATE_CLTBL;
 					f_close(&s.fil[samplenum]);
-					s.play_state = SamplerModes::SILENT;
+					params.play_state = PlayStates::SILENT;
 					return;
 				}
 
@@ -132,16 +132,16 @@ public:
 				((play_buff[samplenum].size * 7) / 10)) // limit amount of buffering ahead to 70% of buffer size
 				active_buff_size = ((play_buff[samplenum].size * 7) / 10);
 
-			if (!s.is_buffered_to_file_end[samplenum] &&
-				((s.play_state == SamplerModes::PREBUFFERING && (s.play_buff_bufferedamt[samplenum] < pre_buff_size)) ||
-				 (s.play_state != SamplerModes::PREBUFFERING &&
-				  (s.play_buff_bufferedamt[samplenum] < active_buff_size))))
+			if (!s.is_buffered_to_file_end[samplenum] && ((params.play_state == PlayStates::PREBUFFERING &&
+														   (s.play_buff_bufferedamt[samplenum] < pre_buff_size)) ||
+														  (params.play_state != PlayStates::PREBUFFERING &&
+														   (s.play_buff_bufferedamt[samplenum] < active_buff_size))))
 			{
 				if (s.sample_file_curpos[samplenum] > s_sample->sampleSize) {
 					// We read too much data somehow
 					// TODO: When does this happen? sample_file_curpos has not changed recently...
 					g_error |= FILE_WAVEFORMATERR;
-					s.play_state = SamplerModes::SILENT;
+					params.play_state = PlayStates::SILENT;
 					s.start_playing();
 
 				} else if (s.sample_file_curpos[samplenum] > s_sample->inst_end) {
@@ -301,17 +301,17 @@ public:
 
 			// Check if we've prebuffered enough to start playing
 			if ((s.is_buffered_to_file_end[samplenum] || s.play_buff_bufferedamt[samplenum] >= pre_buff_size) &&
-				s.play_state == SamplerModes::PREBUFFERING)
+				params.play_state == PlayStates::PREBUFFERING)
 			{
 				flags.set(Flag::StartFadeUp);
 				//  env_level = 0.f;
 				if (params.length <= 0.5f)
-					s.play_state = params.reverse ? SamplerModes::PLAYING_PERC : SamplerModes::PERC_FADEUP;
+					params.play_state = params.reverse ? PlayStates::PLAYING_PERC : PlayStates::PERC_FADEUP;
 				else
-					s.play_state = SamplerModes::PLAY_FADEUP;
+					params.play_state = PlayStates::PLAY_FADEUP;
 			}
 
-		} // s.play_state != SILENT, FADEDOWN
+		} // params.play_state != SILENT, FADEDOWN
 	}
 
 	void check_change_bank() {
@@ -356,18 +356,18 @@ public:
 				if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always ||
 					(params.settings.auto_stop_on_sample_change == AutoStopMode::Looping && params.looping))
 				{
-					if (s.play_state != SamplerModes::SILENT && s.play_state != SamplerModes::PREBUFFERING) {
-						if (s.play_state == SamplerModes::PLAYING_PERC)
+					if (params.play_state != PlayStates::SILENT && params.play_state != PlayStates::PREBUFFERING) {
+						if (params.play_state == PlayStates::PLAYING_PERC)
 
-							s.play_state = SamplerModes::REV_PERC_FADEDOWN;
+							params.play_state = PlayStates::REV_PERC_FADEDOWN;
 						else {
-							s.play_state = SamplerModes::PLAY_FADEDOWN;
+							params.play_state = PlayStates::PLAY_FADEDOWN;
 							flags.set(Flag::StartFadeDown);
 							// env_level = 1.f;
 						}
 
 					} else
-						s.play_state = SamplerModes::SILENT;
+						params.play_state = PlayStates::SILENT;
 				}
 			} else {
 				// Sample found in this slot:
@@ -380,28 +380,28 @@ public:
 				flags.clear(Flag::PlaySampleChangedEmpty);
 
 				if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always) {
-					if (s.play_state == SamplerModes::SILENT && params.looping)
+					if (params.play_state == PlayStates::SILENT && params.looping)
 						flags.set(Flag::PlayBut);
 
-					if (s.play_state != SamplerModes::SILENT && s.play_state != SamplerModes::PREBUFFERING) {
-						if (s.play_state == SamplerModes::PLAYING_PERC)
-							s.play_state = SamplerModes::REV_PERC_FADEDOWN;
+					if (params.play_state != PlayStates::SILENT && params.play_state != PlayStates::PREBUFFERING) {
+						if (params.play_state == PlayStates::PLAYING_PERC)
+							params.play_state = PlayStates::REV_PERC_FADEDOWN;
 						else {
-							s.play_state = SamplerModes::PLAY_FADEDOWN;
+							params.play_state = PlayStates::PLAY_FADEDOWN;
 							flags.set(Flag::StartFadeDown);
 							// env_level = 1.f;
 						}
 					}
 				} else {
 					if (params.looping) {
-						if (s.play_state == SamplerModes::SILENT)
+						if (params.play_state == PlayStates::SILENT)
 							flags.set(Flag::PlayBut);
 
 						else if (params.settings.auto_stop_on_sample_change == AutoStopMode::Looping) {
-							if (s.play_state == SamplerModes::PLAYING_PERC)
-								s.play_state = SamplerModes::REV_PERC_FADEDOWN;
+							if (params.play_state == PlayStates::PLAYING_PERC)
+								params.play_state = PlayStates::REV_PERC_FADEDOWN;
 							else {
-								s.play_state = SamplerModes::PLAY_FADEDOWN;
+								params.play_state = PlayStates::PLAY_FADEDOWN;
 								flags.set(Flag::StartFadeDown);
 								// env_level = 1.f;
 							}

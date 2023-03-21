@@ -21,10 +21,8 @@ class SamplerModes {
 	Sdcard &sd;
 	SampleList &samples;
 	BankManager &banks;
-
-	// static const inline uint32_t PLAY_BUFF_START = Board::MemoryStartAddr;
-	// static const inline uint32_t PLAY_BUFF_SLOT_SIZE = Board::MemorySizeBytes / NumSamplesPerBank / 2;
-	// 0x0006'0000; //
+	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
+	uint32_t &g_error;
 
 	float env_level;
 	float env_rate = 0.f;
@@ -32,22 +30,6 @@ class SamplerModes {
 	uint32_t last_play_start_tmr;
 
 public:
-	// TODO: these are shared between all three Sampler classes
-	enum PlayStates {
-		SILENT,
-		PREBUFFERING,
-		PLAY_FADEUP,
-		PERC_FADEUP,
-		PLAYING,
-		PLAYING_PERC,
-		PLAY_FADEDOWN,
-		RETRIG_FADEDOWN,
-		REV_PERC_FADEDOWN,
-		PAD_SILENCE,
-	} play_state = SILENT;
-
-	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
-
 	// These are used in audio, but probably could move elsewhere
 	// file position where we began playback.
 	uint32_t sample_file_startpos;
@@ -60,12 +42,8 @@ public:
 	//////////////////
 	// TODO: These are shared between SampleLoader and SamplerModes
 	FIL fil[NumSamplesPerBank];
-
-	uint32_t &g_error;
-
-	Cache cache[NumSamplesPerBank]; // not audio
-
-	// 1 = file is totally cached (from inst_start to inst_end), otherwise 0
+	Cache cache[NumSamplesPerBank];
+	// Whether file is totally cached (from inst_start to inst_end)
 	bool is_buffered_to_file_end[NumSamplesPerBank];
 	uint32_t play_buff_bufferedamt[NumSamplesPerBank];
 	bool cached_rev_state[NumSamplesPerBank];
@@ -146,7 +124,7 @@ public:
 
 		if (flags.take(Flag::ToggleLooping)) {
 			params.looping = !params.looping;
-			if (params.looping && play_state == SILENT)
+			if (params.looping && params.play_state == PlayStates::SILENT)
 				// STS: was flags.set(Flag::PlayBut);
 				toggle_playing();
 		}
@@ -178,7 +156,7 @@ public:
 			res = reload_sample_file(&fil[samplenum], s_sample, sd);
 			if (res != FR_OK) {
 				g_error |= FILE_OPEN_FAIL;
-				play_state = SILENT;
+				params.play_state = PlayStates::SILENT;
 				return;
 			}
 
@@ -190,7 +168,7 @@ public:
 			{
 				g_error |= FILE_CANNOT_CREATE_CLTBL;
 				f_close(&fil[samplenum]);
-				play_state = SILENT;
+				params.play_state = PlayStates::SILENT;
 				return;
 			}
 
@@ -233,15 +211,15 @@ public:
 
 			env_level = 0.f;
 			if (params.length <= 0.5f)
-				play_state = params.reverse ? PLAYING_PERC : PERC_FADEUP;
+				params.play_state = params.reverse ? PlayStates::PLAYING_PERC : PlayStates::PERC_FADEUP;
 			else
-				play_state = PLAY_FADEUP;
+				params.play_state = PlayStates::PLAY_FADEUP;
 
 		} else {
 			//...otherwise, start buffering from scratch
 			// Set state to silent so we don't run play_audio_buffer(), which could result in a glitch since the
 			// playbuff and cache values are being changed
-			play_state = SILENT;
+			params.play_state = PlayStates::SILENT;
 			play_buff[samplenum].init();
 
 			// Seek to the file position where we will start reading
@@ -253,7 +231,7 @@ public:
 				res = reload_sample_file(&fil[samplenum], s_sample, sd);
 				if (res != FR_OK) {
 					g_error |= FILE_OPEN_FAIL;
-					play_state = SILENT;
+					params.play_state = PlayStates::SILENT;
 					return;
 				}
 
@@ -261,7 +239,7 @@ public:
 				if (res != FR_OK) {
 					g_error |= FILE_CANNOT_CREATE_CLTBL;
 					f_close(&fil[samplenum]);
-					play_state = SILENT;
+					params.play_state = PlayStates::SILENT;
 					return;
 				}
 
@@ -281,7 +259,7 @@ public:
 			cache[samplenum].size = (play_buff[samplenum].size >> 1) * s_sample->sampleByteSize;
 			is_buffered_to_file_end[samplenum] = 0;
 
-			play_state = PREBUFFERING;
+			params.play_state = PlayStates::PREBUFFERING;
 		}
 
 		// used by toggle_reverse() to see if we hit a reverse trigger right after a play trigger
@@ -311,8 +289,8 @@ public:
 	}
 
 	void check_sample_end() {
-		if (play_state == SamplerModes::PLAYING || play_state == SamplerModes::PLAY_FADEUP ||
-			play_state == SamplerModes::PLAYING_PERC || play_state == SamplerModes::PERC_FADEUP)
+		if (params.play_state == PlayStates::PLAYING || params.play_state == PlayStates::PLAY_FADEUP ||
+			params.play_state == PlayStates::PLAYING_PERC || params.play_state == PlayStates::PERC_FADEUP)
 		{
 			float length = params.length;
 			uint8_t samplenum = params.sample_num_now_playing;
@@ -349,11 +327,11 @@ public:
 			// We must start fading down at a point that depends on how long it takes to fade down
 
 			uint32_t fadedown_blocks = calc_perc_fadedown_blocks(length, (float)params.settings.record_sample_rate) + 1;
-			PlayStates fadedown_state = REV_PERC_FADEDOWN;
+			PlayStates fadedown_state = PlayStates::REV_PERC_FADEDOWN;
 
 			if (dist_to_end < (resampled_cache_size * fadedown_blocks)) {
-				play_state = fadedown_state;
-				if (play_state != PLAYING_PERC)
+				params.play_state = fadedown_state;
+				if (params.play_state != PlayStates::PLAYING_PERC)
 					flags.clear(Flag::ChangePlaytoPerc);
 			} else {
 				// Check if we are about to hit buffer underrun
@@ -363,7 +341,7 @@ public:
 					// buffer underrun: tried to read too much out. Try to recover!
 					g_error |= READ_BUFF1_UNDERRUN;
 					// check_errors();
-					play_state = PREBUFFERING;
+					params.play_state = PlayStates::PREBUFFERING;
 				}
 			}
 		}
@@ -407,8 +385,9 @@ private:
 	void toggle_reverse() {
 		uint8_t samplenum, banknum;
 
-		if (play_state == PLAYING || play_state == PLAYING_PERC || play_state == PREBUFFERING ||
-			play_state == PLAY_FADEUP || play_state == PERC_FADEUP)
+		if (params.play_state == PlayStates::PLAYING || params.play_state == PlayStates::PLAYING_PERC ||
+			params.play_state == PlayStates::PREBUFFERING || params.play_state == PlayStates::PLAY_FADEUP ||
+			params.play_state == PlayStates::PERC_FADEUP)
 		{
 			samplenum = params.sample_num_now_playing;
 			banknum = params.sample_bank_now_playing;
@@ -418,15 +397,15 @@ private:
 		}
 
 		// Prevent issues if playback interrupts this routine
-		PlayStates tplay_state = play_state;
-		play_state = SILENT;
+		PlayStates tplay_state = params.play_state;
+		params.play_state = PlayStates::SILENT;
 
 		// If we are PREBUFFERING or PLAY_FADEUP, then that means we just started playing.
 		// It could be the case a common trigger fired into PLAY and REV, but the PLAY trig was detected first
 		// So we actually want to make it play from the end of the sample rather than reverse direction from the current
 		// spot
-		if (tplay_state == PREBUFFERING || tplay_state == PLAY_FADEUP || tplay_state == PLAYING ||
-			tplay_state == PERC_FADEUP)
+		if (tplay_state == PlayStates::PREBUFFERING || tplay_state == PlayStates::PLAY_FADEUP ||
+			tplay_state == PlayStates::PLAYING || tplay_state == PlayStates::PERC_FADEUP)
 		{
 			// Handle a rev trig shortly after a play trig by playing as if the rev trig was first
 			if ((HAL_GetTick() - last_play_start_tmr) < (params.settings.record_sample_rate * 0.1f)) // 100ms
@@ -447,35 +426,36 @@ private:
 		reverse_file_positions(samplenum, banknum, params.reverse);
 		cached_rev_state[params.sample] = params.reverse;
 
-		// Restore play_state
-		play_state = tplay_state;
+		// Restore params.play_state
+		params.play_state = tplay_state;
 	}
 
 	void toggle_playing() {
 		// Start playing
-		if (play_state == SILENT || play_state == PLAY_FADEDOWN || play_state == RETRIG_FADEDOWN ||
-			play_state == PREBUFFERING || play_state == PLAY_FADEUP || play_state == PERC_FADEUP)
+		if (params.play_state == PlayStates::SILENT || params.play_state == PlayStates::PLAY_FADEDOWN ||
+			params.play_state == PlayStates::RETRIG_FADEDOWN || params.play_state == PlayStates::PREBUFFERING ||
+			params.play_state == PlayStates::PLAY_FADEUP || params.play_state == PlayStates::PERC_FADEUP)
 		{
 			start_playing();
 		}
 
 		// Stop it if we're playing a full sample
-		else if (play_state == PLAYING && params.length > 0.98f)
+		else if (params.play_state == PlayStates::PLAYING && params.length > 0.98f)
 		{
 			if (params.settings.length_full_start_stop) {
-				play_state = PLAY_FADEDOWN;
+				params.play_state = PlayStates::PLAY_FADEDOWN;
 				env_level = 1.f;
 			} else
-				play_state = RETRIG_FADEDOWN;
+				params.play_state = PlayStates::RETRIG_FADEDOWN;
 
 			// play_led_state = 0;
 		}
 
 		// Re-start if we have a short length
-		else if (play_state == PLAYING_PERC || play_state == PLAYING || play_state == PAD_SILENCE ||
-				 play_state == REV_PERC_FADEDOWN)
+		else if (params.play_state == PlayStates::PLAYING_PERC || params.play_state == PlayStates::PLAYING ||
+				 params.play_state == PlayStates::PAD_SILENCE || params.play_state == PlayStates::REV_PERC_FADEDOWN)
 		{
-			play_state = RETRIG_FADEDOWN;
+			params.play_state = PlayStates::RETRIG_FADEDOWN;
 			// play_led_state = 0;
 		}
 	}

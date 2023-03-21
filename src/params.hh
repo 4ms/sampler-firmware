@@ -16,6 +16,18 @@
 
 namespace SamplerKit
 {
+enum class PlayStates {
+	SILENT,
+	PREBUFFERING,
+	PLAY_FADEUP,
+	PERC_FADEUP,
+	PLAYING,
+	PLAYING_PERC,
+	PLAY_FADEDOWN,
+	RETRIG_FADEDOWN,
+	REV_PERC_FADEDOWN,
+	PAD_SILENCE,
+};
 
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
@@ -51,6 +63,7 @@ struct Params {
 
 	uint32_t play_trig_timestamp = 0;
 
+	PlayStates play_state = PlayStates::SILENT;
 	OperationMode op_mode = OperationMode::Normal;
 
 	Params(Controls &controls, Flags &flags, CalibrationStorage &system_calibrations, UserSettings &settings)
@@ -224,9 +237,12 @@ private:
 	void update_button_modes() {
 		// if (flags.take(Flag::SkipProcessButtons)) return;
 
-		if (controls.play_button.just_went_low()) {
+		if (controls.play_button.is_just_pressed()) {
 			if (!looping)
 				flags.set(Flag::PlayBut);
+		}
+		if (controls.play_button.is_pressed()) {
+			// press ocunt
 		}
 
 		if (controls.rev_button.just_went_low()) {
@@ -267,7 +283,18 @@ private:
 			controls.rev_led.set_color(reverse ? Colors::blue : Colors::off);
 		}
 
-		// TODO: Play LED
+		static auto last_play_state = PlayStates::SILENT;
+		if (last_play_state != play_state) {
+			last_play_state = play_state;
+
+			if (play_state == PlayStates::PLAYING)
+				controls.play_led.set_color(Colors::green);
+
+			if (play_state == PlayStates::SILENT)
+				controls.play_led.set_color(Colors::off);
+
+			// check flags for SampleChanged/Valid
+		}
 
 		// TODO: Bank LED
 		static uint32_t last_bank = 0;

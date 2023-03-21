@@ -22,9 +22,9 @@ using enum mdrivlib::PinMode;
 
 using namespace Brain;
 
-using PlayButton = mdrivlib::DebouncedSwitch<Pin::D12, Inverted>;
-using BankButton = mdrivlib::DebouncedSwitch<Pin::D6, Inverted>;
-using RevButton = mdrivlib::DebouncedSwitch<Pin::A6, Inverted>;
+using PlayButton = mdrivlib::DebouncedButton<Pin::D12, Inverted>;
+using BankButton = mdrivlib::DebouncedButton<Pin::D6, Inverted>;
+using RevButton = mdrivlib::DebouncedButton<Pin::A6, Inverted>;
 
 using PlayJack = mdrivlib::DebouncedPin<Pin::D13, Normal>;
 using RevJack = mdrivlib::DebouncedPin<Pin::D2, Normal>;

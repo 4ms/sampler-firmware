@@ -133,11 +133,11 @@ uint8_t BankManager::get_bank_path(uint8_t bank, char *path) {
 			// 	candidate_i++;
 			// }
 
-			return (1); // at least one slot is filled
+			return 1; // at least one slot is filled
 		}
 	}
 	path[0] = '\0';
-	return (0); // no slots are filled
+	return 0; // no slots are filled
 
 	// if (!candidate_i)
 	// {
@@ -175,7 +175,7 @@ uint8_t BankManager::find_filename_in_bank(uint8_t bank, const char *filename) {
 			return sample;
 	}
 
-	return (0xFF); // not found
+	return 0xFF; // not found
 }
 
 // Searches all banks for a filename
@@ -193,12 +193,12 @@ uint8_t BankManager::find_filename_in_all_banks(uint8_t bank, const char *filena
 
 	do {
 		if (find_filename_in_bank(bank, filename) != 0xFF)
-			return (bank);
+			return bank;
 
 		bank = next_enabled_bank(bank);
 	} while (bank != orig_bank);
 
-	return (0xFF); // not found
+	return 0xFF; // not found
 }
 
 ///
@@ -208,8 +208,8 @@ uint8_t BankManager::find_filename_in_all_banks(uint8_t bank, const char *filena
 uint8_t BankManager::next_bank(uint8_t bank) {
 	bank++;
 	if (bank >= MaxNumBanks)
-		return (0);
-	return (bank);
+		return 0;
+	return bank;
 }
 
 // Give a bank number, return the next enabled bank
@@ -225,10 +225,10 @@ uint8_t BankManager::next_enabled_bank(uint8_t bank) {
 		if (bank >= MaxNumBanks)
 			bank = 0;
 		if (bank == orig_bank)
-			return (0); // no banks are enabled -->> bail out and return the first bank
+			return 0; // no banks are enabled -->> bail out and return the first bank
 	} while (!bank_status[bank]);
 
-	return (bank);
+	return bank;
 }
 
 // Same as next_enabled_bank but acts as if there
@@ -238,10 +238,10 @@ uint8_t BankManager::next_enabled_bank_0xFF(uint8_t bank) {
 	do {
 		bank++;
 		if (bank >= MaxNumBanks)
-			return (0xFF);
+			return 0xFF;
 	} while (!bank_status[bank]);
 
-	return (bank);
+	return bank;
 }
 
 // Given a bank number, returns the previous enabled bank
@@ -258,10 +258,10 @@ uint8_t BankManager::prev_enabled_bank(uint8_t bank) {
 		else
 			bank--;
 		if (bank == orig_bank)
-			return (0); // no banks are enabled -->> bail out and return the first bank
+			return 0; // no banks are enabled -->> bail out and return the first bank
 	} while (!bank_status[bank]);
 
-	return (bank);
+	return bank;
 }
 
 // Same as prev_enabled_bank but acts as if there
@@ -272,11 +272,11 @@ uint8_t BankManager::prev_enabled_bank_0xFF(uint8_t bank) {
 		bank = MaxNumBanks;
 	do {
 		if (bank == 0)
-			return (0xFF);
+			return 0xFF;
 		bank -= 1;
 	} while (!bank_status[bank]);
 
-	return (bank);
+	return bank;
 }
 
 // Given a bank number, return the next disabled bank
@@ -291,10 +291,10 @@ uint8_t BankManager::next_disabled_bank(uint8_t bank) {
 		if (bank >= MaxNumBanks)
 			bank = 0;
 		if (bank == orig_bank)
-			return (0); // no banks are disabled -->> bail out and return the first bank
+			return 0; // no banks are disabled -->> bail out and return the first bank
 	} while (bank_status[bank]);
 
-	return (bank);
+	return bank;
 }
 
 // Given a bank number, return the previous disabled bank
@@ -311,10 +311,10 @@ uint8_t BankManager::prev_disabled_bank(uint8_t bank) {
 			bank = MaxNumBanks;
 		bank--;
 		if (bank == orig_bank)
-			return (bank); // no banks are disabled -->> bail out and return the same bank given
+			return bank; // no banks are disabled -->> bail out and return the same bank given
 	} while (!bank_status[bank]);
 
-	return (bank);
+	return bank;
 }
 
 // Go through all banks, and enable/disable each one:

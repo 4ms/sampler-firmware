@@ -1,5 +1,6 @@
 #pragma once
 #include "audio_stream_conf.hh"
+#include "bank.hh"
 #include "calibration_storage.hh"
 #include "controls.hh"
 #include "elements.hh"
@@ -39,6 +40,7 @@ struct Params {
 	Flags &flags;
 	CalibrationStorage &system_calibrations;
 	UserSettings &settings;
+	BankManager &banks;
 
 	// i_param[]:
 	uint32_t bank = 0;
@@ -67,13 +69,17 @@ struct Params {
 	PlayStates play_state = PlayStates::SILENT;
 	OperationMode op_mode = OperationMode::Normal;
 
-	Params(Controls &controls, Flags &flags, CalibrationStorage &system_calibrations, UserSettings &settings)
+	Params(Controls &controls,
+		   Flags &flags,
+		   CalibrationStorage &system_calibrations,
+		   UserSettings &settings,
+		   BankManager &banks)
 		: controls{controls}
 		, flags{flags}
 		, system_calibrations{system_calibrations}
-		, settings{settings} {
-		bank = settings.startup_bank;
-		// TODO: need BankManager to check if startup bank is enabled
+		, settings{settings}
+		, banks{banks} {
+
 		controls.start();
 	}
 
@@ -260,8 +266,10 @@ private:
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
 				// TODO: handle change bank
-				// Set flag for SamplerModes to handle?
-				// Or we need BankManager in Params
+				if (controls.rev_button.is_pressed())
+					bank = banks.next_enabled_bank(bank);
+				else
+					bank = banks.prev_enabled_bank(bank);
 			}
 
 			ignore_bank_release = false;
@@ -274,6 +282,7 @@ private:
 			if (!ignore_rev_release) {
 				// TODO:
 				//  flags.set_rev_changed();
+				flags.set(Flag::RevTrig);
 			}
 
 			ignore_rev_release = false;

@@ -41,14 +41,14 @@ void main() {
 	UserSettingsStorage settings_storage{sd};
 
 	Flags flags;
-	Params params{controls, flags, system_calibrations, settings_storage.settings};
+	SampleList samples;
+	BankManager banks{samples};
+	Params params{controls, flags, system_calibrations, settings_storage.settings, banks};
 
 	Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
 	params_update_task.start();
 
 	// Load sample index file (map files to sample slots and banks)
-	SampleList samples;
-	BankManager banks{samples};
 	SampleIndexLoader index_loader{sd, samples, banks, flags};
 	index_loader.load_all_banks();
 

@@ -430,6 +430,7 @@ private:
 		params.play_state = tplay_state;
 	}
 
+	// Button->toggle
 	void toggle_playing() {
 		// Start playing
 		if (params.play_state == PlayStates::SILENT || params.play_state == PlayStates::PLAY_FADEDOWN ||
@@ -451,7 +452,7 @@ private:
 			// play_led_state = 0;
 		}
 
-		// Re-start if we have a short length
+		// Re-start if we're not near full length
 		else if (params.play_state == PlayStates::PLAYING_PERC || params.play_state == PlayStates::PLAYING ||
 				 params.play_state == PlayStates::PAD_SILENCE || params.play_state == PlayStates::REV_PERC_FADEDOWN)
 		{
@@ -460,12 +461,26 @@ private:
 		}
 	}
 
+	// Trigger->start/restart
 	void start_restart_playing() {
-		//
+		// Start playing immediately if we have envelopes disabled for the mode that's playing, or we're not playing
+		if ((!params.settings.fadeupdown_env &&
+			 (params.play_state == PlayStates::PLAYING || params.play_state == PlayStates::PLAY_FADEDOWN)) ||
+			(!params.settings.perc_env && params.play_state == PlayStates::PLAYING_PERC) ||
+			params.play_state == PlayStates::SILENT || params.play_state == PlayStates::PREBUFFERING)
+		{
+			start_playing();
+		}
+
+		// Re-start if we're playing (and have envelopes enabled)
+		else
+		{
+			params.play_state = PlayStates::RETRIG_FADEDOWN;
+		}
 	}
 
 	void toggle_recording() {
-		//
+		// TODO: Recording
 	}
 
 	void init_changed_bank() {

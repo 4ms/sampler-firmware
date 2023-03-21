@@ -183,7 +183,7 @@ private:
 		} else
 			potval = pot.cur_val;
 
-		auto new_sample = detent_num_antihys(potval + cv_state[LengthCV].cur_val, sample);
+		auto new_sample = detent_num_antihys(potval + cv_state[SampleCV].cur_val, sample);
 		if (new_sample != sample) {
 			sample = new_sample;
 			flags.set(Flag::SampleChanged);

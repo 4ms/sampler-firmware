@@ -247,20 +247,21 @@ private:
 		if (controls.play_button.is_just_pressed()) {
 			if (!looping)
 				flags.set(Flag::PlayBut);
-			// else???
+		}
+
+		if (controls.play_button.is_just_released()) {
+			if (looping && !ignore_play_release) {
+				flags.set(Flag::PlayBut);
+			}
+			ignore_play_release = false;
 		}
 
 		if (controls.play_button.is_pressed()) {
-			if (controls.play_button.how_long_held() > (Board::ParamUpdateHz / 2)) // 0.5 sec
+			if (controls.play_button.how_long_held() == (Board::ParamUpdateHz / 2)) // 0.5 sec
 			{
 				flags.set(Flag::ToggleLooping);
-				// TODO: is it OK that looping will toggle every 0.5s if we hold Play?
-				controls.play_button.reset_hold_ctr();
+				ignore_play_release = true;
 			}
-		}
-
-		if (controls.rev_button.is_just_released()) {
-			// latch the Rev+Pot pot values
 		}
 
 		if (controls.bank_button.is_just_released()) {
@@ -296,33 +297,21 @@ private:
 
 	void update_leds() {
 
-		static bool last_rev = false;
-		if (last_rev != reverse) {
-			last_rev = reverse;
-			controls.rev_led.set_color(reverse ? Colors::blue : Colors::off);
-		}
+		Color rev_color;
+		rev_color = reverse ? Colors::blue : Colors::off;
 
-		static auto last_play_state = PlayStates::SILENT;
-		if (last_play_state != play_state) {
-			last_play_state = play_state;
+		Color play_color;
+		if (play_state != PlayStates::SILENT && play_state != PlayStates::PREBUFFERING) {
+			play_color = looping ? Colors::cyan : Colors::green;
+		} else
+			play_color = Colors::off;
 
-			if (play_state == PlayStates::PLAYING) {
-				controls.play_led.set_color(looping ? Colors::cyan : Colors::green);
-			}
+		// TODO: check flags for SampleChanged/Valid
 
-			if (play_state == PlayStates::SILENT)
-				controls.play_led.set_color(Colors::off);
+		Color bank_color;
+		bank_color = (BankColors[bank % 10]);
+		// TODO: flash bank LED
 
-			// check flags for SampleChanged/Valid
-		}
-
-		// TODO: Bank LED
-		static uint32_t last_bank = 0;
-		if (last_bank != bank) {
-			last_bank = bank;
-			controls.bank_led.set_color(BankColors[bank % 10]);
-			// TODO: flash bank LED
-		}
 		if (flags.take(Flag::StartupLoadingIndex))
 			controls.bank_led.breathe(Colors::orange, 1);
 
@@ -337,6 +326,20 @@ private:
 
 		if (flags.take(Flag::StartupDone))
 			controls.bank_led.reset_breathe();
+
+		// Output to the LEDs
+		if (last_play_color != play_color) {
+			last_play_color = play_color;
+			controls.play_led.set_base_color(play_color);
+		}
+		if (last_rev_color != rev_color) {
+			last_rev_color = rev_color;
+			controls.rev_led.set_base_color(rev_color);
+		}
+		if (last_bank_color != bank_color) {
+			last_bank_color = bank_color;
+			controls.bank_led.set_base_color(bank_color);
+		}
 	}
 
 private:
@@ -362,6 +365,11 @@ private:
 
 	bool ignore_bank_release = false;
 	bool ignore_rev_release = false;
+	bool ignore_play_release = false;
+
+	Color last_play_color = Colors::off;
+	Color last_rev_color = Colors::off;
+	Color last_bank_color = Colors::off;
 };
 
 constexpr auto ParamsSize = sizeof(Params);

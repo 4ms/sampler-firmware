@@ -45,15 +45,17 @@ void main() {
 	BankManager banks{samples};
 	Params params{controls, flags, system_calibrations, settings_storage.settings, banks};
 
-	Timekeeper params_update_task(Board::param_update_task_conf, [&params]() { params.update(); });
-	params_update_task.start();
-
 	// Load sample index file (map files to sample slots and banks)
 	SampleIndexLoader index_loader{sd, samples, banks, flags};
 	index_loader.load_all_banks();
 
 	Sampler sampler{params, flags, sd, banks};
-	AudioStream audio_stream([&sampler](const AudioInBlock &in, AudioOutBlock &out) { sampler.audio.update(in, out); });
+	AudioStream audio_stream([&sampler, &params](const AudioInBlock &in, AudioOutBlock &out) {
+		Debug::Pin0::high();
+		params.update();
+		sampler.audio.update(in, out);
+		Debug::Pin0::low();
+	});
 
 	sampler.start();
 	audio_stream.start();
@@ -62,7 +64,6 @@ void main() {
 	// Trig Jack(TIM5)? 12kHz
 	while (true) {
 		sampler.update();
-
 		// settings_storage.handle_events();
 
 		__NOP();

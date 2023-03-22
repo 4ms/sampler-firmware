@@ -54,6 +54,12 @@ static void pr_dbg(...) {}
 // 	printf_(args...);
 // }
 
+// static void pr_log(...) {}
+template<typename... Ts>
+static void pr_log(Ts... args) {
+	printf_(args...);
+}
+
 uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 	// Load the index file, marking files found or not found with samples[][].file_found = 1/0;
@@ -64,38 +70,47 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	FRESULT queue_valid;
 	if (!force_reload) // sampleindex file was ok
 	{
+		pr_log("Valid sample index found\n");
 		// Look for new folders and missing files
 		flags.set(Flag::StartupLoadingIndex);
 
 		// Update the list of banks that are enabled
 		// Banks with no file_found will be disabled (but filenames will be preserved, for use in
 		// load_missing_files)
+		pr_log("Checking for empty banks\n");
 		banks.check_enabled_banks();
 
 		// Check for new folders, and turn them into banks if possible
+		pr_log("Scanning new folders for samples\n");
 		load_new_folders();
 
 		// Check for files that have file_found==0
 		// Look for a file to fill this slot
+		pr_log("Looking for samples to replace missing files\n");
 		load_missing_files();
 
 		// Check for empty slots
+		pr_log("Looking for samples to fill empty slots\n");
 		load_empty_slots();
 	}
 
 	else // sampleindex file was not ok, or we requested to force a full reload from disk
 	{
+		pr_log("No valid sample index found, or reload was requested\n");
 
 		// Ignore index and create new banks from disk:
 		flags.set(Flag::StartupNewIndex);
 
 		// First pass: load all the banks that have default folder names
+		pr_log("Looking for dirs with color names\n");
 		load_banks_by_default_colors();
 
 		// Second pass: look for folders that start with a bank name, example "Red - My Samples/"
+		pr_log("Looking for dirs with color names and a number suffix\n");
 		load_banks_by_color_prefix();
 
 		// Third pass: go through all remaining folders and try to assign them to banks
+		pr_log("Looking for other dirs containing samples\n");
 		load_banks_with_noncolors();
 
 		banks.check_enabled_banks();
@@ -107,21 +122,27 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 	// Check for system dir
 	FRESULT res_sysdir = sd.check_sys_dir();
-	if (res_sysdir != FR_OK)
+	if (res_sysdir != FR_OK) {
+		flags.set(Flag::StartupDone);
 		return res_sysdir;
+	}
 
 	// WRITE INDEX FILE
+	pr_log("Writing sample index\n");
 	flags.set(Flag::StartupWritingIndex);
 	res = index.write_sampleindex_file();
-	if (res != FR_OK)
+	if (res != FR_OK) {
+		flags.set(Flag::StartupDone);
 		return FR_OK;
+	}
 
 	// WRITE SAMPLE LIST HTML FILE
+	pr_log("Writing HTML index\n");
 	flags.set(Flag::StartupWritingHTML);
 	res = index.write_samplelist();
 
-	// Done re-indexing (buttons are normal)
 	flags.set(Flag::StartupDone);
+	pr_log("Done!\n");
 
 	// check if there was an error writing to index file
 	// ToDo: push this to error log

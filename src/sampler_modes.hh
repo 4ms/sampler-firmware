@@ -65,7 +65,7 @@ public:
 
 		Memory::clear();
 		// TODO: init_recbuff();
-		const auto slot_size = Brain::MemorySizeBytes / NumSamplesPerBank / 2;
+		const auto slot_size = (Brain::MemorySizeBytes / NumSamplesPerBank / 2) & 0xFFFFF000; // align
 		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
 			play_buff[i].min = Brain::MemoryStartAddr + (i * slot_size);
 			play_buff[i].max = play_buff[i].min + slot_size;

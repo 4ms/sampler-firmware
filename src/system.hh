@@ -18,11 +18,11 @@ struct System {
 
 		SystemTarget::init();
 
+		Console::init();
 		Debug::Pin0{};
 		Debug::Pin1{};
 		Debug::Pin2{};
 		Debug::Pin3{};
-		Console::init();
 
 		__HAL_DBGMCU_FREEZE_TIM6();
 		__HAL_DBGMCU_FREEZE_TIM7();

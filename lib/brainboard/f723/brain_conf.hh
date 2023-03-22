@@ -9,16 +9,17 @@
 
 namespace Brain
 {
+constexpr bool DebugDisableAdcIRQ = false;
 
 // ADC Peripheral Conf:
-constexpr inline int16_t MinPotChange = 10;
+constexpr inline int16_t MinPotChange = DebugDisableAdcIRQ ? 30 : 10;
 constexpr inline int16_t MinCVChange = 10;
 constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_28Cycles;
 
 struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;
 	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_1;
-	static constexpr auto oversample = false;
+	static constexpr auto oversample = DebugDisableAdcIRQ ? true : false;
 	static constexpr auto clock_div = mdrivlib::AdcClockSourceDiv::APBClk_Div4;
 
 	static constexpr bool enable_end_of_sequence_isr = true;

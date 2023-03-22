@@ -318,11 +318,16 @@ private:
 		}
 
 		// Breathe / flash
-		if (flags.take(Flag::PlaySampleChangedValidBright))
-			controls.play_led.flash_once(Colors::red, 720000);
 
+		if (flags.take(Flag::PlaySampleChangedValid))
+			controls.play_led.flash_once_ms(Colors::white, 20);
+		if (flags.take(Flag::PlaySampleChangedValidBright))
+			controls.play_led.flash_once_ms(Colors::white, 120);
+
+		if (flags.take(Flag::PlaySampleChangedEmpty))
+			controls.play_led.flash_once_ms(Colors::red, 20);
 		if (flags.take(Flag::PlaySampleChangedEmptyBright))
-			controls.play_led.flash_once(Colors::white, 720000);
+			controls.play_led.flash_once_ms(Colors::red, 120);
 
 		if (flags.take(Flag::StartupLoadingIndex))
 			controls.bank_led.breathe(Colors::orange, 1);

@@ -14,15 +14,18 @@ namespace SamplerKit::HWTests
 struct TestADCs : IAdcChecker {
 	static constexpr AdcRangeCheckerBounds bounds{
 		.center_val = 2048,
-		.center_width = 20,
-		.center_check_counts = 1000,
+		.center_width = 10,
+		.center_check_counts = 10000,
 		.min_val = Brain::PotAdcConf::min_value,
-		.max_val = 4086,
+		.max_val = 4082,
 	};
 
 	uint32_t last_update = 0;
 
 	Controls &controls;
+
+	uint16_t window_min = 4095;
+	uint16_t window_max = 0;
 
 	static constexpr std::string_view pot_names[] = {"Pitch", "StartPos", "Length", "Sample"};
 	static constexpr std::string_view bi_cv_names[] = {"Pitch"};
@@ -44,8 +47,22 @@ struct TestADCs : IAdcChecker {
 		if (adctype == AdcType::UnipolarCV)
 			val = controls.read_cv(static_cast<CVAdcElement>(adc_i + 1));
 
-		if ((HAL_GetTick() - last_update) > 100) {
-			printf_("\x1b[0GMin: %4d  \tCur: %4d\tMax: %4d    ", get_last_min(), val, get_last_max());
+		if (val > window_max)
+			window_max = val;
+		if (val < window_min)
+			window_min = val;
+		if ((HAL_GetTick() - last_update) > 250) {
+			int32_t range = std::max(val - window_min, window_max - val);
+			// window_ctr = 0;
+			window_max = 0;
+			window_min = 4095;
+			printf_("\x1b[0GMin: %4d/%d  \tCur: %4d [range=%4d]\tMax: %4d/%d    ",
+					get_last_min(),
+					bounds.min_val,
+					val,
+					range,
+					get_last_max(),
+					bounds.max_val);
 			last_update = HAL_GetTick();
 		}
 		return val;

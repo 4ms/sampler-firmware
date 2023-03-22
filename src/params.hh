@@ -121,7 +121,7 @@ private:
 		// and the current CV value is stored into voct_latch_value
 		// After a delay, the latch is released and playback begins
 		// if (flags[LatchVoltOctCV] cvval = voct_latch_value; else
-		pitch_cv = MathTools::plateau<6, 2048>(cv_state[PitchCV].cur_val);
+		pitch_cv = MathTools::plateau<6, 2048>(4095 - cv_state[PitchCV].cur_val);
 
 		float compensated_pitch_cv =
 			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);

@@ -335,77 +335,74 @@ public:
 	}
 
 	void check_change_sample(void) {
-		if (flags.take(Flag::PlaySampleChanged)) {
-			if (s.cached_rev_state[params.sample] != params.reverse) {
-				s.reverse_file_positions(params.sample, params.bank, params.reverse);
-				s.cached_rev_state[params.sample] = params.reverse;
-			}
 
-			// FixMe: Clean up this logic:
-			// no file: fadedown or remain silent
-			if (samples[params.bank][params.sample].filename[0] == 0) {
-				// No sample in this slot:
+		if (!flags.take(Flag::PlaySampleChanged))
+			return;
 
-				// Set the sample empty flag to 1 (dim) only if it's 0
-				//(that way we avoid dimming it if we had already set the flag to 6 in order to flash it brightly)
-				if (flags.read(Flag::PlaySampleChangedEmpty) == 0)
-					flags.set(Flag::PlaySampleChangedEmpty);
+		if (s.cached_rev_state[params.sample] != params.reverse) {
+			s.reverse_file_positions(params.sample, params.bank, params.reverse);
+			s.cached_rev_state[params.sample] = params.reverse;
+		}
 
-				flags.clear(Flag::PlaySampleChangedValid);
+		// FixMe: Clean up this logic:
+		// no file: fadedown or remain silent
+		if (samples[params.bank][params.sample].filename[0] == 0) {
+			// Avoid dimming it if we had already set the bright flag
+			if (flags.read(Flag::PlaySampleChangedEmptyBright) == 0)
+				flags.set(Flag::PlaySampleChangedEmpty);
+			flags.clear(Flag::PlaySampleChangedValid);
 
-				if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always ||
-					(params.settings.auto_stop_on_sample_change == AutoStopMode::Looping && params.looping))
-				{
-					if (params.play_state != PlayStates::SILENT && params.play_state != PlayStates::PREBUFFERING) {
-						if (params.play_state == PlayStates::PLAYING_PERC)
+			if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always ||
+				(params.settings.auto_stop_on_sample_change == AutoStopMode::Looping && params.looping))
+			{
+				if (params.play_state != PlayStates::SILENT && params.play_state != PlayStates::PREBUFFERING) {
+					if (params.play_state == PlayStates::PLAYING_PERC)
 
-							params.play_state = PlayStates::REV_PERC_FADEDOWN;
-						else {
-							params.play_state = PlayStates::PLAY_FADEDOWN;
-							flags.set(Flag::StartFadeDown);
-							// env_level = 1.f;
-						}
-
-					} else
-						params.play_state = PlayStates::SILENT;
-				}
-			} else {
-				// Sample found in this slot:
-
-				// Set the sample valid flag to 1 (dim) only if it's 0
-				//(that way we avoid dimming it if we had already set the flag to 6 in order to flash it brightly)
-				if (flags.read(Flag::PlaySampleChangedValid) == 0)
-					flags.set(Flag::PlaySampleChangedValid);
-
-				flags.clear(Flag::PlaySampleChangedEmpty);
-
-				if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always) {
-					if (params.play_state == PlayStates::SILENT && params.looping)
-						flags.set(Flag::PlayBut);
-
-					if (params.play_state != PlayStates::SILENT && params.play_state != PlayStates::PREBUFFERING) {
-						if (params.play_state == PlayStates::PLAYING_PERC)
-							params.play_state = PlayStates::REV_PERC_FADEDOWN;
-						else {
-							params.play_state = PlayStates::PLAY_FADEDOWN;
-							flags.set(Flag::StartFadeDown);
-							// env_level = 1.f;
-						}
+						params.play_state = PlayStates::REV_PERC_FADEDOWN;
+					else {
+						params.play_state = PlayStates::PLAY_FADEDOWN;
+						flags.set(Flag::StartFadeDown);
+						// env_level = 1.f;
 					}
-				} else {
-					if (params.looping) {
-						if (params.play_state == PlayStates::SILENT)
-							flags.set(Flag::PlayBut);
 
-						else if (params.settings.auto_stop_on_sample_change == AutoStopMode::Looping) {
-							if (params.play_state == PlayStates::PLAYING_PERC)
-								params.play_state = PlayStates::REV_PERC_FADEDOWN;
-							else {
-								params.play_state = PlayStates::PLAY_FADEDOWN;
-								flags.set(Flag::StartFadeDown);
-								// env_level = 1.f;
-							}
-						}
+				} else
+					params.play_state = PlayStates::SILENT;
+			}
+			return;
+		}
+
+		// Sample found in this slot:
+
+		// Avoid dimming it if we had already set the bright flag
+		if (flags.read(Flag::PlaySampleChangedValidBright) == 0)
+			flags.set(Flag::PlaySampleChangedValid);
+		flags.clear(Flag::PlaySampleChangedEmpty);
+
+		if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always) {
+			if (params.play_state == PlayStates::SILENT && params.looping)
+				flags.set(Flag::PlayBut);
+
+			if (params.play_state != PlayStates::SILENT && params.play_state != PlayStates::PREBUFFERING) {
+				if (params.play_state == PlayStates::PLAYING_PERC)
+					params.play_state = PlayStates::REV_PERC_FADEDOWN;
+				else {
+					params.play_state = PlayStates::PLAY_FADEDOWN;
+					flags.set(Flag::StartFadeDown);
+					// env_level = 1.f;
+				}
+			}
+		} else {
+			if (params.looping) {
+				if (params.play_state == PlayStates::SILENT)
+					flags.set(Flag::PlayBut);
+
+				else if (params.settings.auto_stop_on_sample_change == AutoStopMode::Looping) {
+					if (params.play_state == PlayStates::PLAYING_PERC)
+						params.play_state = PlayStates::REV_PERC_FADEDOWN;
+					else {
+						params.play_state = PlayStates::PLAY_FADEDOWN;
+						flags.set(Flag::StartFadeDown);
+						// env_level = 1.f;
 					}
 				}
 			}

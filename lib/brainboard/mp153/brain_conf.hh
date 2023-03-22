@@ -20,8 +20,8 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;
 	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_1;
 	static constexpr auto oversample = true;
-	static constexpr auto oversampling_ratio = 1024;
-	static constexpr auto oversampling_right_bitshift = mdrivlib::AdcOversampleRightBitShift::Shift10Right;
+	static constexpr auto oversampling_ratio = 256;
+	static constexpr auto oversampling_right_bitshift = mdrivlib::AdcOversampleRightBitShift::Shift8Right;
 	static constexpr auto clock_div = mdrivlib::PLL_Div1;
 
 	static constexpr bool enable_end_of_sequence_isr = true;

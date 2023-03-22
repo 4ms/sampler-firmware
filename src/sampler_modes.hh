@@ -90,7 +90,8 @@ public:
 		params.bank = params.settings.startup_bank;
 		if (!banks.is_bank_enabled(params.bank))
 			params.bank = banks.next_enabled_bank(MaxNumBanks - 1);
-		flags.set(Flag::SampleChanged); // was PlaySampleChanged
+
+		flags.set(Flag::PlaySampleChanged);
 		flags.set(Flag::PlayBuffDiscontinuity);
 		flags.set(Flag::ForceFileReload);
 	}

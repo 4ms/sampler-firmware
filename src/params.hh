@@ -186,11 +186,7 @@ private:
 		auto new_sample = detent_num_antihys(potval + cv_state[SampleCV].cur_val, sample);
 		if (new_sample != sample) {
 			sample = new_sample;
-			flags.set(Flag::SampleChanged);
-			// if (samples[bank][sample].filename[0] == '\0')
-			// 	flags.set(Flag::SampleChangedInvalid);
-			// else
-			// 	flags.set(Flag::SampleChangedValid);
+			flags.set(Flag::PlaySampleChanged);
 		}
 	}
 
@@ -266,7 +262,6 @@ private:
 
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
-				// TODO: handle change bank
 				if (controls.rev_button.is_pressed())
 					bank = banks.next_enabled_bank(bank);
 				else
@@ -281,8 +276,6 @@ private:
 		// STS: TODO: long-hold Reverse with Length at extreme toggles env modes
 		if (controls.rev_button.is_just_released()) {
 			if (!ignore_rev_release) {
-				// TODO:
-				//  flags.set_rev_changed();
 				flags.set(Flag::RevTrig);
 			}
 
@@ -306,11 +299,30 @@ private:
 		} else
 			play_color = Colors::off;
 
-		// TODO: check flags for SampleChanged/Valid
-
 		Color bank_color;
 		bank_color = (BankColors[bank % 10]);
-		// TODO: flash bank LED
+		// TODO: flash bank LED bank /10 times per second
+
+		// Output to the LEDs
+		if (last_play_color != play_color) {
+			last_play_color = play_color;
+			controls.play_led.set_base_color(play_color);
+		}
+		if (last_rev_color != rev_color) {
+			last_rev_color = rev_color;
+			controls.rev_led.set_base_color(rev_color);
+		}
+		if (last_bank_color != bank_color) {
+			last_bank_color = bank_color;
+			controls.bank_led.set_base_color(bank_color);
+		}
+
+		// Breathe / flash
+		if (flags.take(Flag::PlaySampleChangedValidBright))
+			controls.play_led.flash_once(Colors::red, 720000);
+
+		if (flags.take(Flag::PlaySampleChangedEmptyBright))
+			controls.play_led.flash_once(Colors::white, 720000);
 
 		if (flags.take(Flag::StartupLoadingIndex))
 			controls.bank_led.breathe(Colors::orange, 1);
@@ -326,20 +338,6 @@ private:
 
 		if (flags.take(Flag::StartupDone))
 			controls.bank_led.reset_breathe();
-
-		// Output to the LEDs
-		if (last_play_color != play_color) {
-			last_play_color = play_color;
-			controls.play_led.set_base_color(play_color);
-		}
-		if (last_rev_color != rev_color) {
-			last_rev_color = rev_color;
-			controls.rev_led.set_base_color(rev_color);
-		}
-		if (last_bank_color != bank_color) {
-			last_bank_color = bank_color;
-			controls.bank_led.set_base_color(bank_color);
-		}
 	}
 
 private:

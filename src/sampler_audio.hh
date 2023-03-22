@@ -93,6 +93,8 @@ public:
 			for (auto [L, R] : zip(outL, outR)) {
 				L = 0;
 				R = 0;
+				// R = params.controls.read_cv(PitchCV) << 11;
+				// L = params.controls.read_cv(SampleCV) << 11;
 			}
 			return;
 		}

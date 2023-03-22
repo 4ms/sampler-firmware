@@ -5,9 +5,6 @@
 namespace SamplerKit
 {
 enum class Flag : uint32_t {
-	SampleChanged,
-	SampleChangedValid,
-	SampleChangedInvalid,
 	LatchVoltOctCV,
 	RevTrig,
 	PlayBut,
@@ -22,6 +19,8 @@ enum class Flag : uint32_t {
 	PlaySampleChanged,
 	PlaySampleChangedValid,
 	PlaySampleChangedEmpty,
+	PlaySampleChangedValidBright,
+	PlaySampleChangedEmptyBright,
 
 	StartFadeUp,   // env_level => 0
 	StartFadeDown, // env_level => 1

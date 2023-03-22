@@ -65,7 +65,7 @@ public:
 
 		Memory::clear();
 		// TODO: init_recbuff();
-		const auto slot_size = (Brain::MemorySizeBytes / NumSamplesPerBank / 2) & 0xFFFFF000; // align
+		const auto slot_size = (Brain::MemorySizeBytes / NumSamplesPerBank) & 0xFFFFF000; // align
 		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
 			play_buff[i].min = Brain::MemoryStartAddr + (i * slot_size);
 			play_buff[i].max = play_buff[i].min + slot_size;
@@ -229,6 +229,7 @@ public:
 
 			// If seeking fails, perhaps we need to reload the file
 			if (res != FR_OK) {
+
 				res = reload_sample_file(&fil[samplenum], s_sample, sd);
 				if (res != FR_OK) {
 					g_error |= FILE_OPEN_FAIL;
@@ -267,25 +268,21 @@ public:
 		last_play_start_tmr = HAL_GetTick();
 
 		flags.set(Flag::PlayBuffDiscontinuity);
-
-		// env_level = 0.f;
-		// env_rate = 0.f;
-
-		// play_led_state = 1;
+		flags.set(Flag::StartFadeUp);
 
 #ifdef DEBUG_ENABLED
-		str_cpy(dbg_sample.filename, s_sample->filename);
-		dbg_sample.sampleSize = s_sample->sampleSize;
-		dbg_sample.sampleByteSize = s_sample->sampleByteSize;
-		dbg_sample.sampleRate = s_sample->sampleRate;
-		dbg_sample.numChannels = s_sample->numChannels;
-		dbg_sample.startOfData = s_sample->startOfData;
-		dbg_sample.blockAlign = s_sample->blockAlign;
-		dbg_sample.PCM = s_sample->PCM;
-		dbg_sample.inst_start = s_sample->inst_start;
-		dbg_sample.inst_end = s_sample->inst_end;
-		dbg_sample.inst_size = s_sample->inst_size;
-		dbg_sample.inst_gain = s_sample->inst_gain;
+		// str_cpy(dbg_sample.filename, s_sample->filename);
+		// dbg_sample.sampleSize = s_sample->sampleSize;
+		// dbg_sample.sampleByteSize = s_sample->sampleByteSize;
+		// dbg_sample.sampleRate = s_sample->sampleRate;
+		// dbg_sample.numChannels = s_sample->numChannels;
+		// dbg_sample.startOfData = s_sample->startOfData;
+		// dbg_sample.blockAlign = s_sample->blockAlign;
+		// dbg_sample.PCM = s_sample->PCM;
+		// dbg_sample.inst_start = s_sample->inst_start;
+		// dbg_sample.inst_end = s_sample->inst_end;
+		// dbg_sample.inst_size = s_sample->inst_size;
+		// dbg_sample.inst_gain = s_sample->inst_gain;
 #endif
 	}
 

@@ -262,10 +262,11 @@ private:
 
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
-				if (controls.rev_button.is_pressed())
-					bank = banks.next_enabled_bank(bank);
-				else
+				if (controls.rev_button.is_pressed()) {
 					bank = banks.prev_enabled_bank(bank);
+					ignore_rev_release = true;
+				} else
+					bank = banks.next_enabled_bank(bank);
 			}
 
 			ignore_bank_release = false;
@@ -295,7 +296,7 @@ private:
 
 		Color play_color;
 		if (play_state != PlayStates::SILENT && play_state != PlayStates::PREBUFFERING) {
-			play_color = looping ? Colors::cyan : Colors::green;
+			play_color = looping ? SamplerColors::cyan : SamplerColors::green;
 		} else
 			play_color = Colors::off;
 

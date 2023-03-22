@@ -335,7 +335,6 @@ public:
 	}
 
 	void check_change_sample(void) {
-
 		if (!flags.take(Flag::PlaySampleChanged))
 			return;
 

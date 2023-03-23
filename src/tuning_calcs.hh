@@ -10,7 +10,7 @@ namespace TuningCalcs
 //
 // Applies tracking comp for a bi-polar adc
 // Assumes 2048 is the center value
-//
+// TODO: use floats for more accuracy
 inline uint32_t apply_tracking_compensation(int32_t cv_adcval, float cal_amt) {
 	float float_val;
 
@@ -41,7 +41,6 @@ inline uint32_t apply_tracking_compensation(int32_t cv_adcval, float cal_amt) {
 //
 // Returns a semitone-quantized tuning amount, given an ADC value
 //
-
 inline float quantized_semitone_voct(uint32_t adcval) {
 	constexpr float TWELFTH_ROOT_TWO = 1.059463094f;
 	constexpr float SEMITONE_ADC_WIDTH = 34.0f;

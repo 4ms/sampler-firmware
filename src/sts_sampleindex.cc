@@ -39,6 +39,11 @@ static void pr_dbg(...) {}
 // static void pr_dbg(Ts... args) {
 // 	printf_(args...);
 // }
+// static void pr_log(...) {}
+template<typename... Ts>
+static void pr_log(Ts... args) {
+	printf_(args...);
+}
 
 #define ALL_BANKS MaxNumBanks
 
@@ -428,12 +433,19 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 		return FR_NO_FILE; // file not found
 	}
 
-	pr_dbg("Using index file: %255s\n", full_path);
+	pr_log("Using index file: %255s\n", full_path);
+	pr_log("Parsing.");
 
+	uint32_t dot_cnt = 0;
 	// Read File
 	while (!f_eof(&temp_file)) // until we reach the eof
 	{
 		f_gets(read_buffer, FF_MAX_LFN + 1, &temp_file); // Read next line
+		pr_log(".");
+		if (dot_cnt++ > 60) {
+			pr_log("\n");
+			dot_cnt = 0;
+		}
 		if (read_buffer[str_len(read_buffer) - 1] == '\n')
 			read_buffer[str_len(read_buffer) - 1] = 0; // Remove \n from buffer (mac)
 		if (read_buffer[str_len(read_buffer) - 1] == '\r')
@@ -831,6 +843,8 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 			}
 		}
 	}
+
+	pr_log("\n");
 
 	// close sample index file
 	f_close(&temp_file);

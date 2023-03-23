@@ -63,8 +63,10 @@ static void pr_log(Ts... args) {
 uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 	// Load the index file, marking files found or not found with samples[][].file_found = 1/0;
-	if (!force_reload)
+	if (!force_reload) {
+		pr_log("Loading index file...");
 		force_reload = (index.load_sampleindex_file(USE_INDEX_FILE, MaxNumBanks) != FR_OK);
+	}
 
 	FRESULT res;
 	FRESULT queue_valid;

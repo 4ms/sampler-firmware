@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 
 namespace SamplerKit
@@ -34,11 +35,7 @@ inline uint32_t apply_tracking_compensation(int32_t cv_adcval, float cal_amt) {
 
 		cv_adcval = 2048 - cv_adcval;
 	}
-	if (cv_adcval > 4095)
-		cv_adcval = 4095;
-	if (cv_adcval < 0)
-		cv_adcval = 0;
-	return (cv_adcval);
+	return std::clamp(cv_adcval, 0, 4095);
 }
 
 //

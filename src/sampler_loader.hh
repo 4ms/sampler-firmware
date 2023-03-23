@@ -376,6 +376,7 @@ public:
 		if (flags.read(Flag::PlaySampleChangedValidBright) == 0)
 			flags.set(Flag::PlaySampleChangedValid);
 		flags.clear(Flag::PlaySampleChangedEmpty);
+		pr_dbg("%.80s\n", samples[params.bank][params.sample].filename);
 
 		if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always) {
 			if (params.play_state == PlayStates::SILENT && params.looping)
@@ -406,6 +407,18 @@ public:
 				}
 			}
 		}
+	}
+
+	// static void pr_dbg(...) {}
+	template<typename... Ts>
+	static void pr_dbg(Ts... args) {
+		printf_(args...);
+	}
+
+	// static void pr_log(...) {}
+	template<typename... Ts>
+	static void pr_log(Ts... args) {
+		printf_(args...);
 	}
 };
 } // namespace SamplerKit

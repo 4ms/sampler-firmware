@@ -34,8 +34,6 @@ enum class PlayStates {
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
-	// SampleList samples;
-
 	Controls &controls;
 	Flags &flags;
 	CalibrationStorage &system_calibrations;
@@ -93,6 +91,8 @@ struct Params {
 		update_startpos();
 		update_sample();
 		update_pitch();
+
+		update_trig_jacks();
 		// TODO: TrigDelay (STS: Edit+RecSample)
 
 		if (op_mode == OperationMode::Calibrate) {
@@ -234,6 +234,13 @@ private:
 				cv.delta = diff;
 				cv.prev_val = cv.cur_val;
 			}
+		}
+	}
+
+	void update_trig_jacks() {
+		if (controls.play_jack.is_just_pressed()) {
+			play_trig_timestamp = HAL_GetTick();
+			flags.set(Flag::PlayTrigDelaying);
 		}
 	}
 

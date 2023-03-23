@@ -429,11 +429,11 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 
 	res = f_open(&temp_file, full_path, FA_READ);
 	if (res != FR_OK) {
-		pr_dbg("Index file not found: %255s\n", full_path);
+		pr_dbg("Index file not found: %.255s\n", full_path);
 		return FR_NO_FILE; // file not found
 	}
 
-	pr_log("Using index file: %255s\n", full_path);
+	pr_log("Using index file: %.255s\n", full_path);
 	pr_log("Parsing.");
 
 	uint32_t dot_cnt = 0;

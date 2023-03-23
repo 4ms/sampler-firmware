@@ -66,7 +66,7 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	flags.set(Flag::StartupLoadingIndex);
 
 	if (!force_reload) {
-		pr_log("Loading index file...");
+		pr_log("Loading index file\n");
 		force_reload = (index.load_sampleindex_file(SampleIndex::USE_INDEX_FILE, MaxNumBanks) != FR_OK);
 	}
 

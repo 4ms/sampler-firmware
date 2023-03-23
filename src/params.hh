@@ -264,14 +264,16 @@ private:
 		if (flags.take(Flag::EndOutShort))
 			end_out_ctr = 8;
 
-		if (flags.take(Flag::EndOutShort))
+		if (flags.take(Flag::EndOutLong))
 			end_out_ctr = 35;
 
-		if (end_out_ctr) {
+		if (end_out_ctr == 1) {
+			controls.end_out.low();
+			end_out_ctr = 0;
+		} else if (end_out_ctr > 1) {
 			controls.end_out.high();
 			end_out_ctr--;
-		} else
-			controls.end_out.low();
+		}
 	}
 
 	void update_button_modes() {

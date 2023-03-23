@@ -61,8 +61,8 @@ public:
 			//
 			for (auto [out, L, R] : zip(outblock, outL, outR)) {
 				// Chan 1 L + Chan 2 L clipped at signed 16-bits
-				out.chan[0] = L;
-				out.chan[1] = R;
+				out.chan[0] = -L;
+				out.chan[1] = -R;
 				// We don't need to do SSAT again, unless we start using dac_calibration_offset
 				// out.chan[0] = SSAT24(L + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
 				// out.chan[1] = SSAT24(R + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
@@ -75,7 +75,7 @@ public:
 			// Left Out = Right Out = average of L+R
 			for (auto [out, L, R] : zip(outblock, outL, outR)) {
 				// Average is already done in play_audio_from_buffer(), and put into outL
-				out.chan[0] = L;
+				out.chan[0] = -L;
 				out.chan[1] = L;
 				// We don't need to do SSAT again, unless we start using dac_calibration_offset
 				// int32_t t = L;

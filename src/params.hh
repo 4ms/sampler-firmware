@@ -120,7 +120,6 @@ struct Params {
 	}
 
 private:
-	GCC_OPTIMIZE_OFF
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
 		auto potval = std::clamp(pot.cur_val + (int16_t)system_calibrations.pitch_pot_detent_offset, 0, 4095);
@@ -180,7 +179,7 @@ private:
 		}
 
 		start = (pot_start + cv_state[StartCV].cur_val) / 4096.f;
-		if (start < 0.005f)
+		if (start < 0.01f)
 			start = 0.f;
 		if (start > 0.99f)
 			start = 1.f;

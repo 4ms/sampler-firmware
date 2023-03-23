@@ -38,7 +38,7 @@ namespace SamplerKit
 // Moving banks
 //
 
-void BankManager::copy_bank(Bank dst, const Bank src) {
+void BankManager::copy_bank(Bank &dst, const Bank &src) {
 	// TODO: =>memcpy
 	uint8_t *p_dst;
 	uint8_t *p_src;

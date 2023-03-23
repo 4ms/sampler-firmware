@@ -40,7 +40,7 @@ struct BankManager {
 	//?? These use samples:
 	SampleList &samples;
 	void bump_down_banks(uint8_t bank);
-	void copy_bank(Bank dst, const Bank src);
+	void copy_bank(Bank &dst, const Bank &src);
 	uint8_t get_bank_path(uint8_t bank, char *path);
 	uint8_t find_filename_in_bank(uint8_t bank, const char *filename);
 	uint8_t find_filename_in_all_banks(uint8_t bank, const char *filename);

@@ -361,6 +361,7 @@ uint8_t SampleIndexLoader::dir_contains_assigned_samples(const char *path) {
 //
 //
 //
+GCC_OPTIMIZE_OFF
 void SampleIndexLoader::load_new_folders(void) {
 	DIR root_dir, test_dir;
 	FRESULT res;
@@ -405,16 +406,23 @@ void SampleIndexLoader::load_new_folders(void) {
 
 			// exit if no more dirs found
 			if (res != FR_OK) {
+				pr_dbg("No more dirs found\n");
 				f_closedir(&root_dir);
 				break;
 			}
 
+			pr_dbg("Checking next dir in root: %.255s\n", foldername);
+
 			// Check if foldername contains any .wav files
 			res = f_opendir(&test_dir, foldername);
-			if (res != FR_OK)
+			if (res != FR_OK) {
+				pr_dbg("Failed to open\n");
 				continue;
-			if (sd.find_next_ext_in_dir(&test_dir, ".wav", default_bankname) != FR_OK)
+			}
+			if (sd.find_next_ext_in_dir(&test_dir, ".wav", default_bankname) != FR_OK) {
+				pr_dbg("No .wav files found\n");
 				continue;
+			}
 
 			// add a slash to folder_path if it doesn't have one
 			l = str_len(foldername);
@@ -423,8 +431,10 @@ void SampleIndexLoader::load_new_folders(void) {
 				foldername[l + 1] = '\0';
 			}
 
-			if (dir_contains_assigned_samples(foldername))
+			if (dir_contains_assigned_samples(foldername)) {
+				pr_dbg("Already contains assigned samples\n");
 				continue;
+			}
 		}
 
 		// If we got here, we found a directory that contains wav files, and none of the files are assigned as
@@ -436,17 +446,22 @@ void SampleIndexLoader::load_new_folders(void) {
 		// Try to load it as a bank, to make sure there's actually some valid files inside (i.e. headers are not
 		// corrupted)
 		Bank test_bank;
-		if (load_bank_from_disk(test_bank, foldername)) {
+		pr_dbg("Trying to load as a bank...\n");
+		if (uint8_t num_samples_loaded = load_bank_from_disk(test_bank, foldername)) {
+			pr_dbg("Loaded %d samples\n", num_samples_loaded);
 			// First see if the foldername begins with a color or color-blink name:
 			// Search banks from end to start, so we look for "Yellow-2" before "Yellow"
 			for (bank = (MaxNumBanks - 1); bank != 0xFF; bank--) {
 				bank_to_color(bank, default_bankname);
 
 				if (str_startswith_nocase(foldername, default_bankname)) {
+					pr_dbg("Starts with a bank name: %s, bank#%d\n", default_bankname, bank);
 					// If the bank is already being used (e.g. "Yellow-2" is already used)
 					// Then bump down Yellow-2 ==> Yellow-3, Yellow-3 ==> Yellow-4, etc..
-					if (banks.is_bank_enabled(bank))
+					if (banks.is_bank_enabled(bank)) {
 						banks.bump_down_banks(bank);
+						pr_dbg("Already in use, bumping down banks\n");
+					}
 
 					// Copy the test_bank into bank
 					banks.copy_bank(samples[bank], test_bank);
@@ -462,7 +477,10 @@ void SampleIndexLoader::load_new_folders(void) {
 				banks.copy_bank(samples[bank], test_bank);
 				banks.enable_bank(bank);
 				bank_loaded = 1;
+				pr_dbg("Not a recognized color name, loading into %d\n", bank);
 			}
+		} else {
+			pr_dbg("Failed to load folder as a bank\n");
 		}
 	}
 }

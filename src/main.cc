@@ -60,8 +60,6 @@ void main() {
 	sampler.start();
 	audio_stream.start();
 
-	// TODO Tasks:
-	// Trig Jack(TIM5)? 12kHz
 	while (true) {
 		sampler.update();
 		// settings_storage.handle_events();

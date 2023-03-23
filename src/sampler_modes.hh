@@ -117,8 +117,10 @@ public:
 			}
 		}
 
-		if (flags.take(Flag::PlayTrig))
+		if (flags.take(Flag::PlayTrig)) {
 			start_restart_playing();
+			flags.clear(Flag::LatchVoltOctCV);
+		}
 
 		if (flags.take(Flag::RevTrig))
 			toggle_recording();

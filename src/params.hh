@@ -6,6 +6,7 @@
 #include "elements.hh"
 #include "flags.hh"
 #include "lut/pitch_pot_lut.h"
+#include "lut/voltoct.h"
 #include "palette.hh"
 #include "sample_file.hh"
 #include "sample_pot_detents.hh"
@@ -63,6 +64,7 @@ struct Params {
 	uint8_t sample_bank_now_playing;
 
 	uint32_t play_trig_timestamp = 0;
+	int32_t voct_latch_value = 0;
 
 	PlayStates play_state = PlayStates::SILENT;
 	OperationMode op_mode = OperationMode::Normal;
@@ -116,20 +118,26 @@ private:
 		auto &pot = pot_state[PitchPot];
 		auto potval = std::clamp(pot.cur_val + (int16_t)system_calibrations.pitch_pot_detent_offset, 0, 4095);
 
+		// Flag::LatchVoltOctCV is set after a Play Trig happens
+		// and the current CV value is stored into voct_latch_value.
+		// After a delay, the latch flag is released and playback begins
 		int16_t pitch_cv;
-		// STS: TODO: flags[LatchVoltOctCV] is set when Trig happens
-		// and the current CV value is stored into voct_latch_value
-		// After a delay, the latch is released and playback begins
-		// if (flags[LatchVoltOctCV] cvval = voct_latch_value; else
-		pitch_cv = MathTools::plateau<6, 2048>(4095 - cv_state[PitchCV].cur_val);
+		if (flags.read(Flag::LatchVoltOctCV))
+			pitch_cv = voct_latch_value;
+		else
+			pitch_cv = cv_state[PitchCV].cur_val;
+
+		pitch_cv = MathTools::plateau<6, 2048>(4095 - pitch_cv);
 
 		float compensated_pitch_cv =
 			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);
-		if (settings.quantize) {
-			pitch = pitch_pot_lut[potval] * TuningCalcs::quantized_semitone_voct(compensated_pitch_cv);
-		}
 
-		pitch = std::min((potval + pitch_cv) / 4096.f, MAX_RS);
+		if (settings.quantize)
+			pitch = pitch_pot_lut[potval] * TuningCalcs::quantized_semitone_voct(compensated_pitch_cv);
+		else
+			pitch = pitch_pot_lut[potval] + voltoct[(unsigned)compensated_pitch_cv];
+
+		// pitch = std::min((potval + pitch_cv) / 4096.f, MAX_RS);
 	}
 
 	void update_length() {
@@ -239,6 +247,10 @@ private:
 
 	void update_trig_jacks() {
 		if (controls.play_jack.is_just_pressed()) {
+			if (play_state == PlayStates::PLAYING)
+				play_state = PlayStates::PLAY_FADEDOWN;
+
+			voct_latch_value = cv_state[PitchCV].cur_val;
 			play_trig_timestamp = HAL_GetTick();
 			flags.set(Flag::PlayTrigDelaying);
 		}

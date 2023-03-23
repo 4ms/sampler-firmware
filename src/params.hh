@@ -86,6 +86,9 @@ struct Params {
 	void update() {
 		controls.update();
 
+		update_endout_jack();
+		update_trig_jacks();
+
 		update_pot_states();
 		update_cv_states();
 
@@ -93,9 +96,6 @@ struct Params {
 		update_startpos();
 		update_sample();
 		update_pitch();
-
-		update_trig_jacks();
-		// TODO: TrigDelay (STS: Edit+RecSample)
 
 		if (op_mode == OperationMode::Calibrate) {
 			// TODO: Calibrate mode
@@ -260,6 +260,20 @@ private:
 		}
 	}
 
+	void update_endout_jack() {
+		if (flags.take(Flag::EndOutShort))
+			end_out_ctr = 8;
+
+		if (flags.take(Flag::EndOutShort))
+			end_out_ctr = 35;
+
+		if (end_out_ctr) {
+			controls.end_out.high();
+			end_out_ctr--;
+		} else
+			controls.end_out.low();
+	}
+
 	void update_button_modes() {
 		// if (flags.take(Flag::SkipProcessButtons)) return;
 
@@ -389,6 +403,8 @@ private:
 		int16_t delta = 0;
 	};
 	std::array<CVState, NumPots> cv_state;
+
+	uint32_t end_out_ctr = 0;
 
 	bool ignore_bank_release = false;
 	bool ignore_rev_release = false;

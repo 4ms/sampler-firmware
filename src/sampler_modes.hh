@@ -128,7 +128,6 @@ public:
 		if (flags.take(Flag::ToggleLooping)) {
 			params.looping = !params.looping;
 			if (params.looping && params.play_state == PlayStates::SILENT)
-				// STS: was flags.set(Flag::PlayBut);
 				toggle_playing();
 		}
 	}

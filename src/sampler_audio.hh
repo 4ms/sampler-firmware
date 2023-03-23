@@ -230,7 +230,6 @@ public:
 
 		switch (params.play_state) {
 			case (PlayStates::RETRIG_FADEDOWN):
-				// DEBUG0_ON;
 				env_rate =
 					params.settings.fadeupdown_env ? fast_retrig_fade_rate : (1.0f / (float)AudioStreamConf::BlockSize);
 				env_level = fade(outL, outR, gain, env_level, -1.f * env_rate);
@@ -369,7 +368,11 @@ public:
 	}
 
 	void flicker_endout(float tm) {
-		// TODO: how to connct to EndOut jack?
+		if (tm > 0.3f)
+			flags.set(Flag::EndOutLong); // 35
+		else
+			flags.set(Flag::EndOutShort); // 8
+		// TODO: End Out on immediately to reduce jitter? Does it make a difference?
 	}
 };
 

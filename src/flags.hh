@@ -25,6 +25,9 @@ enum class Flag : uint32_t {
 	StartFadeUp,   // env_level => 0
 	StartFadeDown, // env_level => 1
 
+	EndOutShort,
+	EndOutLong,
+
 	StartupLoadingIndex,
 	StartupNewIndex,
 	StartupWritingIndex,

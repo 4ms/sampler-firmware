@@ -120,6 +120,7 @@ struct Params {
 	}
 
 private:
+	GCC_OPTIMIZE_OFF
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
 		auto potval = std::clamp(pot.cur_val + (int16_t)system_calibrations.pitch_pot_detent_offset, 0, 4095);
@@ -133,7 +134,7 @@ private:
 		else
 			pitch_cv = cv_state[PitchCV].cur_val;
 
-		pitch_cv = MathTools::plateau<6, 2048>(4095 - pitch_cv);
+		pitch_cv = MathTools::plateau<12, 2048>(4095 - pitch_cv) + 2048;
 
 		uint32_t compensated_pitch_cv =
 			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);
@@ -141,9 +142,7 @@ private:
 		if (settings.quantize)
 			pitch = pitch_pot_lut[potval] * TuningCalcs::quantized_semitone_voct(compensated_pitch_cv);
 		else
-			pitch = pitch_pot_lut[potval] + voltoct[compensated_pitch_cv];
-
-		// pitch = std::min((potval + pitch_cv) / 4096.f, MAX_RS);
+			pitch = pitch_pot_lut[potval] * voltoct[compensated_pitch_cv];
 	}
 
 	void update_length() {

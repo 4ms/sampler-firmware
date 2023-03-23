@@ -1,6 +1,7 @@
 #pragma once
 #include "audio_stream_conf.hh"
 #include "bank.hh"
+#include "bank_blink.hh"
 #include "calibration_storage.hh"
 #include "controls.hh"
 #include "elements.hh"
@@ -340,8 +341,7 @@ private:
 			play_color = Colors::off;
 
 		Color bank_color;
-		bank_color = (BankColors[bank % 10]);
-		// TODO: flash bank LED bank /10 times per second
+		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
 
 		// Output to the LEDs
 		if (last_play_color != play_color) {

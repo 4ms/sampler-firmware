@@ -122,7 +122,7 @@ public:
 			flags.clear(Flag::LatchVoltOctCV);
 		}
 
-		if (flags.take(Flag::RevTrig))
+		if (flags.take(Flag::RecTrig))
 			toggle_recording();
 
 		if (flags.take(Flag::ToggleLooping)) {

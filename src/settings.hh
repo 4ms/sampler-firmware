@@ -12,14 +12,14 @@ enum class AutoStopMode { Off = 0, Always = 1, Looping = 2 };
 struct UserSettings {
 	// These are stored on SD Card
 	// And changed with button-combos or in system mode
-	bool stereo_mode = false;
+	bool stereo_mode = true;
 	AutoStopMode auto_stop_on_sample_change = AutoStopMode::Off;
 	bool length_full_start_stop;
 	bool quantize = false;
 	bool perc_env = true;
 	bool fadeupdown_env = true;
 	uint32_t startup_bank = 0;
-	uint32_t trig_delay = 8;
+	uint32_t trig_delay = 2;
 	uint32_t fade_time_ms = 24;
 	bool auto_inc_slot_num_after_rec_trig = false;
 	bool rec_24bits = false;

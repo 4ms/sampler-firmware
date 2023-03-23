@@ -96,6 +96,10 @@ public:
 		flags.set(Flag::ForceFileReload);
 	}
 
+	// FIXME: Split up the state machinery and the sd card IO
+	// Then only call the SD card io from the main loop update()
+	// And call the state machinery in the audio callback (before/after params.update())
+	// GCC_OPTIMIZE_OFF
 	void process_mode_flags() {
 		if (flags.take(Flag::RevTrig))
 			toggle_reverse();
@@ -105,15 +109,14 @@ public:
 
 		if (flags.read(Flag::PlayTrigDelaying)) {
 			uint32_t time_since_play_trig = HAL_GetTick() - params.play_trig_timestamp;
-			if (time_since_play_trig > params.settings.play_trig_latch_pitch_time)
+			if (time_since_play_trig >= params.settings.play_trig_latch_pitch_time)
 				flags.clear(Flag::LatchVoltOctCV);
 			else
 				flags.set(Flag::LatchVoltOctCV);
 
-			if (time_since_play_trig > params.settings.play_trig_delay) {
+			if (time_since_play_trig >= params.settings.play_trig_delay) {
 				flags.set(Flag::PlayTrig);
 				flags.clear(Flag::PlayTrigDelaying);
-				flags.clear(Flag::LatchVoltOctCV);
 			}
 		}
 

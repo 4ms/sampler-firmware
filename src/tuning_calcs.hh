@@ -35,7 +35,7 @@ inline uint32_t apply_tracking_compensation(int32_t cv_adcval, float cal_amt) {
 
 		cv_adcval = 2048 - cv_adcval;
 	}
-	return std::clamp(cv_adcval, 0, 4095);
+	return std::clamp<int32_t>(cv_adcval, 0, 4095);
 }
 
 //

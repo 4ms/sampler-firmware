@@ -4,7 +4,6 @@
 #include "params.hh"
 #include "resample.hh"
 #include "sampler_calcs.hh"
-#include "ssat.h"
 #include "util/zip.hh"
 
 #include "sampler_modes.hh"
@@ -369,9 +368,9 @@ public:
 
 	void flicker_endout(float tm) {
 		if (tm > 0.3f)
-			flags.set(Flag::EndOutLong); // 35
+			flags.set(Flag::EndOutLong);
 		else
-			flags.set(Flag::EndOutShort); // 8
+			flags.set(Flag::EndOutShort);
 		// TODO: End Out on immediately to reduce jitter? Does it make a difference?
 	}
 };

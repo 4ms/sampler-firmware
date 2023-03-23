@@ -254,6 +254,10 @@ private:
 			play_trig_timestamp = HAL_GetTick();
 			flags.set(Flag::PlayTrigDelaying);
 		}
+
+		if (controls.rev_jack.is_just_pressed()) {
+			flags.set(Flag::RevTrig);
+		}
 	}
 
 	void update_button_modes() {

@@ -129,13 +129,13 @@ private:
 
 		pitch_cv = MathTools::plateau<6, 2048>(4095 - pitch_cv);
 
-		float compensated_pitch_cv =
+		uint32_t compensated_pitch_cv =
 			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);
 
 		if (settings.quantize)
 			pitch = pitch_pot_lut[potval] * TuningCalcs::quantized_semitone_voct(compensated_pitch_cv);
 		else
-			pitch = pitch_pot_lut[potval] + voltoct[(unsigned)compensated_pitch_cv];
+			pitch = pitch_pot_lut[potval] + voltoct[compensated_pitch_cv];
 
 		// pitch = std::min((potval + pitch_cv) / 4096.f, MAX_RS);
 	}

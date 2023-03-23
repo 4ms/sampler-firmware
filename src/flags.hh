@@ -28,6 +28,7 @@ enum class Flag : uint32_t {
 	EndOutShort,
 	EndOutLong,
 
+	StartupParsing,
 	StartupLoadingIndex,
 	StartupNewIndex,
 	StartupWritingIndex,

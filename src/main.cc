@@ -47,7 +47,12 @@ void main() {
 
 	// Load sample index file (map files to sample slots and banks)
 	SampleIndexLoader index_loader{sd, samples, banks, flags};
-	index_loader.load_all_banks();
+	{
+		Timekeeper startup_animation{Brain::param_update_task_conf, [&params] { params.startup_animation(); }};
+		startup_animation.start();
+		index_loader.load_all_banks();
+		startup_animation.stop();
+	}
 
 	Sampler sampler{params, flags, sd, banks};
 	AudioStream audio_stream([&sampler, &params](const AudioInBlock &in, AudioOutBlock &out) {

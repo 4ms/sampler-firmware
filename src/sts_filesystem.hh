@@ -53,7 +53,7 @@ struct SampleIndexLoader {
 		: sd{sd}
 		, samples{samples}
 		, banks{banks}
-		, index{samples}
+		, index{samples, flags}
 		, flags{flags} {}
 
 	uint8_t new_filename(uint8_t bank, uint8_t sample_num, char *path);

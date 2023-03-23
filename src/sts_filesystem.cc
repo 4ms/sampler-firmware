@@ -63,9 +63,11 @@ static void pr_log(Ts... args) {
 uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 	// Load the index file, marking files found or not found with samples[][].file_found = 1/0;
+	flags.set(Flag::StartupLoadingIndex);
+
 	if (!force_reload) {
 		pr_log("Loading index file...");
-		force_reload = (index.load_sampleindex_file(USE_INDEX_FILE, MaxNumBanks) != FR_OK);
+		force_reload = (index.load_sampleindex_file(SampleIndex::USE_INDEX_FILE, MaxNumBanks) != FR_OK);
 	}
 
 	FRESULT res;
@@ -74,7 +76,6 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	{
 		pr_log("Valid sample index found\n");
 		// Look for new folders and missing files
-		flags.set(Flag::StartupLoadingIndex);
 
 		// Update the list of banks that are enabled
 		// Banks with no file_found will be disabled (but filenames will be preserved, for use in

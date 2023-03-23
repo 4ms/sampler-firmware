@@ -114,6 +114,11 @@ struct Params {
 		update_button_modes();
 	}
 
+	void startup_animation() {
+		controls.update();
+		update_leds();
+	}
+
 private:
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
@@ -369,20 +374,33 @@ private:
 		if (flags.take(Flag::PlaySampleChangedEmptyBright))
 			controls.play_led.flash_once_ms(Colors::red, 120);
 
-		if (flags.take(Flag::StartupLoadingIndex))
-			controls.bank_led.breathe(Colors::orange, 1);
+		if (flags.take(Flag::StartupParsing))
+			controls.rev_led.flash_once_ms(Colors::yellow, 100);
 
-		if (flags.take(Flag::StartupNewIndex))
+		if (flags.take(Flag::StartupLoadingIndex)) {
+			controls.bank_led.set_base_color(Colors::orange);
+			controls.bank_led.breathe(SamplerColors::Bank::purple, 1);
+		}
+
+		if (flags.take(Flag::StartupNewIndex)) {
+			controls.bank_led.set_base_color(Colors::off);
 			controls.bank_led.breathe(Colors::white, 1);
+		}
 
-		if (flags.take(Flag::StartupWritingIndex))
+		if (flags.take(Flag::StartupWritingIndex)) {
+			controls.bank_led.set_base_color(Colors::off);
 			controls.bank_led.breathe(Colors::magenta, 1);
+		}
 
-		if (flags.take(Flag::StartupWritingHTML))
-			controls.bank_led.breathe(Colors::purple, 1);
+		if (flags.take(Flag::StartupWritingHTML)) {
+			controls.bank_led.set_base_color(Colors::off);
+			controls.bank_led.breathe(Colors::magenta, 0.5);
+		}
 
-		if (flags.take(Flag::StartupDone))
+		if (flags.take(Flag::StartupDone)) {
+			controls.bank_led.set_base_color(bank_color);
 			controls.bank_led.reset_breathe();
+		}
 	}
 
 private:

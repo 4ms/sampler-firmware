@@ -29,27 +29,29 @@
 #pragma once
 
 #include "ff.h"
+#include "flags.hh"
 #include "sample_file.hh"
 
 namespace SamplerKit
 {
 struct SampleIndex {
-#define USE_BACKUP_FILE 1
-#define USE_INDEX_FILE 0
+	enum IndexSelection { USE_INDEX_FILE = 0, USE_BACKUP_FILE = 1 };
 
-	SampleIndex(SampleList &samples)
-		: samples{samples} {}
+	SampleIndex(SampleList &samples, Flags &flags)
+		: samples{samples}
+		, flags{flags} {}
 
 	FRESULT write_sampleindex_file();
 	FRESULT write_samplelist();
 	FRESULT index_write_wrapper();
 	FRESULT backup_sampleindex_file();
-	FRESULT load_sampleindex_file(uint8_t use_backup, uint8_t banks);
+	FRESULT load_sampleindex_file(IndexSelection use_backup, uint8_t banks);
 
 	bool check_sampleindex_valid(const char *indexfilename);
 
 private:
 	SampleList &samples;
+	Flags &flags;
 };
 
 } // namespace SamplerKit

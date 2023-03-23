@@ -395,7 +395,7 @@ bool SampleIndex::check_sampleindex_valid(const char *indexfilename) {
 // On the other hand, if we request the index file but it's invalid/missing, then we use the backup file instead
 //
 // FIXME: This is illegible, rewrite
-FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
+FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backup, uint8_t banks) {
 	FIL temp_file, temp_wav_file;
 	FRESULT res;
 	uint8_t head_load;
@@ -443,6 +443,7 @@ FRESULT SampleIndex::load_sampleindex_file(uint8_t use_backup, uint8_t banks) {
 		f_gets(read_buffer, FF_MAX_LFN + 1, &temp_file); // Read next line
 		pr_log(".");
 		if (dot_cnt++ > 60) {
+			flags.set(Flag::StartupParsing);
 			pr_log("\n");
 			dot_cnt = 0;
 		}

@@ -67,6 +67,8 @@ struct Params {
 	uint32_t play_trig_timestamp = 0;
 	int32_t voct_latch_value = 0;
 
+	uint32_t bank_button_sel = 0;
+
 	PlayStates play_state = PlayStates::SILENT;
 	OperationMode op_mode = OperationMode::Normal;
 
@@ -307,10 +309,11 @@ private:
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
 				if (controls.rev_button.is_pressed()) {
-					bank = banks.prev_enabled_bank(bank);
+					bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
 					ignore_rev_release = true;
-				} else
-					bank = banks.next_enabled_bank(bank);
+				} else {
+					bank_button_sel = banks.next_enabled_bank(bank_button_sel);
+				}
 			}
 
 			ignore_bank_release = false;
@@ -334,17 +337,25 @@ private:
 	}
 
 	void update_bank_cv() {
-		// Keep track of bank set by the button.
 		// Final bank is closest enabled bank to (button_bank_i + bank_cv_i)
+		float bank_cv = (float)controls.read_cv(BankCV) / 4096.f * 60.f; // 0..4096 => 0..60
 
-		// uint32_t t_bank;
-		// uint32_t banki = (uint16_t)(((float)controls.read_cv(BankCV) + 0.5f) / 60.f);
-		// if (banks.is_bank_enabled(banki))
-		// 	t_bank = banki;
-		// else
-		// 	t_bank = banks.next_enabled_bank(banki);
+		// Short-circuit if no or low CV:
+		if (bank_cv == 0.f)
+			bank = bank_button_sel;
 
-		// TODO: go next or prev, whichever is closer
+		int32_t t_bank = (uint32_t)bank_cv + bank_button_sel;
+
+		if (banks.is_bank_enabled(t_bank))
+			bank = t_bank;
+		else {
+			// Pick nearest of next or prev enabled bank
+			int32_t next = banks.next_enabled_bank(t_bank);
+			int32_t prev = banks.prev_enabled_bank(t_bank);
+			int32_t next_diff = (next > t_bank) ? (next - t_bank) : (next + MaxNumBanks - t_bank);
+			int32_t prev_diff = (prev > t_bank) ? (prev - t_bank) : (prev + MaxNumBanks - t_bank);
+			bank = (next_diff < prev_diff) ? next : prev;
+		}
 	}
 
 	void update_leds() {

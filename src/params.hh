@@ -97,6 +97,7 @@ struct Params {
 		update_startpos();
 		update_sample();
 		update_pitch();
+		update_bank_cv();
 
 		if (op_mode == OperationMode::Calibrate) {
 			// TODO: Calibrate mode
@@ -330,6 +331,20 @@ private:
 				pot.moved_while_rev_down = false;
 			}
 		}
+	}
+
+	void update_bank_cv() {
+		// Keep track of bank set by the button.
+		// Final bank is closest enabled bank to (button_bank_i + bank_cv_i)
+
+		// uint32_t t_bank;
+		// uint32_t banki = (uint16_t)(((float)controls.read_cv(BankCV) + 0.5f) / 60.f);
+		// if (banks.is_bank_enabled(banki))
+		// 	t_bank = banki;
+		// else
+		// 	t_bank = banks.next_enabled_bank(banki);
+
+		// TODO: go next or prev, whichever is closer
 	}
 
 	void update_leds() {

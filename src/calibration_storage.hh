@@ -12,7 +12,7 @@ struct CalibrationStorage {
 	int32_t codec_adc_calibration_dcoffset[2] = {0, 0};
 	int32_t codec_dac_calibration_dcoffset[2] = {0, 0};
 	uint32_t led_brightness = 0;
-	float tracking_comp = 0;
+	float tracking_comp = 1.f;
 	int32_t pitch_pot_detent_offset = 0;
 	float rgbled_adjustments[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 

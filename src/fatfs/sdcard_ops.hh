@@ -20,8 +20,12 @@ public:
 	SDCardOps(SDCardOps &other) = delete;
 	SDCardOps() = default;
 
-	void busy_light_on() { SdCardBusyLED::high(); }
-	void busy_light_off() { SdCardBusyLED::low(); }
+	void busy_light_on() {
+		// SdCardBusyLED::high();
+	}
+	void busy_light_off() {
+		// SdCardBusyLED::low();
+	}
 
 	DSTATUS status() override { return (_status == Status::NotInit) ? (STA_NOINIT | STA_NODISK) : 0; }
 
@@ -30,6 +34,7 @@ public:
 	// - and when it mouts the disk in f_mount(_,_,1)
 	// - and the first time FatFS attempts a read/write/stat if the disk is not yet mounted
 	DSTATUS initialize() override {
+		SdCardBusyLED{};
 		if (_status == Status::NotInit)
 			sd.init();
 

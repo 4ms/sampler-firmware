@@ -62,4 +62,5 @@ constexpr inline mdrivlib::SDRAMConfig SDRAM_conf = {
 
 constexpr inline mdrivlib::SDRAMBank SdramBank = mdrivlib::SDRAMBank::Bank2;
 constexpr inline uint32_t SdramKernelClock = 216'000'000;
+
 } // namespace Brain

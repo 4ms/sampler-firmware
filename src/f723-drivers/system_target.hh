@@ -1,5 +1,6 @@
 #pragma once
-#include "conf/sdram_conf.hh"
+#include "brain_conf.hh"
+#include "drivers/sdram.hh"
 #include "drivers/stm32xx.h"
 
 namespace SamplerKit

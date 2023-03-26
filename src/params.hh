@@ -339,6 +339,7 @@ private:
 	void update_bank_cv() {
 		// Final bank is closest enabled bank to (button_bank_i + bank_cv_i)
 		float bank_cv = (float)controls.read_cv(BankCV) / 4096.f * 60.f; // 0..4096 => 0..60
+		// TODO: anti-hysteresis
 
 		// Short-circuit if no or low CV:
 		if (bank_cv == 0.f)

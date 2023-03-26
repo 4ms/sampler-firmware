@@ -210,8 +210,9 @@ private:
 			pot.cur_val = (int16_t)controls.read_pot(static_cast<PotAdcElement>(i));
 
 			int16_t diff = std::abs(pot.cur_val - pot.prev_val);
-			if (diff > Board::MinPotChange)
+			if (diff > Board::MinPotChange) {
 				pot.track_moving_ctr = 250; // 250 for 6kHz = 42ms
+			}
 
 			if (pot.track_moving_ctr) {
 				pot.track_moving_ctr--;
@@ -223,7 +224,8 @@ private:
 					if (!pot.moved_while_rev_down)
 						pot.latched_val = pot.cur_val;
 					pot.moved_while_rev_down = true;
-					ignore_rev_release = true;
+					if (i == StartPot)
+						ignore_rev_release = true;
 				}
 
 				if (controls.bank_button.is_pressed()) {
@@ -342,21 +344,33 @@ private:
 		// TODO: anti-hysteresis
 
 		// Short-circuit if no or low CV:
-		if (bank_cv == 0.f)
+		if (bank_cv < 0.5f)
 			bank = bank_button_sel;
 
 		int32_t t_bank = (uint32_t)bank_cv + bank_button_sel;
 
-		if (banks.is_bank_enabled(t_bank))
+		// Short-circuit if not wrapping (skip the expensive % calculation)
+		if (banks.is_bank_enabled(t_bank)) {
 			bank = t_bank;
-		else {
-			// Pick nearest of next or prev enabled bank
-			int32_t next = banks.next_enabled_bank(t_bank);
-			int32_t prev = banks.prev_enabled_bank(t_bank);
-			int32_t next_diff = (next > t_bank) ? (next - t_bank) : (next + MaxNumBanks - t_bank);
-			int32_t prev_diff = (prev > t_bank) ? (prev - t_bank) : (prev + MaxNumBanks - t_bank);
-			bank = (next_diff < prev_diff) ? next : prev;
+			return;
 		}
+
+		if (t_bank > 60) {
+			t_bank = t_bank % 60;
+			if (banks.is_bank_enabled(t_bank)) {
+				bank = t_bank;
+				return;
+			}
+		}
+
+		// Pick nearest of next or prev enabled bank
+		// next will be 0xFF in case there are no enabled banks higher than t_bank
+		// ...which causes next_diff to always be > prev_diff, therefore we always pick prev
+		int32_t next = banks.next_enabled_bank_0xFF(t_bank);
+		int32_t prev = banks.prev_enabled_bank(t_bank);
+		int32_t next_diff = (next > t_bank) ? (next - t_bank) : (next + MaxNumBanks - t_bank);
+		int32_t prev_diff = (prev > t_bank) ? (prev - t_bank) : (prev + MaxNumBanks - t_bank);
+		bank = (next_diff < prev_diff) ? next : prev;
 	}
 
 	void update_leds() {

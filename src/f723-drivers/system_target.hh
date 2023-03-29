@@ -18,7 +18,7 @@ struct SystemTarget {
 		// Data Cache not needed for this app:
 		// Even with max modulation and resampling rate, audio processing loop never exceeds 25% load
 		// Disabling DCache keeps the DMA transfers more simple
-		SCB_DisableDCache();
+		// SCB_DisableDCache();
 	}
 };
 } // namespace SamplerKit

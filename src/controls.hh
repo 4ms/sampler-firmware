@@ -81,7 +81,7 @@ public:
 		play_jack.update();
 		rev_jack.update();
 
-		constexpr uint32_t led_throttle = Board::ParamUpdateHz / LEDUpdateRateHz;
+		constexpr uint32_t led_throttle = Brain::ParamUpdateHz / LEDUpdateRateHz;
 		static uint32_t led_throttle_ctr = 0;
 		// 187Hz
 		if (led_throttle_ctr++ > led_throttle) {

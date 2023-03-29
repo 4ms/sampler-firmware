@@ -9,7 +9,7 @@ struct Memory {
 
 	static void clear() {
 		uint32_t i;
-		for (i = Board::MemoryStartAddr; i < Board::MemoryEndAddr; i += 4)
+		for (i = Brain::MemoryStartAddr; i < Brain::MemoryEndAddr; i += 4)
 			*((uint32_t *)i) = 0x00000000;
 	}
 

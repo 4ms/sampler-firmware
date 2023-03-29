@@ -19,61 +19,60 @@ using mdrivlib::PinDef;
 using mdrivlib::PinNum;
 using enum mdrivlib::PinPolarity;
 using enum mdrivlib::PinMode;
+namespace BrainPin = Brain::Pin;
 
-using namespace Brain;
+using PlayButton = mdrivlib::DebouncedButton<BrainPin::D12, Inverted>;
+using BankButton = mdrivlib::DebouncedButton<BrainPin::D6, Inverted>;
+using RevButton = mdrivlib::DebouncedButton<BrainPin::A6, Inverted>;
 
-using PlayButton = mdrivlib::DebouncedButton<Pin::D12, Inverted>;
-using BankButton = mdrivlib::DebouncedButton<Pin::D6, Inverted>;
-using RevButton = mdrivlib::DebouncedButton<Pin::A6, Inverted>;
+using PlayJack = mdrivlib::DebouncedPin<BrainPin::D13, Normal>;
+using RevJack = mdrivlib::DebouncedPin<BrainPin::D2, Normal>;
 
-using PlayJack = mdrivlib::DebouncedPin<Pin::D13, Normal>;
-using RevJack = mdrivlib::DebouncedPin<Pin::D2, Normal>;
-
-using PlayR = mdrivlib::FPin<Pin::D8.gpio, Pin::D8.pin, Output, Inverted>;
-using PlayG = mdrivlib::FPin<Pin::D11.gpio, Pin::D11.pin, Output, Inverted>;
-using PlayB = mdrivlib::FPin<Pin::D14.gpio, Pin::D14.pin, Output, Inverted>;
+using PlayR = mdrivlib::FPin<BrainPin::D8.gpio, BrainPin::D8.pin, Output, Inverted>;
+using PlayG = mdrivlib::FPin<BrainPin::D11.gpio, BrainPin::D11.pin, Output, Inverted>;
+using PlayB = mdrivlib::FPin<BrainPin::D14.gpio, BrainPin::D14.pin, Output, Inverted>;
 using PlayLED = mdrivlib::MixedRgbLed<PlayR, PlayG, PlayB>;
 
-using RevR = mdrivlib::FPin<Pin::D7.gpio, Pin::D7.pin, Output, Inverted>;
-using RevG = mdrivlib::FPin<Pin::D10.gpio, Pin::D10.pin, Output, Inverted>;
-using RevB = mdrivlib::FPin<Pin::D3.gpio, Pin::D3.pin, Output, Inverted>;
+using RevR = mdrivlib::FPin<BrainPin::D7.gpio, BrainPin::D7.pin, Output, Inverted>;
+using RevG = mdrivlib::FPin<BrainPin::D10.gpio, BrainPin::D10.pin, Output, Inverted>;
+using RevB = mdrivlib::FPin<BrainPin::D3.gpio, BrainPin::D3.pin, Output, Inverted>;
 using RevLED = mdrivlib::MixedRgbLed<RevR, RevG, RevB>;
 
-using BankR = mdrivlib::FPin<Pin::D1.gpio, Pin::D1.pin, Output, Inverted>;
-using BankG = mdrivlib::FPin<Pin::D0.gpio, Pin::D0.pin, Output, Inverted>;
-using BankB = mdrivlib::FPin<Pin::D5.gpio, Pin::D5.pin, Output, Inverted>;
+using BankR = mdrivlib::FPin<BrainPin::D1.gpio, BrainPin::D1.pin, Output, Inverted>;
+using BankG = mdrivlib::FPin<BrainPin::D0.gpio, BrainPin::D0.pin, Output, Inverted>;
+using BankB = mdrivlib::FPin<BrainPin::D5.gpio, BrainPin::D5.pin, Output, Inverted>;
 using BankLED = mdrivlib::MixedRgbLed<BankR, BankG, BankB>;
 
-// using PlayRPwm = mdrivlib::TimPwmChan<Pin::D8PwmConf>; // R = D8, has no PWM on F723-p3 or mp1-p3
-using PlayGPwm = mdrivlib::TimPwmChan<Pin::D11PwmConf>;
-using PlayBPwm = mdrivlib::TimPwmChan<Pin::D14PwmConf>;
+// using PlayRPwm = mdrivlib::TimPwmChan<BP::D8PwmConf>; // R = D8, has no PWM on F723-p3 or mp1-p3
+using PlayGPwm = mdrivlib::TimPwmChan<BrainPin::D11PwmConf>;
+using PlayBPwm = mdrivlib::TimPwmChan<BrainPin::D14PwmConf>;
 using PlayPWM = mdrivlib::MixedRgbLed<PlayR, PlayGPwm, PlayBPwm, LEDUpdateRateHz>;
 
-// using RevRPwm = mdrivlib::TimPwmChan<Pin::D7PwmConf>;// R = D7, has no PWM on mp1-p3
-using RevGPwm = mdrivlib::TimPwmChan<Pin::D10PwmConf>;
-using RevBPwm = mdrivlib::TimPwmChan<Pin::D3PwmConf>;
+// using RevRPwm = mdrivlib::TimPwmChan<BP::D7PwmConf>;// R = D7, has no PWM on mp1-p3
+using RevGPwm = mdrivlib::TimPwmChan<BrainPin::D10PwmConf>;
+using RevBPwm = mdrivlib::TimPwmChan<BrainPin::D3PwmConf>;
 using RevPWM = mdrivlib::MixedRgbLed<RevR, RevGPwm, RevBPwm, LEDUpdateRateHz>;
 
-using BankRPwm = mdrivlib::TimPwmChan<Pin::D1PwmConf>;
-using BankGPwm = mdrivlib::TimPwmChan<Pin::D0PwmConf>;
-// using BankBPwm = mdrivlib::TimPwmChan<Pin::D5PwmConf>;// Blue = D5, which has no PWM on mp1-p3
+using BankRPwm = mdrivlib::TimPwmChan<BrainPin::D1PwmConf>;
+using BankGPwm = mdrivlib::TimPwmChan<BrainPin::D0PwmConf>;
+// using BankBPwm = mdrivlib::TimPwmChan<BP::D5PwmConf>;// Blue = D5, which has no PWM on mp1-p3
 using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankB, LEDUpdateRateHz>;
 
-using EndOut = mdrivlib::FPin<Pin::D15.gpio, Pin::D15.pin, Output, Normal>;
+using EndOut = mdrivlib::FPin<BrainPin::D15.gpio, BrainPin::D15.pin, Output, Normal>;
 
 constexpr std::array<AdcChannelConf, NumPots> PotAdcChans = {{
-	{Pin::A1, Pin::A1AdcChan, PitchPot, Brain::AdcSampTime},
-	{Pin::A3, Pin::A3AdcChan, StartPot, Brain::AdcSampTime},
-	{Pin::A7, Pin::A7AdcChan, LengthPot, Brain::AdcSampTime},
-	{Pin::A9, Pin::A9AdcChan, SamplePot, Brain::AdcSampTime},
+	{BrainPin::A1, BrainPin::A1AdcChan, PitchPot, Brain::AdcSampTime},
+	{BrainPin::A3, BrainPin::A3AdcChan, StartPot, Brain::AdcSampTime},
+	{BrainPin::A7, BrainPin::A7AdcChan, LengthPot, Brain::AdcSampTime},
+	{BrainPin::A9, BrainPin::A9AdcChan, SamplePot, Brain::AdcSampTime},
 }};
 
 constexpr std::array<AdcChannelConf, NumCVs> CVAdcChans = {{
-	{Pin::A2, Pin::A2AdcChan, PitchCV, Brain::AdcSampTime},
-	{Pin::A0, Pin::A0AdcChan, StartCV, Brain::AdcSampTime},
-	{Pin::A5, Pin::A5AdcChan, LengthCV, Brain::AdcSampTime},
-	{Pin::A8, Pin::A8AdcChan, SampleCV, Brain::AdcSampTime},
-	{Pin::A4, Pin::A4AdcChan, BankCV, Brain::AdcSampTime},
+	{BrainPin::A2, BrainPin::A2AdcChan, PitchCV, Brain::AdcSampTime},
+	{BrainPin::A0, BrainPin::A0AdcChan, StartCV, Brain::AdcSampTime},
+	{BrainPin::A5, BrainPin::A5AdcChan, LengthCV, Brain::AdcSampTime},
+	{BrainPin::A8, BrainPin::A8AdcChan, SampleCV, Brain::AdcSampTime},
+	{BrainPin::A4, BrainPin::A4AdcChan, BankCV, Brain::AdcSampTime},
 }};
 
 } // namespace SamplerKit::Board

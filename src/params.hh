@@ -210,7 +210,7 @@ private:
 			pot.cur_val = (int16_t)controls.read_pot(static_cast<PotAdcElement>(i));
 
 			int16_t diff = std::abs(pot.cur_val - pot.prev_val);
-			if (diff > Board::MinPotChange) {
+			if (diff > Brain::MinPotChange) {
 				pot.track_moving_ctr = 250; // 250 for 6kHz = 42ms
 			}
 
@@ -247,7 +247,7 @@ private:
 				cv.cur_val += system_calibrations.cv_calibration_offset[i];
 
 			int16_t diff = std::abs(cv.cur_val - cv.prev_val);
-			if (diff > Board::MinCVChange) {
+			if (diff > Brain::MinCVChange) {
 				cv.delta = diff;
 				cv.prev_val = cv.cur_val;
 			}
@@ -301,7 +301,7 @@ private:
 		}
 
 		if (controls.play_button.is_pressed()) {
-			if (controls.play_button.how_long_held() == (Board::ParamUpdateHz / 2)) // 0.5 sec
+			if (controls.play_button.how_long_held() == (Brain::ParamUpdateHz / 2)) // 0.5 sec
 			{
 				flags.set(Flag::ToggleLooping);
 				ignore_play_release = true;

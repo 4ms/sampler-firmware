@@ -23,6 +23,9 @@ enum class Flag : uint32_t {
 	PlaySampleChangedValidBright,
 	PlaySampleChangedEmptyBright,
 
+	EnterPlayMode,
+	EnterRecordMode,
+
 	StartFadeUp,   // env_level => 0
 	StartFadeDown, // env_level => 1
 

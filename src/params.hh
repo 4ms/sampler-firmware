@@ -322,6 +322,8 @@ private:
 			if (!ignore_rev_longhold && controls.rev_button.how_long_held() > (Brain::ParamUpdateHz)) {
 				if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz)) {
 					op_mode = OperationMode::Record;
+					looping = false;
+					flags.set(Flag::EnterRecordMode);
 					ignore_play_longhold = true;
 					ignore_rev_longhold = true;
 					ignore_play_release = true;
@@ -388,6 +390,7 @@ private:
 			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
 
 				controls.play_led.reset_breathe();
+				flags.set(Flag::EnterPlayMode);
 				op_mode = OperationMode::Playback;
 				ignore_play_longhold = true;
 				ignore_rev_longhold = true;

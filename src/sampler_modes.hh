@@ -133,6 +133,27 @@ public:
 			if (params.looping && params.play_state == PlayStates::SILENT)
 				toggle_playing();
 		}
+
+		if (flags.take(Flag::EnterRecordMode)) {
+			// Stop playing
+			switch (params.play_state) {
+				case PlayStates::PLAYING:
+				case PlayStates::PLAY_FADEUP:
+				case PlayStates::PLAY_FADEDOWN:
+				case PlayStates::PERC_FADEUP:
+				case PlayStates::PLAYING_PERC:
+				case PlayStates::REV_PERC_FADEDOWN:
+				case PlayStates::RETRIG_FADEDOWN:
+					params.play_state = PlayStates::PLAY_FADEDOWN;
+					break;
+
+				case PlayStates::SILENT:
+				case PlayStates::PAD_SILENCE:
+				case PlayStates::PREBUFFERING:
+					params.play_state = PlayStates::SILENT;
+					break;
+			}
+		}
 	}
 
 	void start_playing() {

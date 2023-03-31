@@ -245,7 +245,9 @@ private:
 					if (!pot.moved_while_bank_down)
 						pot.latched_val = pot.cur_val;
 					pot.moved_while_bank_down = true;
-					ignore_bank_release = true;
+					// Allow Sample + Bank since the combo does nothing
+					if (i != SamplePot)
+						ignore_bank_release = true;
 				}
 			}
 		}
@@ -319,7 +321,6 @@ private:
 			// Long hold Play and Rev to toggle Rec/Play mode
 			if (!ignore_rev_longhold && controls.rev_button.how_long_held() > (Brain::ParamUpdateHz)) {
 				if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz)) {
-					printf_("=>Rec\n");
 					op_mode = OperationMode::Record;
 					ignore_play_longhold = true;
 					ignore_rev_longhold = true;
@@ -329,8 +330,7 @@ private:
 			}
 
 			// Long hold Play to toggle looping (Rev cannot be down)
-			if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz / 2)) // 0.5 sec
-			{
+			if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz * 0.3f)) {
 				if (!controls.rev_button.is_pressed()) {
 					flags.set(Flag::ToggleLooping);
 					ignore_play_longhold = true;
@@ -386,7 +386,6 @@ private:
 		// Long hold Play and Rev to toggle Rec/Play mode
 		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
 			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-				printf_("=>Play\n");
 
 				controls.play_led.reset_breathe();
 				op_mode = OperationMode::Playback;
@@ -471,7 +470,7 @@ private:
 			} else
 				play_color = Colors::off;
 
-			controls.play_led.breathe(Colors::red, 2.f);
+			controls.play_led.breathe(Colors::red, 4.f);
 		}
 
 		if (op_mode == OperationMode::Calibrate) {

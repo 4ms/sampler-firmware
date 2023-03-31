@@ -43,20 +43,21 @@ using BankG = mdrivlib::FPin<BrainPin::D0.gpio, BrainPin::D0.pin, Output, Invert
 using BankB = mdrivlib::FPin<BrainPin::D5.gpio, BrainPin::D5.pin, Output, Inverted>;
 using BankLED = mdrivlib::MixedRgbLed<BankR, BankG, BankB>;
 
-// using PlayRPwm = mdrivlib::TimPwmChan<BP::D8PwmConf>; // R = D8, has no PWM on F723-p3 or mp1-p3
+using PlayR50 = mdrivlib::Led50<BrainPin::D8.gpio, BrainPin::D8.pin, Inverted>;
 using PlayGPwm = mdrivlib::TimPwmChan<BrainPin::D11PwmConf>;
 using PlayBPwm = mdrivlib::TimPwmChan<BrainPin::D14PwmConf>;
-using PlayPWM = mdrivlib::MixedRgbLed<PlayR, PlayGPwm, PlayBPwm, LEDUpdateRateHz>;
+using PlayPWM = mdrivlib::MixedRgbLed<PlayR50, PlayGPwm, PlayBPwm, LEDUpdateRateHz>;
 
-// using RevRPwm = mdrivlib::TimPwmChan<BP::D7PwmConf>;// R = D7, has no PWM on mp1-p3
+using RevRPwm = mdrivlib::Led50<BrainPin::D7.gpio, BrainPin::D7.pin, Inverted>;
 using RevGPwm = mdrivlib::TimPwmChan<BrainPin::D10PwmConf>;
 using RevBPwm = mdrivlib::TimPwmChan<BrainPin::D3PwmConf>;
 using RevPWM = mdrivlib::MixedRgbLed<RevR, RevGPwm, RevBPwm, LEDUpdateRateHz>;
 
 using BankRPwm = mdrivlib::TimPwmChan<BrainPin::D1PwmConf>;
 using BankGPwm = mdrivlib::TimPwmChan<BrainPin::D0PwmConf>;
-// using BankBPwm = mdrivlib::TimPwmChan<BP::D5PwmConf>;// Blue = D5, which has no PWM on mp1-p3
-using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankB, LEDUpdateRateHz>;
+using BankB50 = mdrivlib::Led50<BrainPin::D5.gpio, BrainPin::D5.pin, Inverted>;
+using BankBPwm = mdrivlib::TimPwmChan<BrainPin::D5PwmConf>; // no Blue on mp1-p3
+using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankBPwm, LEDUpdateRateHz>;
 
 using EndOut = mdrivlib::FPin<BrainPin::D15.gpio, BrainPin::D15.pin, Output, Normal>;
 

@@ -32,6 +32,13 @@ enum class PlayStates {
 	REV_PERC_FADEDOWN,
 	PAD_SILENCE,
 };
+enum class RecStates {
+	REC_OFF,
+	CREATING_FILE,
+	RECORDING,
+	CLOSING_FILE,
+	CLOSING_FILE_TO_REC_AGAIN,
+};
 
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
@@ -58,7 +65,6 @@ struct Params {
 	enum class MonitorModes { OFF = 0b00, BOTH = 0b11, LEFT = 0b01, RIGHT = 0b10 };
 	MonitorModes monitor_recording = MonitorModes::OFF;
 	bool enable_recording = false;
-	// No: EDIT_MODE, ASSIGN_MODE, ALLOW_SPLIT_MONITORING, VIDEO_DIM
 
 	// These are what's playing, even if the controls have selected something else
 	uint8_t sample_num_now_playing;
@@ -70,7 +76,9 @@ struct Params {
 	uint32_t bank_button_sel = 0;
 
 	PlayStates play_state = PlayStates::SILENT;
-	OperationMode op_mode = OperationMode::Normal;
+	RecStates rec_state = RecStates::REC_OFF;
+
+	OperationMode op_mode = OperationMode::Playback;
 
 	Params(Controls &controls,
 		   Flags &flags,
@@ -101,6 +109,9 @@ struct Params {
 		update_pitch();
 		update_bank_cv();
 
+		update_leds();
+		// check_entering_system_mode();
+
 		if (op_mode == OperationMode::Calibrate) {
 			// TODO: Calibrate mode
 			//  update_calibration();
@@ -111,10 +122,12 @@ struct Params {
 			//  update_system_settings();
 		}
 
-		// check_entering_system_mode();
-
-		update_leds();
-		update_button_modes();
+		if (op_mode == OperationMode::Playback) {
+			update_play_mode_buttons();
+		}
+		if (op_mode == OperationMode::Record) {
+			update_rec_mode_buttons();
+		}
 	}
 
 	void startup_animation() {
@@ -285,7 +298,7 @@ private:
 		}
 	}
 
-	void update_button_modes() {
+	void update_play_mode_buttons() {
 		// if (flags.take(Flag::SkipProcessButtons)) return;
 
 		if (controls.play_button.is_just_pressed()) {
@@ -297,14 +310,32 @@ private:
 			if (looping && !ignore_play_release) {
 				flags.set(Flag::PlayBut);
 			}
+
 			ignore_play_release = false;
+			ignore_play_longhold = false;
 		}
 
 		if (controls.play_button.is_pressed()) {
-			if (controls.play_button.how_long_held() == (Brain::ParamUpdateHz / 2)) // 0.5 sec
+			// Long hold Play and Rev to toggle Rec/Play mode
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held() > (Brain::ParamUpdateHz)) {
+				if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz)) {
+					printf_("=>Rec\n");
+					op_mode = OperationMode::Record;
+					ignore_play_longhold = true;
+					ignore_rev_longhold = true;
+					ignore_play_release = true;
+					ignore_rev_release = true;
+				}
+			}
+
+			// Long hold Play to toggle looping (Rev cannot be down)
+			if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz / 2)) // 0.5 sec
 			{
-				flags.set(Flag::ToggleLooping);
-				ignore_play_release = true;
+				if (!controls.rev_button.is_pressed()) {
+					flags.set(Flag::ToggleLooping);
+					ignore_play_longhold = true;
+					ignore_play_release = true;
+				}
 			}
 		}
 
@@ -318,9 +349,11 @@ private:
 				}
 			}
 
-			ignore_bank_release = false;
 			for (auto &pot : pot_state)
 				pot.moved_while_bank_down = false;
+
+			ignore_bank_longhold = false;
+			ignore_bank_release = false;
 		}
 
 		// STS: TODO: long-hold Reverse with Length at extreme toggles env modes
@@ -329,12 +362,57 @@ private:
 				flags.set(Flag::RevTrig);
 			}
 
-			ignore_rev_release = false;
 			for (auto &pot : pot_state) {
 				if (pot.moved_while_rev_down)
 					pot.is_catching_up = true;
 				pot.moved_while_rev_down = false;
 			}
+
+			ignore_rev_release = false;
+			ignore_rev_longhold = false;
+		}
+	}
+
+	void update_rec_mode_buttons() {
+		if (controls.play_button.is_just_pressed()) {
+			flags.set(Flag::RecBut);
+		}
+
+		if (controls.play_button.is_just_released()) {
+			ignore_play_longhold = false;
+			ignore_play_release = false;
+		}
+
+		// Long hold Play and Rev to toggle Rec/Play mode
+		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
+			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
+				printf_("=>Play\n");
+
+				controls.play_led.reset_breathe();
+				op_mode = OperationMode::Playback;
+				ignore_play_longhold = true;
+				ignore_rev_longhold = true;
+				ignore_play_release = true;
+				ignore_rev_release = true;
+			}
+		}
+
+		if (controls.bank_button.is_just_released()) {
+			if (!ignore_bank_release) {
+				if (controls.rev_button.is_pressed()) {
+					bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
+					ignore_rev_release = true;
+				} else {
+					bank_button_sel = banks.next_enabled_bank(bank_button_sel);
+				}
+			}
+			ignore_bank_longhold = false;
+			ignore_bank_release = false;
+		}
+
+		if (controls.rev_button.is_just_released()) {
+			ignore_rev_longhold = false;
+			ignore_rev_release = false;
 		}
 	}
 
@@ -374,17 +452,35 @@ private:
 	}
 
 	void update_leds() {
-
 		Color rev_color;
-		rev_color = reverse ? Colors::blue : Colors::off;
-
 		Color play_color;
-		if (play_state != PlayStates::SILENT && play_state != PlayStates::PREBUFFERING) {
-			play_color = looping ? SamplerColors::cyan : SamplerColors::green;
-		} else
-			play_color = Colors::off;
-
 		Color bank_color;
+
+		if (op_mode == OperationMode::Playback) {
+			rev_color = reverse ? Colors::blue : Colors::off;
+
+			if (play_state != PlayStates::SILENT && play_state != PlayStates::PREBUFFERING) {
+				play_color = looping ? SamplerColors::cyan : SamplerColors::green;
+			} else
+				play_color = Colors::off;
+		}
+		if (op_mode == OperationMode::Record) {
+			rev_color = Colors::off;
+			if (rec_state == RecStates::RECORDING) {
+				play_color = Colors::red;
+			} else
+				play_color = Colors::off;
+
+			controls.play_led.breathe(Colors::red, 2.f);
+		}
+
+		if (op_mode == OperationMode::Calibrate) {
+			// TODO: calibration and system modes
+		}
+		if (op_mode == OperationMode::SystemMode) {
+			// TODO: calibration and system modes
+		}
+
 		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
 
 		// Output to the LEDs
@@ -403,39 +499,35 @@ private:
 
 		// Breathe / flash
 
+		// Sample Slot Change
 		if (flags.take(Flag::PlaySampleChangedValid))
 			controls.play_led.flash_once_ms(Colors::white, 20);
 		if (flags.take(Flag::PlaySampleChangedValidBright))
 			controls.play_led.flash_once_ms(Colors::white, 120);
-
 		if (flags.take(Flag::PlaySampleChangedEmpty))
 			controls.play_led.flash_once_ms(Colors::red, 20);
 		if (flags.take(Flag::PlaySampleChangedEmptyBright))
 			controls.play_led.flash_once_ms(Colors::red, 120);
 
+		// Startup sequence
 		if (flags.take(Flag::StartupParsing))
 			controls.rev_led.flash_once_ms(Colors::yellow, 100);
-
 		if (flags.take(Flag::StartupLoadingIndex)) {
 			controls.bank_led.set_base_color(Colors::orange);
 			controls.bank_led.breathe(SamplerColors::Bank::purple, 1);
 		}
-
 		if (flags.take(Flag::StartupNewIndex)) {
 			controls.bank_led.set_base_color(Colors::off);
 			controls.bank_led.breathe(Colors::white, 1);
 		}
-
 		if (flags.take(Flag::StartupWritingIndex)) {
 			controls.bank_led.set_base_color(Colors::off);
 			controls.bank_led.breathe(Colors::magenta, 1);
 		}
-
 		if (flags.take(Flag::StartupWritingHTML)) {
 			controls.bank_led.set_base_color(Colors::off);
 			controls.bank_led.breathe(Colors::magenta, 0.5);
 		}
-
 		if (flags.take(Flag::StartupDone)) {
 			controls.bank_led.set_base_color(bank_color);
 			controls.bank_led.reset_breathe();
@@ -468,6 +560,10 @@ private:
 	bool ignore_bank_release = false;
 	bool ignore_rev_release = false;
 	bool ignore_play_release = false;
+
+	bool ignore_bank_longhold = false;
+	bool ignore_rev_longhold = false;
+	bool ignore_play_longhold = false;
 
 	Color last_play_color = Colors::off;
 	Color last_rev_color = Colors::off;

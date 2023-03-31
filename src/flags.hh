@@ -10,6 +10,7 @@ enum class Flag : uint32_t {
 	PlayBut,
 	PlayTrigDelaying,
 	PlayTrig,
+	RecBut,
 	RecTrig,
 	ToggleLooping,
 	PlayBuffDiscontinuity,

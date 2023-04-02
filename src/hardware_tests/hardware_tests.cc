@@ -106,8 +106,13 @@ void run(Controls &controls) {
 	printf_("After the pots, patch Out L into Pitch CV (bi-polar CV)\n");
 	printf_("Then patch Out R into the other CV jacks (uni-polar CV)\n");
 
-	CenterFlatRamp test_waveform_0_5{1., 0.3, -4'200'000, 300'000, 0, 48000};
-	CenterFlatRamp test_waveform_n5_5{1., 0.3, 4'000'000, -4'000'000, 0, 48000};
+	// center -2'200'000 = 2.35V;
+	// center -2'250'000 = 2.41V
+	// est center -2'350'000 = 2.5V
+	// 100'000 = ADC 10, ~190mV
+	// -4'600'000 > ADC 4095, ~4.97V
+	CenterFlatRamp test_waveform_0_5{1., 0.3, -4'600'000, 100'000, 0, 48000};
+	CenterFlatRamp test_waveform_n5_5{1., 0.3, 4'400'000, -4'600'000, 0, 48000};
 	audio.set_callback([&](const AudioStreamConf::AudioInBlock &in, AudioStreamConf::AudioOutBlock &out) {
 		for (auto &o : out) {
 			o.chan[0] = test_waveform_0_5.update();	 // R

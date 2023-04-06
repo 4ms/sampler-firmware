@@ -48,7 +48,7 @@ constexpr inline PinDef D2{GPIO::B, PinNum::_7};
 constexpr inline PinDef D3{GPIO::B, PinNum::_4};
 constexpr inline PinDef D4{GPIO::D, PinNum::_2};
 // constexpr inline PinDef D5{GPIO::B, PinNum::_12}; // p3
-constexpr inline PinDef D5{GPIO::A, PinNum::_11}; // p4
+constexpr inline PinDef D5{GPIO::A, PinNum::_11}; // p4 and later
 constexpr inline PinDef D6{GPIO::B, PinNum::_10};
 constexpr inline PinDef D7{GPIO::C, PinNum::_2};
 constexpr inline PinDef D8{GPIO::C, PinNum::_1};
@@ -83,7 +83,7 @@ constexpr inline mdrivlib::TimChanConf D1PwmConf{
 	.channum = TimChannelNum::_3,
 };
 
-// p4 only: (p3 has no PWM)
+// p4 and later: (p3 has no PWM)
 constexpr inline mdrivlib::TimChanConf D5PwmConf{
 	.pin = {D5.gpio, D5.pin, PinAF::AltFunc1},
 	.TIM = TIM1_BASE,
@@ -119,8 +119,8 @@ constexpr inline mdrivlib::TimChanConf D14PwmConf{
 };
 
 //
-constexpr inline PinDef Debug0{GPIO::C, PinNum::_6};
-constexpr inline PinDef Debug1{GPIO::C, PinNum::_7};
+constexpr inline PinDef Debug0{GPIO::C, PinNum::_6}; // overlaps TX
+constexpr inline PinDef Debug1{GPIO::C, PinNum::_7}; // overlaps RX
 constexpr inline PinDef Debug2{GPIO::G, PinNum::_12};
 constexpr inline PinDef Debug3{GPIO::E, PinNum::_11};
 constexpr inline PinDef ConsoleUartTX{GPIO::C, PinNum::_6, PinAF::AltFunc7};

@@ -59,7 +59,7 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 		static constexpr uint32_t subpri = 0;
 	};
 
-	static constexpr uint16_t min_value = 70;
+	static constexpr uint16_t min_value = 80;
 };
 
 // memory_conf:
@@ -91,7 +91,7 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 };
 
 // SDCard
-constexpr inline bool SdmmcWide = true;
+constexpr inline bool SdmmcWide = false;
 constexpr inline uint32_t SdmmcPeriphNum = 1;
 constexpr inline uint32_t SdmmcMaxSpeed = 32'000'000;
 

@@ -156,6 +156,7 @@ public:
 		}
 	}
 
+	// GCC_OPTIMIZE_OFF
 	void start_playing() {
 		FRESULT res;
 		float rs;
@@ -454,6 +455,7 @@ private:
 	}
 
 	// Button->toggle
+	GCC_OPTIMIZE_OFF
 	void toggle_playing() {
 		// Start playing
 		if (params.play_state == PlayStates::SILENT || params.play_state == PlayStates::PLAY_FADEDOWN ||

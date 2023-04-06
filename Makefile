@@ -15,3 +15,11 @@ $(BUILDDIR):
 
 clean:
 	rm -rf $(BUILDDIR)
+
+flash:
+	python3 uimg_header.py build/mp153/RelWithDebInfo/mp153.bin build/mp153/RelWithDebInfo/mp153.uimg
+	$(info ------------------------------------------------------------------------)
+	$(info Reboot the board with the jumper installed before executing this command)
+	$(info ------------------------------------------------------------------------)
+	dfu-util -a 0 -s 0x70080000 -D build/mp153/RelWithDebInfo/mp153.uimg
+

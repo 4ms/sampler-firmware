@@ -36,7 +36,7 @@ namespace SamplerKit
 
 static void pr_dbg(...) {}
 // template<typename... Ts>
-// static void pr_dbg(Ts... args) {
+// static void pr_dbg(Ts... args){
 // 	printf_(args...);
 // }
 // static void pr_log(...) {}
@@ -433,8 +433,8 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 		return FR_NO_FILE; // file not found
 	}
 
-	pr_log("Using index file: %.255s\n", full_path);
-	pr_log("Parsing.");
+	pr_log("Found index file at: %.255s\n", full_path);
+	pr_log("Parsing\n");
 
 	uint32_t dot_cnt = 0;
 	// Read File

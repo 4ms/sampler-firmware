@@ -239,7 +239,7 @@ public:
 					// Start playing again unless we faded down because of a play trigger
 					// TODO: Does this ever happen?
 					if (!flags.read(Flag::PlayTrigDelaying))
-						flags.set(Flag::PlayBut);
+						flags.set(Flag::PlayTrig);
 
 					params.play_state = PlayStates::SILENT;
 				}
@@ -293,7 +293,7 @@ public:
 
 					// Start playing again if we're looping, unless we faded down because of a play trigger
 					if (params.looping && !flags.read(Flag::PlayTrigDelaying))
-						flags.set(Flag::PlayBut);
+						flags.set(Flag::PlayTrig);
 
 					params.play_state = PlayStates::SILENT;
 				}

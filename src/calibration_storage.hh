@@ -1,4 +1,5 @@
 #pragma once
+#include "brain_conf.hh"
 #include "elements.hh"
 #include <cstdint>
 
@@ -8,7 +9,11 @@ namespace SamplerKit
 struct CalibrationStorage {
 	uint32_t major_firmware_version = 0;
 	uint32_t minor_firmware_version = 0;
-	int32_t cv_calibration_offset[NumCVs] = {0, 0, 0, 0, 0};
+	int32_t cv_calibration_offset[NumCVs] = {-Brain::CVAdcConf::bi_min_value,
+											 -Brain::CVAdcConf::uni_min_value,
+											 -Brain::CVAdcConf::uni_min_value,
+											 -Brain::CVAdcConf::uni_min_value,
+											 -Brain::CVAdcConf::uni_min_value};
 	int32_t codec_adc_calibration_dcoffset[2] = {0, 0};
 	int32_t codec_dac_calibration_dcoffset[2] = {0, 0};
 	uint32_t led_brightness = 0;

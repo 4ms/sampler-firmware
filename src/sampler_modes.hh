@@ -40,7 +40,7 @@ public:
 	uint32_t sample_file_curpos[NumSamplesPerBank];
 
 	//////////////////
-	// TODO: These are shared between SampleLoader and SamplerModes
+	// TODO: These are shared between SampleLoader and SamplerModes, re-factor these into a struct?
 	FIL fil[NumSamplesPerBank];
 	Cache cache[NumSamplesPerBank];
 	// Whether file is totally cached (from inst_start to inst_end)
@@ -99,7 +99,6 @@ public:
 	// FIXME: Split up the state machinery and the sd card IO
 	// Then only call the SD card io from the main loop update()
 	// And call the state machinery in the audio callback (before/after params.update())
-	// GCC_OPTIMIZE_OFF
 	void process_mode_flags() {
 		if (flags.take(Flag::RevTrig))
 			toggle_reverse();
@@ -455,7 +454,6 @@ private:
 	}
 
 	// Button->toggle
-	GCC_OPTIMIZE_OFF
 	void toggle_playing() {
 		// Start playing
 		if (params.play_state == PlayStates::SILENT || params.play_state == PlayStates::PLAY_FADEDOWN ||

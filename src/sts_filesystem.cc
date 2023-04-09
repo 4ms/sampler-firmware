@@ -361,7 +361,6 @@ uint8_t SampleIndexLoader::dir_contains_assigned_samples(const char *path) {
 //
 //
 //
-GCC_OPTIMIZE_OFF
 void SampleIndexLoader::load_new_folders(void) {
 	DIR root_dir, test_dir;
 	FRESULT res;

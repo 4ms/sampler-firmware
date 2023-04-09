@@ -14,7 +14,7 @@ struct UserSettings {
 	// And changed with button-combos or in system mode
 	bool stereo_mode = true;
 	AutoStopMode auto_stop_on_sample_change = AutoStopMode::Off;
-	bool length_full_start_stop;
+	bool length_full_start_stop = false;
 	bool quantize = false;
 	bool perc_env = true;
 	bool fadeupdown_env = true;

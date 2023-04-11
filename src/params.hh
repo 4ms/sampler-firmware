@@ -277,6 +277,7 @@ private:
 			voct_latch_value = cv_state[PitchCV].cur_val;
 			play_trig_timestamp = HAL_GetTick();
 			flags.set(Flag::PlayTrigDelaying);
+			Debug::Pin1::high();
 		}
 
 		if (controls.rev_jack.is_just_pressed()) {
@@ -420,37 +421,48 @@ private:
 
 	void update_bank_cv() {
 		// Final bank is closest enabled bank to (button_bank_i + bank_cv_i)
-		float bank_cv = (float)controls.read_cv(BankCV) / 4096.f * 60.f; // 0..4096 => 0..60
-		// TODO: anti-hysteresis
+		float cv = cv_state[BankCV].cur_val;
+		float bank_cv = cv / 4096.f * 60.f; // 0..4096 => 0..60
 
 		// Short-circuit if no or low CV:
 		if (bank_cv < 0.5f)
 			bank = bank_button_sel;
 
-		int32_t t_bank = (uint32_t)bank_cv + bank_button_sel;
+		// anti-hysteresis
+		static float last_bank_cv = 0.f;
+		if (std::abs(last_bank_cv - bank_cv) < 0.25f)
+			return;
 
-		// Short-circuit if not wrapping (skip the expensive % calculation)
+		int32_t t_bank = (uint32_t)(bank_cv + 0.5f) + bank_button_sel;
+
+		static int32_t last_t_bank = 0xFFFFFFFF;
+		// Short-circuit if no change in sum of Button + CV
+		if (last_t_bank == t_bank)
+			return;
+
+		Debug::Pin0::high();
+		last_t_bank = t_bank;
+
+		if (t_bank >= 60)
+			t_bank = t_bank % 60;
+
 		if (banks.is_bank_enabled(t_bank)) {
 			bank = t_bank;
+			Debug::Pin0::low();
 			return;
 		}
 
-		if (t_bank > 60) {
-			t_bank = t_bank % 60;
-			if (banks.is_bank_enabled(t_bank)) {
-				bank = t_bank;
-				return;
-			}
-		}
+		int32_t last_bank = banks.prev_enabled_bank(0);
+		if (t_bank > last_bank)
+			t_bank = t_bank % (last_bank + 1);
 
-		// Pick nearest of next or prev enabled bank
-		// next will be 0xFF in case there are no enabled banks higher than t_bank
-		// ...which causes next_diff to always be > prev_diff, therefore we always pick prev
-		int32_t next = banks.next_enabled_bank_0xFF(t_bank);
+		// Pick nearest of next or prev enabled bank, without wrapping
+		int32_t next = banks.next_enabled_bank(t_bank);
 		int32_t prev = banks.prev_enabled_bank(t_bank);
-		int32_t next_diff = (next > t_bank) ? (next - t_bank) : (next + MaxNumBanks - t_bank);
-		int32_t prev_diff = (prev > t_bank) ? (prev - t_bank) : (prev + MaxNumBanks - t_bank);
+		int32_t next_diff = std::abs(next - t_bank);
+		int32_t prev_diff = std::abs(t_bank - prev);
 		bank = (next_diff < prev_diff) ? next : prev;
+		Debug::Pin0::low();
 	}
 
 	void update_leds() {
@@ -555,7 +567,7 @@ private:
 		int16_t prev_val = 0;
 		int16_t delta = 0;
 	};
-	std::array<CVState, NumPots> cv_state;
+	std::array<CVState, NumCVs> cv_state;
 
 	uint32_t end_out_ctr = 0;
 

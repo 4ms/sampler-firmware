@@ -55,8 +55,13 @@ using RevPWM = mdrivlib::MixedRgbLed<RevR50, RevGPwm, RevBPwm, LEDUpdateRateHz>;
 
 using BankRPwm = mdrivlib::TimPwmChan<BrainPin::D1PwmConf>;
 using BankGPwm = mdrivlib::TimPwmChan<BrainPin::D0PwmConf>;
+#ifdef STM32F7
 using BankBPwm = mdrivlib::TimPwmChan<BrainPin::D5PwmConf>;
 using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankBPwm, LEDUpdateRateHz>;
+#else
+using BankB50 = mdrivlib::Led50<BrainPin::D5.gpio, BrainPin::D5.pin, Inverted>;
+using BankPWM = mdrivlib::MixedRgbLed<BankRPwm, BankGPwm, BankB50, LEDUpdateRateHz>;
+#endif
 
 using EndOut = mdrivlib::FPin<BrainPin::D15.gpio, BrainPin::D15.pin, Output, Normal>;
 

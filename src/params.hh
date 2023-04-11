@@ -277,7 +277,6 @@ private:
 			voct_latch_value = cv_state[PitchCV].cur_val;
 			play_trig_timestamp = HAL_GetTick();
 			flags.set(Flag::PlayTrigDelaying);
-			Debug::Pin1::high();
 		}
 
 		if (controls.rev_jack.is_just_pressed()) {
@@ -421,26 +420,22 @@ private:
 
 	void update_bank_cv() {
 		// Final bank is closest enabled bank to (button_bank_i + bank_cv_i)
-		float cv = cv_state[BankCV].cur_val;
-		float bank_cv = cv / 4096.f * 60.f; // 0..4096 => 0..60
+		float bank_cv = (float)cv_state[BankCV].cur_val / 4096.f * 60.f; // 0..4096 => 0..60
 
 		// Short-circuit if no or low CV:
 		if (bank_cv < 0.5f)
 			bank = bank_button_sel;
 
-		// anti-hysteresis
+		// TODO: actual anti-hysteresis
 		static float last_bank_cv = 0.f;
 		if (std::abs(last_bank_cv - bank_cv) < 0.25f)
 			return;
+		last_bank_cv = bank_cv;
 
 		int32_t t_bank = (uint32_t)(bank_cv + 0.5f) + bank_button_sel;
-
 		static int32_t last_t_bank = 0xFFFFFFFF;
-		// Short-circuit if no change in sum of Button + CV
 		if (last_t_bank == t_bank)
 			return;
-
-		Debug::Pin0::high();
 		last_t_bank = t_bank;
 
 		if (t_bank >= 60)
@@ -448,7 +443,6 @@ private:
 
 		if (banks.is_bank_enabled(t_bank)) {
 			bank = t_bank;
-			Debug::Pin0::low();
 			return;
 		}
 
@@ -456,13 +450,17 @@ private:
 		if (t_bank > last_bank)
 			t_bank = t_bank % (last_bank + 1);
 
+		if (banks.is_bank_enabled(t_bank)) {
+			bank = t_bank;
+			return;
+		}
+
 		// Pick nearest of next or prev enabled bank, without wrapping
 		int32_t next = banks.next_enabled_bank(t_bank);
 		int32_t prev = banks.prev_enabled_bank(t_bank);
 		int32_t next_diff = std::abs(next - t_bank);
 		int32_t prev_diff = std::abs(t_bank - prev);
 		bank = (next_diff < prev_diff) ? next : prev;
-		Debug::Pin0::low();
 	}
 
 	void update_leds() {

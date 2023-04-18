@@ -31,6 +31,8 @@
 #include "brain_conf.hh"
 #include "circular_buffer.hh"
 #include "elements.hh"
+#include "params.hh"
+#include "wavefmt.hh"
 #include <array>
 // #include "audio_sdram.h"
 // #include "audio_util.h"
@@ -55,11 +57,33 @@ namespace SamplerKit
 {
 
 struct Recorder {
-	Recorder() {}
+	Params &params;
+
+	Recorder(Params &params)
+		: params{params} {}
+
+	void init_rec_buff(void) {
+		rec_buff = &srec_buff;
+		rec_buff->in = Brain::MemoryStartAddr;
+		rec_buff->out = Brain::MemoryStartAddr;
+		rec_buff->min = Brain::MemoryStartAddr;
+		rec_buff->max = Brain::MemoryEndAddr;
+		rec_buff->size = Brain::MemorySizeBytes; // TODO: bytes or samples?
+		rec_buff->wrapping = 0;
+
+		sample_num_to_record_in = params.sample;
+	}
+
+	void stop_recording() {
+		if (rec_state == RECORDING || rec_state == CREATING_FILE) {
+			rec_state = CLOSING_FILE;
+		}
+	}
 
 	// SDRAM buffer address for recording to sdcard
 	// Codec --> SDRAM (@rec_buff->in) .... SDRAM (@rec_buff->out) --> SD Card:recfil@rec_storage_addr
-	std::array<CircularBuffer, NumSamplesPerBank> srec_buff;
+	CircularBuffer srec_buff;
+	CircularBuffer *rec_buff;
 
 	uint32_t g_error = 0;
 
@@ -72,12 +96,26 @@ struct Recorder {
 	// WAV file specification limits sample data to 4GB = 0xFFFFFFFF Bytes
 	// Note: the wav file itself can exceed 4GB, just the 'data' chunk size must be <=4GB
 	static constexpr uint32_t MAX_REC_SAMPLES = (0xFFFFFFFF - Brain::MemorySizeBytes - (WRITE_BLOCK_SIZE * 2));
-	// uint32_t WATCH_REC_BUFF;
-	// uint32_t WATCH_REC_BUFF_IN;
-	// uint32_t WATCH_REC_BUFF_OUT;
+
+	enum RecStates rec_state;
+	uint32_t samplebytes_recorded;
+	uint8_t sample_num_now_recording;
+	uint8_t sample_num_to_record_in;
+	uint8_t sample_bank_now_recording;
+	uint8_t sample_bytesize_now_recording;
+	char sample_fname_now_recording[FF_MAX_LFN];
+
+	WaveHeaderAndChunk whac_now_recording; // whac = "Wave Header And Chunk"
+
+	bool recording_enabled;
+
+	FIL recfil;
 };
+
+// uint32_t WATCH_REC_BUFF;
+// uint32_t WATCH_REC_BUFF_IN;
+// uint32_t WATCH_REC_BUFF_OUT;
 // extern volatile uint32_t sys_tmr;
-// extern enum g_Errors g_error;
 
 // extern uint8_t i_param[NUM_ALL_CHAN][NUM_I_PARAMS];
 // extern uint8_t global_mode[NUM_GLOBAL_MODES];
@@ -91,37 +129,6 @@ struct Recorder {
 // extern Sample samples[MAX_NUM_BANKS][NUM_SAMPLES_PER_BANK];
 
 // extern SystemCalibrations *system_calibrations;
-
-enum RecStates rec_state;
-uint32_t samplebytes_recorded;
-uint8_t sample_num_now_recording;
-uint8_t sample_num_to_record_in;
-uint8_t sample_bank_now_recording;
-uint8_t sample_bytesize_now_recording;
-char sample_fname_now_recording[_MAX_LFN];
-WaveHeaderAndChunk whac_now_recording; // whac = "Wave Header And Chunk"
-
-uint8_t recording_enabled;
-
-FIL recfil;
-
-void init_rec_buff(void) {
-	rec_buff = &srec_buff;
-	rec_buff->in = REC_BUFF_START;
-	rec_buff->out = REC_BUFF_START;
-	rec_buff->min = REC_BUFF_START;
-	rec_buff->max = REC_BUFF_START + REC_BUFF_SIZE;
-	rec_buff->size = REC_BUFF_SIZE;
-	rec_buff->wrapping = 0;
-
-	sample_num_to_record_in = i_param[REC][SAMPLE];
-}
-
-void stop_recording(void) {
-	if (rec_state == RECORDING || rec_state == CREATING_FILE) {
-		rec_state = CLOSING_FILE;
-	}
-}
 
 void toggle_recording(void) {
 	if (rec_state == RECORDING || rec_state == CREATING_FILE) {

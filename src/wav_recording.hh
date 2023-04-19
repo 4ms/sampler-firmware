@@ -28,29 +28,60 @@
 
 #pragma once
 
+#include "circular_buffer.hh"
 #include "drivers/stm32xx.h"
 #include "ff.h"
+#include "params.hh"
+#include "wavefmt.hh"
 
 namespace SamplerKit
 {
 #define WAV_COMMENT "Recorded on a 4ms Sampler" // goes into wav info chunk and id3 tag
 #define WAV_SOFTWARE "4ms Sampler firmware v"	//	goes into wav info chunk and id3 tag
 
-enum RecStates {
-	REC_OFF,
-	CREATING_FILE,
-	RECORDING,
-	CLOSING_FILE,
-	CLOSING_FILE_TO_REC_AGAIN
+struct Recorder {
+	Params &params;
+	Flags &flags;
+	Sdcard &sd;
+	BankManager &banks;
 
+	CircularBuffer rec_buff;
+
+	uint32_t g_error = 0;
+
+	static constexpr uint32_t WRITE_BLOCK_SIZE = 9216;
+	int16_t rec_buff16[WRITE_BLOCK_SIZE >> 1];
+
+	// WAV file specification limits sample data to 4GB = 0xFFFFFFFF Bytes
+	static constexpr uint32_t MAX_REC_SAMPLES = (0xFFFFFFFF - Brain::MemorySizeBytes - (WRITE_BLOCK_SIZE * 2));
+
+	RecStates rec_state;
+	bool recording_enabled;
+
+	FIL recfil;
+	uint32_t samplebytes_recorded;
+	uint8_t sample_num_now_recording;
+	uint8_t sample_num_to_record_in;
+	uint8_t sample_bank_now_recording;
+	uint8_t sample_bytesize_now_recording;
+	char sample_fname_now_recording[FF_MAX_LFN];
+	WaveHeaderAndChunk whac_now_recording; // whac = "Wave Header And Chunk"
+
+	using ChanBuff = std::array<AudioStreamConf::SampleT, AudioStreamConf::BlockSize>;
+
+	Recorder(Params &params, Flags &flags, Sdcard &sd, BankManager &banks)
+		: params{params}
+		, flags{flags}
+		, sd{sd}
+		, banks{banks} {}
+
+	void stop_recording(void);
+	void toggle_recording(void);
+	void record_audio_to_buffer(ChanBuff &src);
+	void write_buffer_to_storage(void);
+	void init_rec_buff(void);
+	void create_new_recording(uint8_t bitsPerSample, uint8_t numChannels, uint32_t sample_rate);
+	FRESULT write_wav_info_chunk(FIL *wavfil, unsigned int *total_written);
+	FRESULT write_wav_size(FIL *wavfil, uint32_t data_chunk_bytes, uint32_t file_size_bytes);
 };
-
-void stop_recording(void);
-void toggle_recording(void);
-void record_audio_to_buffer(int16_t *src);
-void write_buffer_to_storage(void);
-void init_rec_buff(void);
-void create_new_recording(uint8_t bitsPerSample, uint8_t numChannels, uint32_t sample_rate);
-FRESULT write_wav_info_chunk(FIL *wavfil, uint32_t *total_written);
-FRESULT write_wav_size(FIL *wavfil, uint32_t data_chunk_bytes, uint32_t file_size_bytes);
 } // namespace SamplerKit

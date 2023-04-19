@@ -27,5 +27,11 @@ enum g_Errors {
 	FILE_UNEXPECTEDEOF_WRITE = (1 << 23),
 	CANNOT_WRITE_INDEX = (1 << 24),
 	LSEEK_FPTR_MISMATCH = (1 << 25),
-	HEADER_READ_FAIL = (1 << 26)
+	HEADER_READ_FAIL = (1 << 26),
+
+	MATH_ERROR = (1 << 27),
 };
+
+static inline void check_errors() {
+	//
+}

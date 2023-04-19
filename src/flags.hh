@@ -23,6 +23,9 @@ enum class Flag : uint32_t {
 	PlaySampleChangedValidBright,
 	PlaySampleChangedEmptyBright,
 
+	RecSampleChanged,
+	RecStartedWithTrigger,
+
 	EnterPlayMode,
 	EnterRecordMode,
 

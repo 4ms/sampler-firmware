@@ -40,9 +40,6 @@ namespace SamplerKit
 
 // TODO: constexpr these, move them into SampleBankFiles
 
-#define TMP_DIR "_tmp"
-#define TMP_DIR_SLASH "_tmp/"
-
 #define RENAME_TMP_FILE "sts-renaming-queue.tmp"
 #define ERROR_LOG_FILE "error-log.txt"
 #define SETTINGS_FILE "settings.txt"
@@ -55,8 +52,6 @@ struct SampleIndexLoader {
 		, banks{banks}
 		, index{samples, flags}
 		, flags{flags} {}
-
-	uint8_t new_filename(uint8_t bank, uint8_t sample_num, char *path);
 
 	void load_new_folders();
 	void load_missing_files();

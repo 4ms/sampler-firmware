@@ -38,8 +38,14 @@ public:
 		, banks{banks}
 		, play_buff{splay_buff}
 		, g_error{g_error} {
-		sdcard_update_task.init({.TIMx = TIM7, .period_ns = 1'000'000'000 / 1400, .priority1 = 1, .priority2 = 0},
-								[this]() { time_to_update = true; });
+		sdcard_update_task.init(
+			{
+				.TIMx = TIM7,
+				.period_ns = 1'000'000'000 / 1400,
+				.priority1 = 1,
+				.priority2 = 0,
+			},
+			[this]() { time_to_update = true; });
 	}
 
 	void start() { sdcard_update_task.start(); }

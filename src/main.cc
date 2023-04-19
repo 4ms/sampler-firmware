@@ -13,6 +13,7 @@
 #include "system.hh"
 #include "test_audio.hh"
 #include "user_settings_storage.hh"
+#include "wav_recording.hh"
 
 namespace
 {
@@ -61,6 +62,8 @@ void main() {
 		sampler.audio.update(in, out);
 		Debug::Pin0::low();
 	});
+
+	Recorder recorder{params, flags, sd, banks};
 
 	sampler.start();
 	audio_stream.start();

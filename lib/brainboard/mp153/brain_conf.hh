@@ -66,9 +66,9 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 };
 
 // memory_conf:
-const inline uint32_t MemoryStartAddr = A7_HEAP;
-const inline uint32_t MemorySizeBytes = A7_HEAP_SZ;
-const inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
+constexpr inline uint32_t MemoryStartAddr = 0xCC000000;
+constexpr inline uint32_t MemorySizeBytes = 63 * 1024 * 1024;
+constexpr inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
 
 // using RAMSampleT = int16_t;
 // constexpr inline uint32_t MemorySampleSize = sizeof(RAMSampleT);

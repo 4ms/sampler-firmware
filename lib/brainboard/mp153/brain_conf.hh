@@ -32,9 +32,12 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
     static constexpr auto RequestNum = DMA_REQUEST_ADC1;
     static constexpr auto dma_priority = Low;
     static constexpr IRQn_Type IRQn = DMA2_Stream7_IRQn;
-    static constexpr uint32_t pri = 0;
-    static constexpr uint32_t subpri = 0;
-  };
+		static constexpr uint32_t pri = 0;
+		static constexpr uint32_t subpri = 0;
+	};
+
+	static constexpr uint16_t uni_min_value = 80;
+	static constexpr uint16_t bi_min_value = 80;
 };
 
 struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
@@ -56,21 +59,20 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
     static constexpr auto dma_priority = Low;
     static constexpr IRQn_Type IRQn = DMA2_Stream6_IRQn;
     static constexpr uint32_t pri = 0;
-    static constexpr uint32_t subpri = 0;
-  };
+		static constexpr uint32_t subpri = 0;
+	};
 
-  static constexpr uint16_t min_value = 70;
+	static constexpr uint16_t min_value = 80;
 };
 
 // memory_conf:
-const inline uint32_t MemoryStartAddr = A7_HEAP;
-const inline uint32_t MemorySizeBytes = A7_HEAP_SZ;
-const inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
+constexpr inline uint32_t MemoryStartAddr = 0xCC000000;
+constexpr inline uint32_t MemorySizeBytes = 63 * 1024 * 1024;
+constexpr inline uint32_t MemoryEndAddr = MemoryStartAddr + MemorySizeBytes;
 
 // using RAMSampleT = int16_t;
 // constexpr inline uint32_t MemorySampleSize = sizeof(RAMSampleT);
-// constexpr inline uint32_t MemorySamplesNum = MemorySizeBytes /
-// MemorySampleSize;
+// constexpr inline uint32_t MemorySamplesNum = MemorySizeBytes / MemorySampleSize;
 
 // clock sync conf
 struct LRClkPinChangeConf : mdrivlib::DefaultPinChangeConf {
@@ -92,7 +94,7 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 };
 
 // SDCard
-constexpr inline bool SdmmcWide = true;
+constexpr inline bool SdmmcWide = false;
 constexpr inline uint32_t SdmmcPeriphNum = 1;
 constexpr inline uint32_t SdmmcMaxSpeed = 32'000'000;
 

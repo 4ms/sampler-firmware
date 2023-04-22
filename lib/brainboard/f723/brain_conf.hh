@@ -51,9 +51,12 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
     static constexpr auto RequestNum = DMA_CHANNEL_1;
     static constexpr auto dma_priority = Low;
     static constexpr IRQn_Type IRQn = DMA2_Stream2_IRQn;
-    static constexpr uint32_t pri = 0;
-    static constexpr uint32_t subpri = 0;
-  };
+		static constexpr uint32_t pri = 0;
+		static constexpr uint32_t subpri = 0;
+	};
+
+	static constexpr uint16_t uni_min_value = 40;
+	static constexpr uint16_t bi_min_value = 20;
 };
 
 // memory_conf:

@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:danngreen/brainboard.git
+	branch = main
+	commit = c02fed1bf2778406bd854420dff533e6c87b4081
+	parent = 8f50722cf4db8e166ceeefe35240b94c53d8d8ea
+	method = merge
+	cmdver = 0.4.6

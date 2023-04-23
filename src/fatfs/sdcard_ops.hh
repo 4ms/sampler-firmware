@@ -111,6 +111,10 @@ public:
 				busy_light_off();
 			} break;
 
+			case CTRL_SYNC: 
+				//Nothing?
+				break;
+
 			default:
 				return RES_PARERR;
 		}

@@ -1,7 +1,7 @@
 #pragma once
 #include "drivers/stm32xx.h"
 
-namespace SamplerKit
+namespace SamplerKit::Bootloader
 {
 
 const RCC_OscInitTypeDef osc_conf{
@@ -39,4 +39,4 @@ const RCC_PeriphCLKInitTypeDef rcc_periph_conf = {
 	.Uart4ClockSelection = RCC_UART4CLKSOURCE_PCLK1,
 };
 
-} // namespace SamplerKit
+} // namespace SamplerKit::Bootloader

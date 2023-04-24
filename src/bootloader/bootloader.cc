@@ -1,8 +1,4 @@
-#include "drivers/stm32xx.h"
-
-#define USING_FSK
-// #define USING_QPSK
-
+#include "audio_stream.hh"
 #include "bl_utils.hh"
 #include "bootloader/animation.hh"
 #include "bootloader/buttons.hh"
@@ -10,8 +6,12 @@
 #include "bootloader/leds.hh"
 #include "conf/bootloader_settings.hh"
 #include "conf/flash_layout.hh"
+#include "drivers/stm32xx.h"
+#include "flash.hh"
 #include "system.hh"
-// #include "flash.hh"
+
+#define USING_FSK
+// #define USING_QPSK
 
 #ifdef USING_QPSK
 #include "stm_audio_bootloader/qpsk/demodulator.h"
@@ -24,310 +24,288 @@
 namespace SamplerKit::Bootloader
 {
 
-using namespace stmlib;
-using namespace stm_audio_bootloader;
-
+struct AudioBootloader {
 #ifdef USING_QPSK
-constexpr float kModulationRate = 6000.0;
-constexpr float kBitRate = 12000.0;
-constexpr float kSampleRate = 48000.0;
+	constexpr float kModulationRate = 6000.0;
+	constexpr float kBitRate = 12000.0;
+	constexpr float kSampleRate = 48000.0;
 #else
-constexpr uint32_t kSampleRate = BootloaderConf::SampleRate;	  //-s
-constexpr uint32_t kPausePeriod = BootloaderConf::Encoding.blank; //-b
-constexpr uint32_t kOnePeriod = BootloaderConf::Encoding.one;	  //-n
-constexpr uint32_t kZeroPeriod = BootloaderConf::Encoding.zero;	  //-z
-																  //-p must be 256 (set in fsk/packet_decoder.h)
+	static constexpr uint32_t kSampleRate = BootloaderConf::SampleRate;		 //-s
+	static constexpr uint32_t kPausePeriod = BootloaderConf::Encoding.blank; //-b
+	static constexpr uint32_t kOnePeriod = BootloaderConf::Encoding.one;	 //-n
+	static constexpr uint32_t kZeroPeriod = BootloaderConf::Encoding.zero;	 //-z
 #endif
+	static constexpr uint32_t kStartExecutionAddress = AppFlashAddr;
+	static constexpr uint32_t kStartReceiveAddress = BootloaderReceiveAddr;
+	static constexpr uint32_t kBlkSize = BootloaderConf::ReceiveSectorSize;					   // Flash page size, -g
+	static constexpr uint16_t kPacketsPerBlock = kBlkSize / stm_audio_bootloader::kPacketSize; // kPacketSize=256
 
-constexpr uint32_t kStartExecutionAddress = AppFlashAddr;
-constexpr uint32_t kStartReceiveAddress = BootloaderReceiveAddr;
-constexpr uint32_t kBlkSize = BootloaderConf::ReceiveSectorSize; // Flash page size, -g
+	uint8_t recv_buffer[kBlkSize];
 
-constexpr uint16_t kPacketsPerBlock = kBlkSize / kPacketSize; // kPacketSize=256
-uint8_t recv_buffer[kBlkSize];
+	stm_audio_bootloader::PacketDecoder decoder;
+	stm_audio_bootloader::Demodulator demodulator;
 
-volatile uint32_t systmr = 0;
-PacketDecoder decoder;
-Demodulator demodulator;
+	uint16_t packet_index;
+	uint16_t discard_samples = 8000;
+	uint32_t current_flash_address;
 
-uint16_t packet_index;
-uint16_t discard_samples = 8000;
-uint32_t current_flash_address;
+	enum UiState { UI_STATE_WAITING, UI_STATE_RECEIVING, UI_STATE_ERROR, UI_STATE_WRITING, UI_STATE_DONE };
+	UiState ui_state;
 
-constexpr uint32_t thresh_stepsize = 10;
-constexpr uint32_t thresh_min = 2080;
-constexpr uint32_t thresh_steps = 25;
-uint32_t gatein_threshold = 2200;
+	AudioBootloader() = default;
 
-enum UiState { UI_STATE_WAITING, UI_STATE_RECEIVING, UI_STATE_ERROR, UI_STATE_WRITING, UI_STATE_DONE };
-UiState ui_state;
+	void run() {
+		HAL_Delay(300);
 
-static void animate_until_button_pushed(Animations animation_type, Button button);
-static void update_LEDs();
-static void init_reception();
-static void delay(uint32_t tm);
-static bool write_buffer();
-static void new_block();
-static void new_packet();
-static void set_threshold_led();
+		init_leds();
+		init_buttons();
 
-void main() {
-	uint32_t symbols_processed = 0;
-	uint32_t dly = 0, button_debounce = 0;
-	uint8_t do_bootloader;
-	uint8_t symbol;
-	PacketDecoderState state;
-	bool rcv_err;
-	uint8_t exit_updater = false;
+		animate(ANI_RESET);
 
-	mdrivlib::System::SetVectorTable(BootloaderFlashAddr);
-	mdrivlib::SystemClocks::init_clocks(osc_conf, clk_conf, rcc_periph_conf);
+		uint32_t dly = 32000;
+		uint32_t button_debounce = 0;
+		while (dly--) {
+			if (button_pushed(Button::Rev) && button_pushed(Button::Bank))
+				button_debounce++;
+			else
+				button_debounce = 0;
+		}
 
-	delay(300);
+		HAL_Delay(100);
 
-	init_leds();
-	init_buttons();
-	init_gate_in();
+		bool do_bootloader = (button_debounce > 15000);
+		if (true || do_bootloader) { // FORCE BL
+			init_reception();
 
-	animate(ANI_RESET);
+			AudioStream audio_stream([this](const AudioStreamConf::AudioInBlock &inblock,
+											AudioStreamConf::AudioOutBlock &) {
+				for (auto &in : inblock) {
+					Debug::Pin0::high();
+					bool sample = std::abs(in.sign_extend_chan(0)) > (0x007FFFFFU / 32U); // 10Vpeak => 300mV threshold
 
-	dly = 32000;
-	while (dly--) {
-		if (button_pushed(Button::Rev) && button_pushed(Button::Bank))
-			button_debounce++;
-		else
-			button_debounce = 0;
-	}
-	do_bootloader = (button_debounce > 15000) ? 1 : 0;
-
-	delay(100);
-
-	// Debug:
-	//  DigIO::ClockBusOut init;
-	//  mdrivlib::FPin<mdrivlib::GPIO::E, mdrivlib::PinNum::_3, mdrivlib::PinMode::Output> debug2;
-	//  debug2.low();
-	//  DigIO::ClockBusOut::low();
-
-	if (do_bootloader) {
-		init_reception();
-
-		start_reception(kSampleRate, []() {
-			bool sample = gate_in_read(gatein_threshold);
-			if (!discard_samples) {
-				demodulator.PushSample(sample ? 1 : 0);
-			} else {
-				--discard_samples;
-			}
-		});
-
-		uint32_t button1_exit_armed = 0;
-		uint32_t cycle_but_armed = 0;
-
-		while (button_pushed(Button::Rev) || button_pushed(Button::Bank))
-			;
-
-		delay(300);
-		set_threshold_led();
-
-		while (!exit_updater) {
-			rcv_err = false;
-
-			while (demodulator.available() && !rcv_err && !exit_updater) {
-				symbol = demodulator.NextSymbol();
-				state = decoder.ProcessSymbol(symbol);
-				symbols_processed++;
-
-				switch (state) {
-					case PACKET_DECODER_STATE_SYNCING:
-						animate(ANI_SYNC);
-						break;
-
-					case PACKET_DECODER_STATE_OK:
-						ui_state = UI_STATE_RECEIVING;
-						memcpy(recv_buffer + (packet_index % kPacketsPerBlock) * kPacketSize,
-							   decoder.packet_data(),
-							   kPacketSize);
-						++packet_index;
-						if ((packet_index % kPacketsPerBlock) == 0) {
-							ui_state = UI_STATE_WRITING;
-							bool write_ok = write_buffer();
-							if (!write_ok) {
-								ui_state = UI_STATE_ERROR;
-								rcv_err = true;
-							}
-							new_block();
-						} else {
-							new_packet();
-						}
-						break;
-
-					case PACKET_DECODER_STATE_ERROR_SYNC:
-						rcv_err = true;
-						break;
-
-					case PACKET_DECODER_STATE_ERROR_CRC:
-						rcv_err = true;
-						break;
-
-					case PACKET_DECODER_STATE_END_OF_TRANSMISSION:
-						if (current_flash_address == kStartReceiveAddress) {
-							if (!write_buffer()) {
-								ui_state = UI_STATE_ERROR;
-								rcv_err = true;
-								new_block();
-								break;
-							}
-						}
-						exit_updater = true;
-						ui_state = UI_STATE_DONE;
-						animate_until_button_pushed(ANI_SUCCESS, Button::Play);
-						animate(ANI_RESET);
-						delay(100);
-						break;
-
-					default:
-						break;
-				}
-			}
-			if (rcv_err) {
-				ui_state = UI_STATE_ERROR;
-				animate_until_button_pushed(ANI_FAIL_ERR, Button::Play);
-				animate(ANI_RESET);
-				delay(100);
-				init_reception();
-				exit_updater = false;
-			}
-
-			if (button_pushed(Button::Rev)) {
-				if (cycle_but_armed) {
-					if (packet_index == 0) {
-						gatein_threshold += thresh_stepsize;
-						if (gatein_threshold >= (thresh_min + thresh_steps * thresh_stepsize))
-							gatein_threshold = thresh_min;
-						set_threshold_led();
+					if (!discard_samples) {
+						demodulator.PushSample(sample ? 1 : 0);
 					} else {
-						delay(100);
+						--discard_samples;
+					}
+					Debug::Pin0::low();
+				}
+			});
+			audio_stream.start();
+
+			uint32_t button1_exit_armed = 0;
+			uint32_t cycle_but_armed = 0;
+
+			while (button_pushed(Button::Rev) || button_pushed(Button::Bank))
+				;
+
+			HAL_Delay(300);
+
+			uint8_t exit_updater = false;
+			while (!exit_updater) {
+				stm_audio_bootloader::PacketDecoderState state;
+				uint32_t symbols_processed = 0;
+				uint8_t symbol;
+				bool rcv_err = false;
+
+				while (demodulator.available() && !rcv_err && !exit_updater) {
+					symbol = demodulator.NextSymbol();
+					state = decoder.ProcessSymbol(symbol);
+					symbols_processed++;
+
+					switch (state) {
+						case stm_audio_bootloader::PACKET_DECODER_STATE_SYNCING:
+							animate(ANI_SYNC);
+							break;
+
+						case stm_audio_bootloader::PACKET_DECODER_STATE_OK:
+							ui_state = UI_STATE_RECEIVING;
+							memcpy(recv_buffer + (packet_index % kPacketsPerBlock) * stm_audio_bootloader::kPacketSize,
+								   decoder.packet_data(),
+								   stm_audio_bootloader::kPacketSize);
+							++packet_index;
+							if ((packet_index % kPacketsPerBlock) == 0) {
+								ui_state = UI_STATE_WRITING;
+								bool write_ok = write_buffer();
+								if (!write_ok) {
+									ui_state = UI_STATE_ERROR;
+									rcv_err = true;
+								}
+								new_block();
+							} else {
+								new_packet();
+							}
+							break;
+
+						case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_SYNC:
+							rcv_err = true;
+							break;
+
+						case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_CRC:
+							rcv_err = true;
+							break;
+
+						case stm_audio_bootloader::PACKET_DECODER_STATE_END_OF_TRANSMISSION:
+							if (current_flash_address == kStartReceiveAddress) {
+								if (!write_buffer()) {
+									ui_state = UI_STATE_ERROR;
+									rcv_err = true;
+									new_block();
+									break;
+								}
+							}
+							exit_updater = true;
+							ui_state = UI_STATE_DONE;
+							animate_until_button_pushed(ANI_SUCCESS, Button::Play);
+							animate(ANI_RESET);
+							HAL_Delay(100);
+							break;
+
+						default:
+							break;
+					}
+				}
+				if (rcv_err) {
+					ui_state = UI_STATE_ERROR;
+					animate_until_button_pushed(ANI_FAIL_ERR, Button::Play);
+					animate(ANI_RESET);
+					HAL_Delay(100);
+					init_reception();
+					exit_updater = false;
+				}
+
+				if (button_pushed(Button::Rev)) {
+					if (cycle_but_armed) {
+						HAL_Delay(100);
 						init_reception();
 					}
-				}
-				cycle_but_armed = 0;
-			} else
-				cycle_but_armed = 1;
+					cycle_but_armed = 0;
+				} else
+					cycle_but_armed = 1;
 
-			if (button_pushed(Button::Play)) {
-				if (button1_exit_armed) {
-					if (ui_state == UI_STATE_WAITING) {
-						exit_updater = true;
+				if (button_pushed(Button::Play)) {
+					if (button1_exit_armed) {
+						if (ui_state == UI_STATE_WAITING) {
+							exit_updater = true;
+						}
 					}
-				}
-				button1_exit_armed = 0;
-			} else
-				button1_exit_armed = 1;
+					button1_exit_armed = 0;
+				} else
+					button1_exit_armed = 1;
+			}
+			ui_state = UI_STATE_DONE;
+			while (button_pushed(Button::Play) || button_pushed(Button::Rev)) {
+				;
+			}
 		}
-		ui_state = UI_STATE_DONE;
-		while (button_pushed(Button::Play) || button_pushed(Button::Rev)) {
-			;
-		}
+
+		mdrivlib::System::reset_buses();
+		mdrivlib::System::reset_RCC();
+		mdrivlib::System::jump_to(kStartExecutionAddress);
 	}
 
-	mdrivlib::System::reset_buses();
-	mdrivlib::System::reset_RCC();
-	mdrivlib::System::jump_to(kStartExecutionAddress);
-}
-
-void init_reception() {
+	void init_reception() {
 #ifdef USING_QPSK
-	// QPSK
-	decoder.Init((uint16_t)20000);
-	demodulator.Init(
-		kModulationRate / kSampleRate * 4294967296.0f, kSampleRate / kModulationRate, 2.f * kSampleRate / kBitRate);
-	demodulator.SyncCarrier(true);
-	decoder.Reset();
+		// QPSK
+		decoder.Init((uint16_t)20000);
+		demodulator.Init(
+			kModulationRate / kSampleRate * 4294967296.0f, kSampleRate / kModulationRate, 2.f * kSampleRate / kBitRate);
+		demodulator.SyncCarrier(true);
+		decoder.Reset();
 #else
-	// FSK
-	decoder.Init();
-	decoder.Reset();
-	demodulator.Init(kPausePeriod, kOnePeriod, kZeroPeriod); // pause_thresh = 24. one_thresh = 6.
-	demodulator.Sync();
+		// FSK
+		decoder.Init();
+		decoder.Reset();
+		demodulator.Init(kPausePeriod, kOnePeriod, kZeroPeriod); // pause_thresh = 24. one_thresh = 6.
+		demodulator.Sync();
 #endif
 
-	current_flash_address = kStartReceiveAddress;
-	packet_index = 0;
-	ui_state = UI_STATE_WAITING;
-}
-
-bool write_buffer() {
-	if ((current_flash_address + kBlkSize) <= get_sector_addr(NumFlashSectors)) {
-		flash_write_page(recv_buffer, current_flash_address, kBlkSize);
-		current_flash_address += kBlkSize;
-		return true;
-	} else {
-		return false;
+		current_flash_address = kStartReceiveAddress;
+		packet_index = 0;
+		ui_state = UI_STATE_WAITING;
 	}
-}
 
-void update_LEDs() {
-	if (ui_state == UI_STATE_RECEIVING)
-		animate(ANI_RECEIVING);
+	bool write_buffer() {
+		if ((current_flash_address + kBlkSize) <= get_sector_addr(NumFlashSectors)) {
+			flash_write_page(recv_buffer, current_flash_address, kBlkSize);
+			current_flash_address += kBlkSize;
+			return true;
+		} else {
+			return false;
+		}
+	}
 
-	else if (ui_state == UI_STATE_WRITING)
-		animate(ANI_WRITING);
+	void update_LEDs() {
+		if (ui_state == UI_STATE_RECEIVING)
+			animate(ANI_RECEIVING);
 
-	else if (ui_state == UI_STATE_WAITING)
-		animate(ANI_WAITING);
+		else if (ui_state == UI_STATE_WRITING)
+			animate(ANI_WRITING);
 
-	else // if (ui_state == UI_STATE_DONE)
-	{}
-}
+		else if (ui_state == UI_STATE_WAITING)
+			animate(ANI_WAITING);
 
-void new_block() {
-	decoder.Reset();
+		else // if (ui_state == UI_STATE_DONE)
+		{}
+	}
+
+	void new_block() {
+		decoder.Reset();
 #ifdef USING_FSK
-	demodulator.Sync(); // FSK
+		demodulator.Sync(); // FSK
 #else
-	demodulator.SyncCarrier(false); // QPSK
+		demodulator.SyncCarrier(false); // QPSK
 #endif
-}
+	}
 
-void new_packet() {
+	void new_packet() {
 #ifdef USING_FSK
-	decoder.Reset(); // FSK
+		decoder.Reset(); // FSK
 #else
-	demodulator.SyncDecision();		// QPSK
+		demodulator.SyncDecision();		// QPSK
 #endif
-}
-
-void animate_until_button_pushed(Animations animation_type, Button button) {
-	animate(ANI_RESET);
-
-	while (!button_pushed(button)) {
-		delay(1);
-		animate(animation_type);
 	}
-	while (button_pushed(button)) {
-		delay(1);
-	}
-}
 
-void delay(uint32_t ticks) {
-	uint32_t i = systmr;
-	while ((systmr - i) < ticks) {
-		;
+	void animate_until_button_pushed(Animations animation_type, Button button) {
+		animate(ANI_RESET);
+
+		while (!button_pushed(button)) {
+			HAL_Delay(1);
+			animate(animation_type);
+		}
+		while (button_pushed(button)) {
+			HAL_Delay(1);
+		}
 	}
-}
+};
 
 } // namespace SamplerKit::Bootloader
 
-extern "C" void SysTick_Handler(void) {
-	SamplerKit::Bootloader::systmr = SamplerKit::Bootloader::systmr + 1;
-	SamplerKit::Bootloader::update_LEDs();
+void main() {
+
+	HAL_Init();
+	SamplerKit::Bootloader::System system_init;
+	SamplerKit::Bootloader::AudioBootloader bootloader;
+
+	mdrivlib::Timekeeper update_task{{
+										 .TIMx = TIM7,
+										 .period_ns = 1'000'000'000 / 1'000, // 1'000Hz = 1ms
+										 .priority1 = 1,
+										 .priority2 = 1,
+									 },
+									 [&] {
+										 //
+										 bootloader.update_LEDs();
+									 }};
+	update_task.start();
+	bootloader.run();
+	while (true) {
+		__NOP();
+	}
 }
 
-extern "C" void NMI_Handler() { __BKPT(); }
-extern "C" void HardFault_Handler() { __BKPT(); }
-extern "C" void MemManage_Handler() { __BKPT(); }
-extern "C" void BusFault_Handler() { __BKPT(); }
-extern "C" void UsageFault_Handler() { __BKPT(); }
-extern "C" void SVC_Handler() { __BKPT(); }
-extern "C" void DebugMon_Handler() { __BKPT(); }
-extern "C" void PendSV_Handler() { __BKPT(); }
+void recover_from_task_fault() {
+	while (true) {
+		__NOP();
+	}
+}

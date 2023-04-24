@@ -1,12 +1,10 @@
 #include "bootloader/animation.hh"
 #include "bootloader/leds.hh"
-// #include "settings.h"
+#include "drivers/stm32xx.h"
 #include <cstdint>
 
-extern volatile uint32_t systmr;
-
 void animate(Animations animation_type) {
-	uint32_t cur_tm = systmr;
+	uint32_t cur_tm = HAL_GetTick();
 	static uint32_t last_tm = 0;
 	static uint8_t ctr = 0;
 	constexpr uint32_t TICKS_PER_MS = 1;

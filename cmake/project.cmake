@@ -24,18 +24,15 @@ function(set_hal_sources sources family_name)
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_rcc.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_rcc_ex.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sai.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sd.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_uart.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_usart.c
-      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sd.c
-      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_fmc.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_sdmmc.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       PARENT_SCOPE
   )
-  # if(NOT (family_name EQUAL "stm32mp1")) set(${sources} ${sources}
-  # ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_flash.c
-  # ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_flash_ex.c PARENT_SCOPE) endif()
 endfunction()
 
 function(set_bootloader_hal_sources sources family_name)
@@ -43,18 +40,21 @@ function(set_bootloader_hal_sources sources family_name)
   set(${sources}
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_cortex.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_dma.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_gpio.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_i2c.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_i2c_ex.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_pwr.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_pwr_ex.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_rcc.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_rcc_ex.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_sai.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_tim.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_uart.c
+      ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_usart.c
       ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_ll_tim.c
       PARENT_SCOPE
   )
-  # if(NOT (family_name EQUAL "stm32mp1")) set(${sources} ${sources}
-  # ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_flash.c
-  # ${root}/lib/${family_name_uc}xx_HAL_Driver/Src/${family_name}xx_hal_flash_ex.c PARENT_SCOPE) endif()
 endfunction()
 
 # ############### Common commands #####################
@@ -179,6 +179,8 @@ function(create_bootloader_target target)
     ${root}/lib/mdrivlib/drivers/pin.cc
     ${root}/lib/mdrivlib/drivers/timekeeper.cc
     ${root}/lib/mdrivlib/drivers/tim.cc
+    ${root}/lib/mdrivlib/drivers/i2c.cc
+    ${root}/lib/mdrivlib/drivers/codec_PCM3060.cc
     ${TARGET_BOOTLOADER_SOURCES}
     ${BOOTLOADER_HAL_SOURCES}
   )
@@ -228,47 +230,20 @@ function(create_bootloader_target target)
 
 endfunction()
 
-function(
-  set_target_sources_includes
-  project_driver_dir
-  mdrivlib_target_dir
-  mdrivlib_target_dir_2
-  family_name
-)
-  # family_name is like stm32f7
-  string(TOLOWER ${family_name} family_name)
-  string(TOUPPER ${family_name} family_name_uc)
+# function( set_target_sources_includes project_driver_dir mdrivlib_target_dir mdrivlib_target_dir_2 family_name ) #
+# family_name is like stm32f7 string(TOLOWER ${family_name} family_name) string(TOUPPER ${family_name} family_name_uc)
 
-  # Add target-specific project files and paths: set(TARGET_SOURCES ${TARGET_SOURCES} PARENT_SCOPE)
+# # Add target-specific project files and paths: set(TARGET_SOURCES ${TARGET_SOURCES} PARENT_SCOPE)
 
-  set(TARGET_INCLUDES
-      ${TARGET_INCLUDES}
-      ${project_driver_dir}
-      ${mdrivlib_target_dir}
-      ${mdrivlib_target_dir_2}
-      ${root}/lib/CMSIS/Device/ST/${family_name_uc}xx/Include
-      ${root}/lib/CMSIS/Core_A/Include
-      ${root}/lib/${family_name_uc}xx_HAL_Driver/Inc
-      ${root}/lib/brainboard
-      PARENT_SCOPE
-  )
+# set(TARGET_INCLUDES ${TARGET_INCLUDES} ${project_driver_dir} ${mdrivlib_target_dir} ${mdrivlib_target_dir_2}
+# ${root}/lib/CMSIS/Device/ST/${family_name_uc}xx/Include ${root}/lib/CMSIS/Core_A/Include
+# ${root}/lib/${family_name_uc}xx_HAL_Driver/Inc ${root}/lib/brainboard PARENT_SCOPE )
 
-  set(TARGET_BOOTLOADER_SOURCES
-      ${TARGET_BOOTLOADER_SOURCES}
-      PARENT_SCOPE
-  )
+# set(TARGET_BOOTLOADER_SOURCES ${TARGET_BOOTLOADER_SOURCES} PARENT_SCOPE )
 
-  # string(REGEX MATCH "^stm32([fghlmuw]p?[0-9bl])_?(m0plus|m4|m7)?" family_name ${family_name}) set(short_family_name
-  # ${CMAKE_MATCH_1})
+# # string(REGEX MATCH "^stm32([fghlmuw]p?[0-9bl])_?(m0plus|m4|m7)?" family_name ${family_name}) set(short_family_name #
+# ${CMAKE_MATCH_1})
 
-  set_hal_sources(HAL_SOURCES ${family_name})
-  set(HAL_SOURCES
-      ${HAL_SOURCES}
-      PARENT_SCOPE
-  )
-  set_bootloader_hal_sources(BOOTLOADER_HAL_SOURCES ${family_name})
-  set(BOOTLOADER_HAL_SOURCES
-      ${BOOTLOADER_HAL_SOURCES}
-      PARENT_SCOPE
-  )
-endfunction()
+# set_hal_sources(HAL_SOURCES ${family_name}) set(HAL_SOURCES ${HAL_SOURCES} PARENT_SCOPE )
+# set_bootloader_hal_sources(BOOTLOADER_HAL_SOURCES ${family_name}) set(BOOTLOADER_HAL_SOURCES ${BOOTLOADER_HAL_SOURCES}
+# PARENT_SCOPE ) endfunction()

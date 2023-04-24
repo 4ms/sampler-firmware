@@ -1,7 +1,7 @@
 /*
- * sts_sampleindex.c - interface to the sample index file
+ * sts_sampleindex.cc - interaction with the sample index file
  *
- * Author: Hugo Paris (hugoplho@gmail.com), Dan Green (danngreen1@gmail.com)
+ * Author: Dan Green (danngreen1@gmail.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -387,6 +387,9 @@ bool SampleIndex::check_sampleindex_valid(const char *indexfilename) {
 	return true;
 }
 
+// load_sampleindex_file
+// Author: Hugo Paris
+//
 // Loads a sample index file
 // Sets samples[][] for all banks, or just one bank (specified with banks=bank# or banks=MaxNumBanks --> all banks)
 //
@@ -537,7 +540,8 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 					{
 						// load previous sample in next available slot (will be overwitten if a following file
 						// specifically assigned there)
-						while (samples[cur_bank][cur_sample].file_found) // until empty slot found
+						while (samples[cur_bank][cur_sample].file_status !=
+							   FileStatus::NotFound) // until empty slot found
 						{
 							if (cur_sample < NumSamplesPerBank - 1) {
 								cur_sample++;
@@ -549,7 +553,7 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 								break;
 							} // exit if cur_sample==NumSamplesPerBank
 						}
-						if (!samples[cur_bank][cur_sample].file_found) // if empty slot found
+						if (samples[cur_bank][cur_sample].file_status == FileStatus::NotFound) // if empty slot found
 						{
 							// TRY AND OPEN FILE
 							res = FR_INT_ERR;
@@ -591,7 +595,7 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 									else
 									{
 										pr_dbg("Loaded OK\n");
-										samples[cur_bank][cur_sample].file_found = 1;
+										samples[cur_bank][cur_sample].file_status = FileStatus::Found;
 										load_data = PLAY_START;
 									} // othewise set file as found and move on to next play data
 								} else {
@@ -607,7 +611,8 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 									str_cpy(samples[cur_bank][cur_sample].filename, full_path);
 									// Copy the file name into the sample struct element - This is
 									// used to find the missing file, or other files in its folder
-									samples[cur_bank][cur_sample].file_found = 0; // Mark file as not found
+									samples[cur_bank][cur_sample].file_status =
+										FileStatus::NotFound; // Mark file as not found
 								} else {
 									f_close(&temp_wav_file);
 									load_data = 0;
@@ -620,7 +625,7 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 							}
 						} else // otherwise, if no empty slot available
 						{
-							samples[cur_bank][cur_sample].file_found = 0; // mark file as not found
+							samples[cur_bank][cur_sample].file_status = FileStatus::NotFound; // mark file as not found
 							load_data = 0;
 							read_name = 1;
 							break; // skip loading sample play information
@@ -658,7 +663,8 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 						else
 						{
 							// find next available slot
-							while (samples[cur_bank][cur_sample].file_found) // until empty slot found
+							while (samples[cur_bank][cur_sample].file_status !=
+								   FileStatus::NotFound) // until empty slot found
 							{
 								if (cur_sample < NumSamplesPerBank - 1) {
 									cur_sample++;
@@ -668,10 +674,10 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 									break;
 								} // exit if cur_sample==NumSamplesPerBank
 							}
-							if (samples[cur_bank][cur_sample].file_found) // if no empty slot
+							if (samples[cur_bank][cur_sample].file_status == FileStatus::Found) // if no empty slot
 							{
 								str_cpy(samples[cur_bank][cur_sample].filename, full_path); // keep track of unused file
-								samples[cur_bank][cur_sample].file_found = 0;				// Mark file as not found
+								samples[cur_bank][cur_sample].file_status = FileStatus::NotFound;
 								load_data = 0;
 								token[0] = '\0';
 								read_name = 1;
@@ -685,8 +691,8 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 
 					if (load_data == SAMPLE_SLOT) // if the data loading has just been armed
 					{
-						if (num_buff == UINT32_MAX) {					  // if no slot number not indicated
-							samples[cur_bank][cur_sample].file_found = 0; // mark file as not found
+						if (num_buff == UINT32_MAX) { // if no slot number not indicated
+							samples[cur_bank][cur_sample].file_status = FileStatus::NotFound;
 							load_data = 0;
 							token[0] = '\0';
 							read_name = 1;
@@ -729,7 +735,7 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 							if (!invalid_banknum && cur_sample < NumSamplesPerBank) {
 								str_cpy(samples[cur_bank][cur_sample].filename,
 										full_path); // use whatever file_name was opened
-								samples[cur_bank][cur_sample].file_found = 1;
+								samples[cur_bank][cur_sample].file_status = FileStatus::Found;
 								sample_was_loaded = true; // At least a sample was loaded
 								head_load =
 									load_sample_header(&samples[cur_bank][cur_sample],
@@ -746,7 +752,7 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 							// if header information couldn't load, treat file as if it couldn'tbe found
 							if (head_load != FR_OK) {
 								if (!invalid_banknum && cur_sample < NumSamplesPerBank) {
-									samples[cur_bank][cur_sample].file_found = 0;
+									samples[cur_bank][cur_sample].file_status = FileStatus::NotFound;
 								}
 								load_data = 0;
 								token[0] = '\0';
@@ -762,9 +768,9 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 							if (!invalid_banknum && cur_sample < NumSamplesPerBank) {
 								str_cpy(samples[cur_bank][cur_sample].filename,
 										full_path); // Copy the file name into the sample struct element
-								samples[cur_bank][cur_sample].file_found =
-									0; // Mark file as not found, later used to find missing file, or other files in its
-									   // folder
+								samples[cur_bank][cur_sample].file_status = FileStatus::NotFound;
+								// Mark file as not found, later used to find missing file, or other files in its
+								// folder
 							}
 							load_data = 0;
 							token[0] = '\0';

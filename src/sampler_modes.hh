@@ -9,6 +9,7 @@
 #include "params.hh"
 #include "sampler_calcs.hh"
 #include "sdcard.hh"
+#include "wav_recording.hh"
 
 namespace SamplerKit
 {
@@ -21,6 +22,8 @@ class SamplerModes {
 	Sdcard &sd;
 	SampleList &samples;
 	BankManager &banks;
+	Recorder &recorder;
+
 	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
 	uint32_t &g_error;
 
@@ -53,6 +56,7 @@ public:
 				 Flags &flags,
 				 Sdcard &sd,
 				 BankManager &banks,
+				 Recorder &recorder,
 				 std::array<CircularBuffer, NumSamplesPerBank> &splay_buff,
 				 uint32_t &g_error)
 		: params{params}
@@ -60,6 +64,7 @@ public:
 		, sd{sd}
 		, samples{banks.samples}
 		, banks{banks}
+		, recorder{recorder}
 		, play_buff{splay_buff}
 		, g_error{g_error} {
 
@@ -124,8 +129,11 @@ public:
 			flags.clear(Flag::LatchVoltOctCV);
 		}
 
+		if (flags.take(Flag::RecBut))
+			recorder.toggle_recording();
+
 		if (flags.take(Flag::RecTrig))
-			toggle_recording();
+			recorder.toggle_recording();
 
 		if (flags.take(Flag::ToggleLooping)) {
 			params.looping = !params.looping;
@@ -178,13 +186,16 @@ public:
 		// Force Reload flag is set (Edit mode, or loaded new index)
 		// File is empty (never been read since entering this bank)
 		// Sample File Changed flag is set (new file was recorded into this slot)
-		if (flags.take(Flag::ForceFileReload) || (fil[samplenum].obj.fs == 0)) {
+		if (flags.take(Flag::ForceFileReload) || (fil[samplenum].obj.fs == 0) ||
+			(s_sample->file_status == FileStatus::NewFile))
+		{
 			res = reload_sample_file(&fil[samplenum], s_sample, sd);
 			if (res != FR_OK) {
 				g_error |= FILE_OPEN_FAIL;
 				params.play_state = PlayStates::SILENT;
 				return;
 			}
+			s_sample->file_status = FileStatus::Found;
 
 			res = sd.create_linkmap(&fil[samplenum], samplenum);
 			if (res == FR_NOT_ENOUGH_CORE) {
@@ -500,10 +511,6 @@ private:
 		{
 			params.play_state = PlayStates::RETRIG_FADEDOWN;
 		}
-	}
-
-	void toggle_recording() {
-		// TODO: Recording
 	}
 
 	void init_changed_bank() {

@@ -1,7 +1,7 @@
 /*
- * wav_recording.h - wav file recording routines
+ * wav_recording.hh - wav file recording routines
  *
- * Authors: Dan Green (danngreen1@gmail.com), Hugo Paris (hugoplo@gmail.com)
+ * Author: Dan Green (danngreen1@gmail.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ struct Recorder {
 	// WAV file specification limits sample data to 4GB = 0xFFFFFFFF Bytes
 	static constexpr uint32_t MAX_REC_SAMPLES = (0xFFFFFFFF - Brain::MemorySizeBytes - (WRITE_BLOCK_SIZE * 2));
 
-	RecStates rec_state;
+	RecStates &rec_state;
 	bool recording_enabled;
 
 	FIL recfil;
@@ -67,19 +67,20 @@ struct Recorder {
 	char sample_fname_now_recording[FF_MAX_LFN];
 	WaveHeaderAndChunk whac_now_recording; // whac = "Wave Header And Chunk"
 
-	using ChanBuff = std::array<AudioStreamConf::SampleT, AudioStreamConf::BlockSize>;
-
 	Recorder(Params &params, Flags &flags, Sdcard &sd, BankManager &banks)
 		: params{params}
 		, flags{flags}
 		, sd{sd}
-		, banks{banks} {}
+		, banks{banks}
+		, rec_state{params.rec_state} {
+		init_rec_buff();
+	}
 
-	void stop_recording(void);
-	void toggle_recording(void);
-	void record_audio_to_buffer(ChanBuff &src);
-	void write_buffer_to_storage(void);
-	void init_rec_buff(void);
+	void stop_recording();
+	void toggle_recording();
+	void record_audio_to_buffer(const AudioStreamConf::AudioInBlock &src);
+	void write_buffer_to_storage();
+	void init_rec_buff();
 	void create_new_recording(uint8_t bitsPerSample, uint8_t numChannels, uint32_t sample_rate);
 	FRESULT write_wav_info_chunk(FIL *wavfil, unsigned int *total_written);
 	FRESULT write_wav_size(FIL *wavfil, uint32_t data_chunk_bytes, uint32_t file_size_bytes);

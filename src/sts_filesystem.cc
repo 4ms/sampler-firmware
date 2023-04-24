@@ -189,9 +189,10 @@ void SampleIndexLoader::load_empty_slots(void) {
 			{
 				sd.find_next_ext_in_dir_alpha(
 					0, 0, 0, Sdcard::Sdcard::FIND_ALPHA_INIT_FOLDER); // Initialize alphabetical folder search
-				samples[bank][samplenum].file_found = 0;
+				samples[bank][samplenum].file_status = FileStatus::NotFound;
 
-				while (!samples[bank][samplenum].file_found) { // Search alphabetically for any wav file in bankpath
+				while (samples[bank][samplenum].file_status == FileStatus::NotFound)
+				{ // Search alphabetically for any wav file in bankpath
 					uint8_t f = sd.find_next_ext_in_dir_alpha(
 						bankpath_noslash, ".wav", filename, Sdcard::Sdcard::FIND_ALPHA_DONT_INIT);
 					if (f != FR_OK) {
@@ -212,7 +213,7 @@ void SampleIndexLoader::load_empty_slots(void) {
 						if (ires == FR_OK) // If we can load the file's wav header, then success!
 						{
 							str_cpy(samples[bank][samplenum].filename, fullpath); // Set the filename (full path)
-							samples[bank][samplenum].file_found = 1;			  // Mark it as found
+							samples[bank][samplenum].file_status = FileStatus::Found;
 						}
 					}
 					f_close(&temp_file);
@@ -247,7 +248,7 @@ void SampleIndexLoader::load_missing_files(void) {
 	{
 
 		for (samplenum = 0; samplenum < NumSamplesPerBank; samplenum++) {
-			if (samples[bank][samplenum].filename[0] && !samples[bank][samplenum].file_found) {
+			if (samples[bank][samplenum].filename[0] && samples[bank][samplenum].file_status == FileStatus::NotFound) {
 				if (str_split(samples[bank][samplenum].filename, '/', path, filename) ==
 					0) // split up filename into path and filename
 				{
@@ -268,7 +269,7 @@ void SampleIndexLoader::load_missing_files(void) {
 				sd.find_next_ext_in_dir_alpha(
 					0, 0, 0, Sdcard::Sdcard::FIND_ALPHA_INIT_FOLDER); // Initialize alphabetical folder search
 
-				while (!samples[bank][samplenum].file_found) // for each file not found:
+				while (samples[bank][samplenum].file_status == FileStatus::NotFound) // for each file not found:
 				{
 					// Search alphabetically for any wav file in original file's path
 					auto res =
@@ -303,7 +304,7 @@ void SampleIndexLoader::load_missing_files(void) {
 
 						if (res == FR_OK) {
 							str_cpy(samples[bank][samplenum].filename, fullpath); // Set the filename (full path)
-							samples[bank][samplenum].file_found = 1;			  // Mark it as found
+							samples[bank][samplenum].file_status = FileStatus::Found;
 							banks.enable_bank(bank);
 						}
 					}
@@ -311,7 +312,7 @@ void SampleIndexLoader::load_missing_files(void) {
 				}
 
 				// If no files are found, try searching anywhere for the filename
-				if (!samples[bank][samplenum].file_found) {
+				if (samples[bank][samplenum].file_status == FileStatus::NotFound) {
 					samples[bank][samplenum].filename[0] = '\0'; // not found: blank out filename
 					// ToDo: If we change indexing, we may not want to blank out the filename here
 					// so that we can write "path/notfoundfile.wav -- NOT FOUND" in the index text file

@@ -27,6 +27,7 @@
  */
 #pragma once
 #include <cstdint>
+#include <span>
 
 struct CircularBuffer {
 	uint32_t in;
@@ -47,16 +48,27 @@ struct CircularBuffer {
 		// Memory::wait_until_ready();
 	}
 
-	uint32_t memory_read16_cb(int16_t *rd_buff, uint32_t num_samples, uint8_t decrement) {
-		uint32_t num_filled = 0;
+	// FIXME: For all the memory IO, we could use memcpy to save some cycles
+	//  - Is it worth it? Memory IO is not the bottleneck (SD card IO is)
+	//  - We'd need to write new under/overflow checks
+
+	// TODO: use span<int16_t>
+	uint32_t memory_read16(std::span<int16_t> rd_buff, bool decrement) {
+		return memory_read16(rd_buff.data(), rd_buff.size(), decrement);
+	}
+
+	// Read num_samples from the out ptr, and put them in rd_buff
+	// Pad rd_buff with 0's if we underflow our CircularBuffer
+	uint32_t memory_read16(int16_t *rd_buff, uint32_t num_samples, bool decrement) {
+		uint32_t num_underflowed = 0;
 		for (uint32_t i = 0; i < num_samples; i++) {
 
 			if (out == in)
-				num_filled = 1;
-			else if (num_filled)
-				num_filled++;
+				num_underflowed = 1;
+			else if (num_underflowed)
+				num_underflowed++;
 
-			if (num_filled)
+			if (num_underflowed)
 				rd_buff[i] = 0;
 			else {
 				wait_memory_ready();
@@ -66,12 +78,11 @@ struct CircularBuffer {
 			offset_out_address(2, decrement);
 			out = (out & 0xFFFFFFFE);
 		}
-		return num_filled;
+		return num_underflowed;
 	}
 
-	uint32_t memory_read24_cb(uint8_t *rd_buff, uint32_t num_samples, uint8_t decrement) {
+	uint32_t memory_read24(uint8_t *rd_buff, uint32_t num_samples, bool decrement) {
 		uint32_t i;
-		uint32_t num_filled = 0;
 		uint32_t num_bytes = num_samples * 3;
 
 		for (i = 0; i < num_bytes; i++) {
@@ -79,12 +90,12 @@ struct CircularBuffer {
 			rd_buff[i] = *((uint8_t *)(out));
 			offset_out_address(1, decrement);
 		}
-		return num_filled;
+		return 0; // does not check for overflow
 	}
 
 	// Grab 16-bit ints and write them into b as 16-bit ints
 	// num_words should be the number of 32-bit words to read from wr_buff (bytes>>2)
-	uint32_t memory_write_16as16(uint32_t *wr_buff, uint32_t num_words, uint8_t decrement) {
+	uint32_t memory_write_16as16(uint32_t *wr_buff, uint32_t num_words, bool decrement) {
 		uint32_t i;
 		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
@@ -112,8 +123,8 @@ struct CircularBuffer {
 			return 0; // pointers did not cross
 	}
 
-	// Grab 24-bit words and write them into b as 16-bit values
-	uint32_t memory_write_24as16(uint8_t *wr_buff, uint32_t num_bytes, uint8_t decrement) {
+	// Convert 24-bit words from wr_buff into 16-bit words, and write to the in ptr
+	uint32_t memory_write_24as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
 		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
@@ -137,8 +148,32 @@ struct CircularBuffer {
 			return 0; // pointers did not cross
 	}
 
+	// Convert 24-bit words padded as 32-bits from wr_buff into 16-bit words, and write to the in ptr
+	uint32_t memory_write_24in32as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
+		uint32_t i;
+		uint8_t heads_crossed = 0;
+		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
+
+		start_polarity = (in < out) ? 0 : 1;
+		start_wrap = wrapping;
+
+		for (i = 0; i < num_bytes; i += 4) {
+			wait_memory_ready();
+			*((int16_t *)in) = (int16_t)(wr_buff[i + 2] << 8 | wr_buff[i + 1]);
+			offset_in_address(2, decrement);
+		}
+
+		end_polarity = (in < out) ? 0 : 1;
+		end_wrap = wrapping; // 0 or 1
+
+		if ((end_wrap + start_wrap + start_polarity + end_polarity) & 0b01)
+			return 1; // warning: in pointer and out pointer crossed
+		else
+			return 0; // pointers did not cross
+	}
+
 	// Grab 32-bit words and write them into b as 16-bit values
-	uint32_t memory_write_32ias16(uint8_t *wr_buff, uint32_t num_bytes, uint8_t decrement) {
+	uint32_t memory_write_32ias16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
 		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
@@ -162,7 +197,7 @@ struct CircularBuffer {
 	}
 
 	// Grab 32-bit floats and write them into b as 16-bit values
-	uint32_t memory_write_32fas16(float *wr_buff, uint32_t num_floats, uint8_t decrement) {
+	uint32_t memory_write_32fas16(float *wr_buff, uint32_t num_floats, bool decrement) {
 		uint32_t i;
 		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
@@ -192,7 +227,7 @@ struct CircularBuffer {
 	}
 
 	// Grab 8-bit ints from wr_buff and write them into b as 16-bit ints
-	uint32_t memory_write_8as16(uint8_t *wr_buff, uint32_t num_bytes, uint8_t decrement) {
+	uint32_t memory_write_8as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
 		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
@@ -216,7 +251,7 @@ struct CircularBuffer {
 			return 0; // pointers did not cross
 	}
 
-	uint32_t memory_write16_cb(int16_t *wr_buff, uint32_t num_samples, uint8_t decrement) {
+	uint32_t memory_write16(int16_t *wr_buff, uint32_t num_samples, bool decrement) {
 		uint32_t i;
 		uint32_t heads_crossed = 0;
 

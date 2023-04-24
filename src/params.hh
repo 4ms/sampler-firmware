@@ -61,11 +61,6 @@ struct Params {
 	float length = 1.f;
 	float volume = 1.f;
 
-	// global_mode[]:
-	enum class MonitorModes { OFF = 0b00, BOTH = 0b11, LEFT = 0b01, RIGHT = 0b10 };
-	MonitorModes monitor_recording = MonitorModes::OFF;
-	bool enable_recording = false;
-
 	// These are what's playing, even if the controls have selected something else
 	uint8_t sample_num_now_playing;
 	uint8_t sample_bank_now_playing;
@@ -124,8 +119,7 @@ struct Params {
 
 		if (op_mode == OperationMode::Playback) {
 			update_play_mode_buttons();
-		}
-		if (op_mode == OperationMode::Record) {
+		} else if (op_mode == OperationMode::Record) {
 			update_rec_mode_buttons();
 		}
 	}
@@ -377,10 +371,11 @@ private:
 
 	void update_rec_mode_buttons() {
 		if (controls.play_button.is_just_pressed()) {
-			flags.set(Flag::RecBut);
 		}
 
 		if (controls.play_button.is_just_released()) {
+			if (!ignore_play_release)
+				flags.set(Flag::RecBut);
 			ignore_play_longhold = false;
 			ignore_play_release = false;
 		}
@@ -478,12 +473,13 @@ private:
 		}
 		if (op_mode == OperationMode::Record) {
 			rev_color = Colors::off;
-			if (rec_state == RecStates::RECORDING) {
-				play_color = Colors::red;
-			} else
+			if (rec_state == RecStates::REC_OFF) {
 				play_color = Colors::off;
-
-			controls.play_led.breathe(Colors::red, 4.f);
+				controls.play_led.breathe(Colors::red, 4.f);
+			} else {
+				play_color = Colors::red;
+				controls.play_led.reset_breathe();
+			}
 		}
 
 		if (op_mode == OperationMode::Calibrate) {

@@ -59,11 +59,10 @@ void main() {
 	AudioStream audio_stream([&sampler, &params](const AudioInBlock &in, AudioOutBlock &out) {
 		Debug::Pin0::high();
 		params.update();
+		sampler.recorder.record_audio_to_buffer(in);
 		sampler.audio.update(in, out);
 		Debug::Pin0::low();
 	});
-
-	Recorder recorder{params, flags, sd, banks};
 
 	sampler.start();
 	audio_stream.start();

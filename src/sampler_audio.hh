@@ -36,9 +36,16 @@ public:
 		, play_buff{splay_buff} {}
 
 	void update(const AudioStreamConf::AudioInBlock &inblock, AudioStreamConf::AudioOutBlock &outblock) {
-		// record_audio_to_buffer(inblock);
 		ChanBuff outL;
 		ChanBuff outR;
+
+		if (params.op_mode == OperationMode::Record) {
+			for (auto [in, out] : zip(inblock, outblock)) {
+				out.chan[0] = in.chan[0];
+				out.chan[1] = in.chan[1];
+			}
+			return;
+		}
 
 		play_audio_from_buffer(outL, outR);
 

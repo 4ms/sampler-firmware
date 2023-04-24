@@ -1,8 +1,7 @@
 /*
  * wav_recording.c - wav file recording routines
- * also contains recording-related functions for Stereo Triggered Sampler application
  *
- * Authors: Dan Green (danngreen1@gmail.com), Hugo Paris (hugoplo@gmail.com)
+ * Author: Dan Green (danngreen1@gmail.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,17 +63,18 @@ void Recorder::toggle_recording(void) {
 	using enum RecStates;
 	if (rec_state == RECORDING || rec_state == CREATING_FILE) {
 		rec_state = CLOSING_FILE;
-
+		printf_("Stopping...\n");
 	} else {
-		rec_buff.init();
+		init_rec_buff();
 		rec_state = CREATING_FILE;
+		printf_("Recording...\n");
 	}
 }
 
 // Main routine that handles recording codec input stream (src)
 // to the SDRAM buffer (rec_buff)
 //
-void Recorder::record_audio_to_buffer(ChanBuff &src) {
+void Recorder::record_audio_to_buffer(const AudioStreamConf::AudioInBlock &src) {
 	using enum RecStates;
 	if (rec_state == RECORDING || rec_state == CREATING_FILE) {
 		// WATCH_REC_BUFF = CB_distance(rec_buff, 0);
@@ -85,26 +85,27 @@ void Recorder::record_audio_to_buffer(ChanBuff &src) {
 
 		// Copy a buffer's worth of samples from codec (src) into rec_buff
 		for (auto [i, in] : enumerate(src)) {
+			for (unsigned chan = 0; chan < 2; chan++) {
+				if (params.settings.rec_24bits) {
+					uint16_t topword = (uint16_t)(in.chan[chan] & 0x00FFFF);
+					uint16_t bottombyte = (uint16_t)((in.chan[chan] & 0xFF0000)) >> 16;
 
-			if (params.settings.rec_24bits) {
-				uint16_t topword = (uint16_t)(in & 0x00FFFF);
-				uint16_t bottombyte = (uint16_t)((in & 0xFF0000)) >> 16;
+					*(int16_t *)rec_buff.in = bottombyte;
+					rec_buff.offset_in_address(1, 0);
+					rec_buff.wait_memory_ready();
 
-				rec_buff.in = bottombyte;
-				rec_buff.offset_in_address(1, 0);
-				rec_buff.wait_memory_ready();
+					*(int16_t *)rec_buff.in = topword;
+					rec_buff.offset_in_address(2, 0);
+					rec_buff.wait_memory_ready();
 
-				rec_buff.in = topword;
-				rec_buff.offset_in_address(2, 0);
-				rec_buff.wait_memory_ready();
-
-			} else {
-				rec_buff.in = in;
-				rec_buff.offset_in_address(2, 0);
-				rec_buff.wait_memory_ready();
+				} else {
+					*(int16_t *)rec_buff.in = in.chan[chan] >> 8;
+					rec_buff.offset_in_address(2, 0);
+					rec_buff.wait_memory_ready();
+				}
 			}
 
-			// Flag an buffer overrun condition if the in and out pointers cross
+			// Flag a buffer overrun condition if the in and out pointers cross
 			// But, don't consider the heads being crossed if they end at the same place
 			if ((rec_buff.in == rec_buff.out) && i != (AudioStreamConf::BlockSize - 1))
 				overrun = rec_buff.out;
@@ -112,7 +113,7 @@ void Recorder::record_audio_to_buffer(ChanBuff &src) {
 
 		if (overrun) {
 			g_error |= WRITE_BUFF_OVERRUN;
-			// check_errors();
+			check_errors(g_error);
 		}
 	}
 }
@@ -152,6 +153,7 @@ void Recorder::create_new_recording(uint8_t bitsPerSample, uint8_t numChannels, 
 	sz = sizeof(WaveHeaderAndChunk);
 
 	// Try to create the tmp file and write to it, reloading the sd card if needed
+	g_error = 0;
 
 	res = f_open(&recfil, sample_fname_now_recording, FA_WRITE | FA_CREATE_NEW | FA_READ);
 	if (res == FR_OK)
@@ -168,8 +170,8 @@ void Recorder::create_new_recording(uint8_t bitsPerSample, uint8_t numChannels, 
 		} else {
 			f_close(&recfil);
 			rec_state = REC_OFF;
-			g_error |= FILE_WRITE_FAIL;
-			check_errors();
+			g_error |= FILE_REC_OPEN_FAIL;
+			check_errors(g_error);
 			return;
 		}
 	}
@@ -178,7 +180,7 @@ void Recorder::create_new_recording(uint8_t bitsPerSample, uint8_t numChannels, 
 		f_close(&recfil);
 		rec_state = REC_OFF;
 		g_error |= FILE_UNEXPECTEDEOF_WRITE;
-		check_errors();
+		check_errors(g_error);
 		return;
 	}
 
@@ -212,12 +214,12 @@ FRESULT Recorder::write_wav_size(FIL *wavfil, uint32_t data_chunk_bytes, uint32_
 
 	if (res != FR_OK) {
 		g_error |= FILE_WRITE_FAIL;
-		check_errors();
-		return (res);
+		check_errors(g_error);
+		return res;
 	}
 	if (written != sizeof(WaveHeaderAndChunk)) {
 		g_error |= FILE_UNEXPECTEDEOF_WRITE;
-		check_errors();
+		check_errors(g_error);
 		return (FR_INT_ERR);
 	}
 
@@ -359,6 +361,7 @@ FRESULT Recorder::write_wav_info_chunk(FIL *wavfil, unsigned int *total_written)
 // If we need to close the file because we reached the size limit, but need to
 // continue recording, it handles all of that.
 //
+GCC_OPTIMIZE_OFF
 void Recorder::write_buffer_to_storage() {
 	using enum RecStates;
 
@@ -366,17 +369,14 @@ void Recorder::write_buffer_to_storage() {
 		sample_num_to_record_in = params.sample;
 	}
 
-	uint32_t addr_exceeded;
-	unsigned int written;
 	static uint32_t write_size_ctr = 0;
-	FRESULT res;
-	char final_filepath[FF_MAX_LFN];
-	uint32_t sz;
-	uint32_t buffer_lead;
+
+	check_errors(g_error);
+	g_error = 0;
 
 	// Handle write buffers (transfer SDRAM to SD card)
 	switch (rec_state) {
-		case (CREATING_FILE): // first time, create a new file
+		case CREATING_FILE: // first time, create a new file
 			if (recfil.obj.fs != 0) {
 				rec_state = CLOSING_FILE;
 			}
@@ -390,31 +390,34 @@ void Recorder::write_buffer_to_storage() {
 				sample_bytesize_now_recording = 2;
 
 			create_new_recording(8 * sample_bytesize_now_recording, 2, params.settings.record_sample_rate);
+			printf_("File: %s\n", sample_fname_now_recording);
 
 			break;
 
-		case (RECORDING): {
+		case RECORDING: {
 			// read a block from rec_buff.out
 
 			// FixMe: Enable load triaging
 			//  if (play_load_triage==0)
-			buffer_lead = rec_buff.distance(0);
+			uint32_t buffer_lead = rec_buff.distance(0);
 
+			uint32_t num_underflowed = 0;
 			if (buffer_lead > WRITE_BLOCK_SIZE) {
 				if (sample_bytesize_now_recording == 3)
-					addr_exceeded = rec_buff.memory_read24_cb((uint8_t *)rec_buff16, WRITE_BLOCK_SIZE / 3, 0);
+					num_underflowed = rec_buff.memory_read24((uint8_t *)rec_buff16, WRITE_BLOCK_SIZE / 3, 0);
 				else
-					addr_exceeded = rec_buff.memory_read16_cb(rec_buff16, WRITE_BLOCK_SIZE >> 1, 0);
+					num_underflowed = rec_buff.memory_read16(rec_buff16, WRITE_BLOCK_SIZE >> 1, 0);
 
 				// WATCH_REC_BUFF_OUT = rec_buff.out;
 
-				if (addr_exceeded) {
+				if (num_underflowed) {
 					g_error |= WRITE_BUFF_OVERRUN;
-					check_errors();
+					check_errors(g_error);
 				}
 
-				sz = WRITE_BLOCK_SIZE;
-				res = f_write(&recfil, rec_buff16, sz, &written);
+				unsigned int written = 0;
+				FRESULT res;
+				res = f_write(&recfil, rec_buff16, WRITE_BLOCK_SIZE, &written);
 
 				if (res != FR_OK) {
 					if (g_error & FILE_WRITE_FAIL) {
@@ -422,16 +425,16 @@ void Recorder::write_buffer_to_storage() {
 						rec_state = REC_OFF;
 					}
 					g_error |= FILE_WRITE_FAIL;
-					check_errors();
+					check_errors(g_error);
 					break;
 				}
-				if (sz != written) {
+				if (WRITE_BLOCK_SIZE != written) {
 					if (g_error & FILE_UNEXPECTEDEOF_WRITE) {
 						f_close(&recfil);
 						rec_state = REC_OFF;
 					}
 					g_error |= FILE_UNEXPECTEDEOF_WRITE;
-					check_errors();
+					check_errors(g_error);
 				}
 
 				samplebytes_recorded += written;
@@ -445,7 +448,7 @@ void Recorder::write_buffer_to_storage() {
 						f_close(&recfil);
 						rec_state = REC_OFF;
 						g_error |= FILE_WRITE_FAIL;
-						check_errors();
+						check_errors(g_error);
 						break;
 					}
 				}
@@ -457,7 +460,7 @@ void Recorder::write_buffer_to_storage() {
 						rec_state = REC_OFF;
 					}
 					g_error |= FILE_WRITE_FAIL;
-					check_errors();
+					check_errors(g_error);
 					break;
 				}
 
@@ -470,28 +473,31 @@ void Recorder::write_buffer_to_storage() {
 
 		} break;
 
-		case (CLOSING_FILE):
-		case (CLOSING_FILE_TO_REC_AGAIN):
+		case CLOSING_FILE:
+		case CLOSING_FILE_TO_REC_AGAIN: {
 			// See if we have more in the buffer to write
-			buffer_lead = rec_buff.distance(0);
+			uint32_t buffer_lead = rec_buff.distance(0);
 
 			if (buffer_lead) {
 				// Write out remaining data in buffer, one WRITE_BLOCK_SIZE at a time
 				if (buffer_lead > WRITE_BLOCK_SIZE)
 					buffer_lead = WRITE_BLOCK_SIZE;
 
+				uint32_t num_underflowed = 0;
 				if (sample_bytesize_now_recording == 3)
-					addr_exceeded = rec_buff.memory_read24_cb((uint8_t *)rec_buff16, buffer_lead / 3, 0);
+					num_underflowed = rec_buff.memory_read24((uint8_t *)rec_buff16, buffer_lead / 3, 0);
 				else
-					addr_exceeded = rec_buff.memory_read16_cb(rec_buff16, buffer_lead >> 1, 0);
+					num_underflowed = rec_buff.memory_read16(rec_buff16, buffer_lead >> 1, 0);
 
 				// WATCH_REC_BUFF_OUT = rec_buff.out;
 
-				if (!addr_exceeded) {
+				if (num_underflowed) {
 					g_error |= MATH_ERROR;
-					check_errors();
+					check_errors(g_error);
 				}
 
+				unsigned int written = 0;
+				FRESULT res;
 				res = f_write(&recfil, rec_buff16, buffer_lead, &written);
 				f_sync(&recfil);
 
@@ -501,7 +507,7 @@ void Recorder::write_buffer_to_storage() {
 						rec_state = REC_OFF;
 					}
 					g_error |= FILE_WRITE_FAIL;
-					check_errors();
+					check_errors(g_error);
 					break;
 				}
 				if (written != buffer_lead) {
@@ -510,7 +516,7 @@ void Recorder::write_buffer_to_storage() {
 						rec_state = REC_OFF;
 					}
 					g_error |= FILE_UNEXPECTEDEOF_WRITE;
-					check_errors();
+					check_errors(g_error);
 				}
 
 				samplebytes_recorded += written;
@@ -522,19 +528,21 @@ void Recorder::write_buffer_to_storage() {
 					f_close(&recfil);
 					rec_state = REC_OFF;
 					g_error |= FILE_WRITE_FAIL;
-					check_errors();
+					check_errors(g_error);
 					break;
 				}
 
 			} else {
 
 				// Write comment and Firmware chunks at bottom of wav file
+				unsigned int written = 0;
+				FRESULT res;
 				res = write_wav_info_chunk(&recfil, &written);
 				if (res != FR_OK) {
 					f_close(&recfil);
 					rec_state = REC_OFF;
 					g_error |= FILE_WRITE_FAIL;
-					check_errors();
+					check_errors(g_error);
 					break;
 				}
 
@@ -545,30 +553,36 @@ void Recorder::write_buffer_to_storage() {
 					f_close(&recfil);
 					rec_state = REC_OFF;
 					g_error |= FILE_WRITE_FAIL;
-					check_errors();
+					check_errors(g_error);
 					break;
 				}
 
 				f_close(&recfil);
 
+				char final_filepath[FF_MAX_LFN];
+
 				// Rename the tmp file as the proper file in the proper directory
 				res = new_filename(sample_bank_now_recording,
 								   sample_num_now_recording,
 								   final_filepath,
+								   sd,
 								   banks.samples[sample_bank_now_recording]);
 				if (res != FR_OK) {
 					rec_state = REC_OFF;
 					g_error |= SDCARD_CANT_MOUNT;
+					check_errors(g_error);
+					printf_("Could not make new filename, err=%d\n", res);
 				} else {
+					printf_("New filename: %.80s\n", final_filepath);
 					res = f_rename(sample_fname_now_recording, final_filepath);
-					if (res == FR_OK)
+					if (res == FR_OK) {
 						str_cpy(sample_fname_now_recording, final_filepath);
+					} else
+						printf_("Could not rename file %.80s. err %d\n", sample_fname_now_recording, res);
 				}
 
-				str_cpy(banks.samples[sample_bank_now_recording][sample_num_now_recording].filename,
-						sample_fname_now_recording);
-
 				Sample *s = &banks.samples[sample_bank_now_recording][sample_num_now_recording];
+				str_cpy(s->filename, sample_fname_now_recording);
 				s->sampleSize = samplebytes_recorded;
 				s->sampleByteSize = sample_bytesize_now_recording;
 				s->sampleRate = params.settings.record_sample_rate;
@@ -576,11 +590,11 @@ void Recorder::write_buffer_to_storage() {
 				s->blockAlign = 2 * sample_bytesize_now_recording;
 				s->startOfData = 44;
 				s->PCM = 1;
-				s->file_found = 1;
 				s->inst_start = 0;
 				s->inst_end = samplebytes_recorded;
 				s->inst_size = samplebytes_recorded;
 				s->inst_gain = 1.0f;
+				s->file_status = FileStatus::NewFile;
 
 				banks.enable_bank(sample_bank_now_recording);
 
@@ -588,7 +602,7 @@ void Recorder::write_buffer_to_storage() {
 				// if (i_param[0][BANK] == sample_bank_now_recording) {
 				// 	flags32[SampleFileChangedMask1] |= (1 << sample_num_now_recording);
 				// 	if (i_param[0][SAMPLE] == sample_num_now_recording)
-				// 		flags[PlaySample1Changed] = 1;
+				// 		flags[PlaySampleChanged] = 1;
 				// }
 
 				sample_fname_now_recording[0] = 0;
@@ -608,10 +622,9 @@ void Recorder::write_buffer_to_storage() {
 				else if (rec_state == CLOSING_FILE_TO_REC_AGAIN)
 					rec_state = CREATING_FILE;
 			}
+		} break;
 
-			break;
-
-		case (REC_OFF):
+		case REC_OFF:
 			break;
 	}
 }

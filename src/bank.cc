@@ -324,7 +324,9 @@ void BankManager::check_enabled_banks(void) {
 	for (uint32_t bank = 0; bank < MaxNumBanks; bank++) {
 		bank_status[bank] = 0; // does not exist
 		for (uint32_t sample_num = 0; sample_num < NumSamplesPerBank; sample_num++) {
-			if (samples[bank][sample_num].filename[0] != 0 && samples[bank][sample_num].file_found == 1) {
+			if (samples[bank][sample_num].filename[0] != 0 &&
+				samples[bank][sample_num].file_status == FileStatus::Found)
+			{
 				bank_status[bank] = 1;
 				break;
 			}

@@ -32,6 +32,7 @@
 
 namespace SamplerKit
 {
+enum class FileStatus { NotFound = 0, Found = 1, NewFile = 2 };
 
 struct Sample {
 	char filename[FF_MAX_LFN];
@@ -48,7 +49,7 @@ struct Sample {
 	float inst_gain;
 
 	uint16_t PCM;
-	uint8_t file_found;
+	FileStatus file_status;
 
 	Sample() { clear(); }
 	void clear() {
@@ -60,7 +61,7 @@ struct Sample {
 		blockAlign = 0;
 		startOfData = 0;
 		PCM = 0;
-		file_found = 0;
+		file_status = FileStatus::NotFound;
 		inst_start = 0;
 		inst_end = 0;
 		inst_size = 0;
@@ -74,6 +75,6 @@ using SampleList = std::array<Bank, MaxNumBanks>;
 uint32_t load_sample_header(Sample *s_sample, FIL *sample_file);
 FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd);
 FRESULT create_dir(Sdcard &sd, DIR *dir, const char *dir_name);
-FRESULT new_filename(uint8_t bank_idx, uint8_t sample_num, char *path, Bank &bank);
+FRESULT new_filename(uint8_t bank_idx, uint8_t sample_num, char *path, Sdcard &sd, Bank &bank);
 
 } // namespace SamplerKit

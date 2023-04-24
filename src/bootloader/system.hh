@@ -5,17 +5,17 @@
 #include "debug.hh"
 #include "drivers/system.hh"
 #include "drivers/system_clocks.hh"
-#include "system_target.hh"
+// #include "system_target.hh"
 
-namespace SamplerKit
+namespace SamplerKit::Bootloader
 {
 
 struct System {
 	System() {
-		mdrivlib::System::SetVectorTable(BootloaderReceiveAddr);
+		mdrivlib::System::SetVectorTable(BootloaderStartAddr);
 		mdrivlib::SystemClocks::init_clocks(osc_conf, clk_conf, rcc_periph_conf);
 
-		SystemTarget::init();
+		// SystemTarget::init();
 
 		Console::init();
 		Debug::Pin0{};
@@ -28,4 +28,4 @@ struct System {
 	}
 };
 
-} // namespace SamplerKit
+} // namespace SamplerKit::Bootloader

@@ -1,4 +1,7 @@
+#pragma once
+
 #define APP_FLASH_ADDR 0x0800C000
+#define APP_START_ADDR 0x0800C000
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -26,5 +29,9 @@ constexpr inline uint32_t AppFlashAddr = get_sector_addr(3);		// 208k = 128k+64k
 constexpr inline uint32_t BootloaderReceiveAddr = get_sector_addr(3);
 // receive in same sector as app because we can hold all data in RAM
 
+constexpr inline uint32_t AppStartAddr = AppFlashAddr;
+constexpr inline uint32_t BootloaderStartAddr = BootloaderFlashAddr;
+
 static_assert(APP_FLASH_ADDR == AppFlashAddr);
+static_assert(APP_START_ADDR == AppStartAddr);
 #endif

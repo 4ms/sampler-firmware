@@ -3,100 +3,105 @@
 #include "drivers/stm32xx.h"
 #include <cstdint>
 
-void animate(Animations animation_type) {
+namespace SamplerKit::Bootloader
+{
+
+void animate(Animation animation_type) {
 	uint32_t cur_tm = HAL_GetTick();
 	static uint32_t last_tm = 0;
 	static uint8_t ctr = 0;
+
+	static LEDs leds;
+
 	constexpr uint32_t TICKS_PER_MS = 1;
 	uint32_t step_time = 500 * TICKS_PER_MS;
 
 	switch (animation_type) {
-
-		case ANI_RESET:
-			set_rgb_led(RgbLeds::Ping, Palette::Black);
-			set_rgb_led(RgbLeds::Cycle, Palette::Black);
+		case Animation::RESET:
+			leds.set(RgbLeds::Play, Colors::black);
+			leds.set(RgbLeds::Rev, Colors::black);
 
 			last_tm = cur_tm;
 			ctr = 0;
 			break;
 
-		case ANI_SUCCESS:
+		case Animation::SUCCESS:
 			if (ctr == 0) {
-				set_rgb_led(RgbLeds::Ping, Palette::Red);
-				set_rgb_led(RgbLeds::Cycle, Palette::Red);
+				leds.set(RgbLeds::Play, Colors::red);
+				leds.set(RgbLeds::Rev, Colors::red);
 			} else if (ctr == 1) {
-				set_rgb_led(RgbLeds::Ping, Palette::Yellow);
-				set_rgb_led(RgbLeds::Cycle, Palette::Yellow);
+				leds.set(RgbLeds::Play, Colors::yellow);
+				leds.set(RgbLeds::Rev, Colors::yellow);
 			} else if (ctr == 2) {
-				set_rgb_led(RgbLeds::Ping, Palette::White);
-				set_rgb_led(RgbLeds::Cycle, Palette::White);
+				leds.set(RgbLeds::Play, Colors::white);
+				leds.set(RgbLeds::Rev, Colors::white);
 			} else if (ctr == 3) {
-				set_rgb_led(RgbLeds::Ping, Palette::Cyan);
-				set_rgb_led(RgbLeds::Cycle, Palette::Cyan);
+				leds.set(RgbLeds::Play, Colors::cyan);
+				leds.set(RgbLeds::Rev, Colors::cyan);
 			} else if (ctr == 4) {
-				set_rgb_led(RgbLeds::Ping, Palette::Green);
-				set_rgb_led(RgbLeds::Cycle, Palette::Green);
+				leds.set(RgbLeds::Play, Colors::green);
+				leds.set(RgbLeds::Rev, Colors::green);
 			} else if (ctr == 5) {
-				set_rgb_led(RgbLeds::Ping, Palette::Blue);
-				set_rgb_led(RgbLeds::Cycle, Palette::Blue);
+				leds.set(RgbLeds::Play, Colors::blue);
+				leds.set(RgbLeds::Rev, Colors::blue);
 			} else
 				ctr = 0;
 			break;
 
-		case ANI_WAITING:
+		case Animation::WAITING:
 			// Flash button green/off when waiting
 			if (ctr == 0)
-				set_rgb_led(RgbLeds::Ping, Palette::Black);
+				leds.set(RgbLeds::Play, Colors::black);
 			else if (ctr == 1)
-				set_rgb_led(RgbLeds::Ping, Palette::Green);
+				leds.set(RgbLeds::Play, Colors::green);
 			else
 				ctr = 0;
 			break;
 
-		case ANI_RECEIVING:
+		case Animation::RECEIVING:
 			step_time = 200 * TICKS_PER_MS;
 			if (ctr == 0) {
-				set_rgb_led(RgbLeds::Ping, Palette::Blue);
-				set_rgb_led(RgbLeds::Cycle, Palette::White);
+				leds.set(RgbLeds::Play, Colors::blue);
+				leds.set(RgbLeds::Rev, Colors::white);
 			} else if (ctr == 1) {
-				set_rgb_led(RgbLeds::Ping, Palette::White);
-				set_rgb_led(RgbLeds::Cycle, Palette::Blue);
+				leds.set(RgbLeds::Play, Colors::white);
+				leds.set(RgbLeds::Rev, Colors::blue);
 			} else
 				ctr = 0;
 			break;
 
-		case ANI_SYNC:
+		case Animation::SYNC:
 			step_time = 100 * TICKS_PER_MS;
 			if (ctr == 0) {
-				set_rgb_led(RgbLeds::Ping, Palette::Black);
-				set_rgb_led(RgbLeds::Cycle, Palette::Black);
+				leds.set(RgbLeds::Play, Colors::black);
+				leds.set(RgbLeds::Rev, Colors::black);
 			} else if (ctr == 1) {
-				set_rgb_led(RgbLeds::Ping, Palette::Magenta);
-				set_rgb_led(RgbLeds::Cycle, Palette::Black);
+				leds.set(RgbLeds::Play, Colors::magenta);
+				leds.set(RgbLeds::Rev, Colors::black);
 			} else
 				ctr = 0;
 			break;
 
-		case ANI_WRITING:
+		case Animation::WRITING:
 			step_time = 100 * TICKS_PER_MS;
 			if (ctr == 0) {
-				set_rgb_led(RgbLeds::Ping, Palette::Black);
-				set_rgb_led(RgbLeds::Cycle, Palette::Yellow);
+				leds.set(RgbLeds::Play, Colors::black);
+				leds.set(RgbLeds::Rev, Colors::yellow);
 			} else if (ctr == 1) {
-				set_rgb_led(RgbLeds::Ping, Palette::Yellow);
-				set_rgb_led(RgbLeds::Cycle, Palette::Black);
+				leds.set(RgbLeds::Play, Colors::yellow);
+				leds.set(RgbLeds::Rev, Colors::black);
 			} else
 				ctr = 0;
 			break;
 
-		case ANI_FAIL_ERR:
+		case Animation::FAIL_ERR:
 			step_time = 100 * TICKS_PER_MS;
 			if (ctr == 0) {
-				set_rgb_led(RgbLeds::Ping, Palette::Black);
-				set_rgb_led(RgbLeds::Cycle, Palette::Red);
+				leds.set(RgbLeds::Play, Colors::black);
+				leds.set(RgbLeds::Rev, Colors::red);
 			} else if (ctr == 1) {
-				set_rgb_led(RgbLeds::Ping, Palette::Red);
-				set_rgb_led(RgbLeds::Cycle, Palette::Black);
+				leds.set(RgbLeds::Play, Colors::red);
+				leds.set(RgbLeds::Rev, Colors::black);
 			} else
 				ctr = 0;
 			break;
@@ -110,3 +115,5 @@ void animate(Animations animation_type) {
 		last_tm = cur_tm;
 	}
 }
+
+} // namespace SamplerKit::Bootloader

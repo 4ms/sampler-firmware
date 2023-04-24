@@ -1,23 +1,37 @@
 #pragma once
+#include "../conf/board_conf.hh"
 
+namespace SamplerKit::Bootloader
+{
 enum class RgbLeds {
-	Ping,
-	Cycle,
-	EnvA,
-	EnvB,
+	Bank,
+	Play,
+	Rev,
 };
 
-enum class Palette {
-	Black = 0b000,
-	Blue = 0b001,
-	Green = 0b010,
-	Cyan = 0b011,
-	Red = 0b100,
-	Magenta = 0b101,
-	Yellow = 0b110,
-	White = 0b111,
+class LEDs {
+	SamplerKit::Board::BankLED bank;
+	SamplerKit::Board::PlayLED play;
+	SamplerKit::Board::RevLED rev;
+
+public:
+	LEDs() {
+		set(RgbLeds::Bank, Colors::off);
+		set(RgbLeds::Play, Colors::off);
+		set(RgbLeds::Rev, Colors::off);
+	}
+	void set(RgbLeds led, Color color) {
+		switch (led) {
+			case RgbLeds::Bank:
+				bank.set_color(color);
+				break;
+			case RgbLeds::Play:
+				play.set_color(color);
+				break;
+			case RgbLeds::Rev:
+				rev.set_color(color);
+				break;
+		}
+	}
 };
-
-void init_leds();
-void set_rgb_led(RgbLeds rgb_led_id, Palette color_id);
-
+} // namespace SamplerKit::Bootloader

@@ -53,10 +53,9 @@ struct AudioBootloader {
 	UiState ui_state;
 
 	AudioBootloader() {
-		init_leds();
 		init_buttons();
 
-		animate(ANI_RESET);
+		animate(Animation::RESET);
 	}
 
 	bool check_enter_bootloader() {
@@ -119,7 +118,7 @@ struct AudioBootloader {
 
 				switch (state) {
 					case stm_audio_bootloader::PACKET_DECODER_STATE_SYNCING:
-						animate(ANI_SYNC);
+						animate(Animation::SYNC);
 						break;
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_OK:
@@ -160,8 +159,8 @@ struct AudioBootloader {
 						}
 						exit_updater = true;
 						ui_state = UI_STATE_DONE;
-						animate_until_button_pushed(ANI_SUCCESS, Button::Play);
-						animate(ANI_RESET);
+						animate_until_button_pushed(Animation::SUCCESS, Button::Play);
+						animate(Animation::RESET);
 						HAL_Delay(100);
 						break;
 
@@ -171,8 +170,8 @@ struct AudioBootloader {
 			}
 			if (rcv_err) {
 				ui_state = UI_STATE_ERROR;
-				animate_until_button_pushed(ANI_FAIL_ERR, Button::Play);
-				animate(ANI_RESET);
+				animate_until_button_pushed(Animation::FAIL_ERR, Button::Play);
+				animate(Animation::RESET);
 				HAL_Delay(100);
 				init_reception();
 				exit_updater = false;
@@ -236,13 +235,13 @@ struct AudioBootloader {
 
 	void update_LEDs() {
 		if (ui_state == UI_STATE_RECEIVING)
-			animate(ANI_RECEIVING);
+			animate(Animation::RECEIVING);
 
 		else if (ui_state == UI_STATE_WRITING)
-			animate(ANI_WRITING);
+			animate(Animation::WRITING);
 
 		else if (ui_state == UI_STATE_WAITING)
-			animate(ANI_WAITING);
+			animate(Animation::WAITING);
 
 		else // if (ui_state == UI_STATE_DONE)
 		{}
@@ -265,8 +264,8 @@ struct AudioBootloader {
 #endif
 	}
 
-	void animate_until_button_pushed(Animations animation_type, Button button) {
-		animate(ANI_RESET);
+	void animate_until_button_pushed(Animation animation_type, Button button) {
+		animate(Animation::RESET);
 
 		while (!button_pushed(button)) {
 			HAL_Delay(1);

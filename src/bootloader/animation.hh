@@ -1,15 +1,8 @@
 #pragma once
-enum Animations {
-	ANI_WAITING,
-	ANI_WRITING,
-	ANI_RECEIVING,
-	ANI_SYNC,
-	ANI_DONE,
-	ANI_SUCCESS,
-	ANI_FAIL_ERR,
-	ANI_FAIL_SYNC,
-	ANI_FAIL_CRC,
-	ANI_RESET
-};
+namespace SamplerKit::Bootloader
+{
 
-void animate(Animations animation_type);
+enum class Animation { WAITING, WRITING, RECEIVING, SYNC, DONE, SUCCESS, FAIL_ERR, FAIL_SYNC, FAIL_CRC, RESET };
+
+void animate(Animation animation_type);
+} // namespace SamplerKit::Bootloader

@@ -40,6 +40,9 @@ set(WAV_ENCODE_PYTHON_CMD
 set_hal_sources(HAL_SOURCES stm32f7)
 create_target(${target})
 
-set(TARGET_BOOTLOADER_SOURCES)
+set(TARGET_BOOTLOADER_SOURCES ${root}/lib/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.c
+                              ${root}/lib/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash_ex.c
+)
+set(TARGET_BOOTLOADER_INCLUDES ${root}/src/bootloader/f723)
 set(TARGET_BOOTLOADER_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)
-# create_bootloader_target(${target})
+create_bootloader_target(${target})

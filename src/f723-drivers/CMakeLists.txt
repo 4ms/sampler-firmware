@@ -43,6 +43,14 @@ create_target(${target})
 set(TARGET_BOOTLOADER_SOURCES ${root}/lib/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.c
                               ${root}/lib/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash_ex.c
 )
-set(TARGET_BOOTLOADER_INCLUDES ${root}/src/bootloader/f723)
+set(TARGET_BOOTLOADER_INCLUDES
+    ${root}/src/bootloader/f723
+    ${root}/lib/brainboard/f723
+    ${root}/lib/mdrivlib/target/stm32f7xx
+    ${root}/lib/mdrivlib/target/stm32f723
+    ${root}/lib/CMSIS/Device/ST/STM32F7xx/Include
+    ${root}/lib/STM32F7xx_HAL_Driver/Inc
+)
+
 set(TARGET_BOOTLOADER_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)
 create_bootloader_target(${target})

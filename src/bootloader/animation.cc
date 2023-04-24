@@ -1,6 +1,6 @@
 #include "bootloader/animation.hh"
 #include "bootloader/leds.hh"
-#include "settings.h"
+// #include "settings.h"
 #include <cstdint>
 
 extern volatile uint32_t systmr;
@@ -9,6 +9,7 @@ void animate(Animations animation_type) {
 	uint32_t cur_tm = systmr;
 	static uint32_t last_tm = 0;
 	static uint8_t ctr = 0;
+	constexpr uint32_t TICKS_PER_MS = 1;
 	uint32_t step_time = 500 * TICKS_PER_MS;
 
 	switch (animation_type) {
@@ -45,7 +46,7 @@ void animate(Animations animation_type) {
 			break;
 
 		case ANI_WAITING:
-			//Flash button green/off when waiting
+			// Flash button green/off when waiting
 			if (ctr == 0)
 				set_rgb_led(RgbLeds::Ping, Palette::Black);
 			else if (ctr == 1)

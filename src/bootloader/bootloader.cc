@@ -11,7 +11,6 @@
 #include "conf/bootloader_settings.hh"
 #include "conf/flash_layout.hh"
 #include "system.hh"
-// #include "dig_inouts.hh"
 // #include "flash.hh"
 
 #ifdef USING_QPSK
@@ -320,8 +319,8 @@ void delay(uint32_t ticks) {
 } // namespace SamplerKit::Bootloader
 
 extern "C" void SysTick_Handler(void) {
-	systmr = systmr + 1;
-	update_LEDs();
+	SamplerKit::Bootloader::systmr = SamplerKit::Bootloader::systmr + 1;
+	SamplerKit::Bootloader::update_LEDs();
 }
 
 extern "C" void NMI_Handler() { __BKPT(); }

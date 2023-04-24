@@ -9,6 +9,7 @@
 #include "drivers/stm32xx.h"
 #include "flash.hh"
 #include "system.hh"
+#include "util/zip.hh"
 
 #define USING_FSK
 // #define USING_QPSK
@@ -35,7 +36,6 @@ struct AudioBootloader {
 	static constexpr uint32_t kOnePeriod = BootloaderConf::Encoding.one;	 //-n
 	static constexpr uint32_t kZeroPeriod = BootloaderConf::Encoding.zero;	 //-z
 #endif
-	static constexpr uint32_t kStartExecutionAddress = AppFlashAddr;
 	static constexpr uint32_t kStartReceiveAddress = BootloaderReceiveAddr;
 	static constexpr uint32_t kBlkSize = BootloaderConf::ReceiveSectorSize;					   // Flash page size, -g
 	static constexpr uint16_t kPacketsPerBlock = kBlkSize / stm_audio_bootloader::kPacketSize; // kPacketSize=256
@@ -52,15 +52,15 @@ struct AudioBootloader {
 	enum UiState { UI_STATE_WAITING, UI_STATE_RECEIVING, UI_STATE_ERROR, UI_STATE_WRITING, UI_STATE_DONE };
 	UiState ui_state;
 
-	AudioBootloader() = default;
-
-	void run() {
-		HAL_Delay(300);
-
+	AudioBootloader() {
 		init_leds();
 		init_buttons();
 
 		animate(ANI_RESET);
+	}
+
+	bool check_enter_bootloader() {
+		HAL_Delay(300);
 
 		uint32_t dly = 32000;
 		uint32_t button_debounce = 0;
@@ -74,134 +74,133 @@ struct AudioBootloader {
 		HAL_Delay(100);
 
 		bool do_bootloader = (button_debounce > 15000);
-		if (true || do_bootloader) { // FORCE BL
-			init_reception();
+		return do_bootloader;
+	}
 
-			AudioStream audio_stream([this](const AudioStreamConf::AudioInBlock &inblock,
-											AudioStreamConf::AudioOutBlock &) {
-				for (auto &in : inblock) {
-					Debug::Pin0::high();
-					bool sample = std::abs(in.sign_extend_chan(0)) > (0x007FFFFFU / 32U); // 10Vpeak => 300mV threshold
+	void run() {
+		init_reception();
+
+		AudioStream audio_stream(
+			[this](const AudioStreamConf::AudioInBlock &inblock, AudioStreamConf::AudioOutBlock &outblock) {
+				for (auto [in, out] : zip(inblock, outblock)) {
+					bool sample = std::abs(in.sign_extend_chan(1)) > (0x007FFFFFU / 32U); // 10Vpeak => 300mV threshold
 
 					if (!discard_samples) {
 						demodulator.PushSample(sample ? 1 : 0);
 					} else {
 						--discard_samples;
 					}
-					Debug::Pin0::low();
+
+					out.chan[0] = this->ui_state != UI_STATE_ERROR ? in.chan[1] : 0;
+					out.chan[1] = sample ? 0xC00000 : 0x400000;
 				}
 			});
-			audio_stream.start();
+		audio_stream.start();
 
-			uint32_t button1_exit_armed = 0;
-			uint32_t cycle_but_armed = 0;
+		uint32_t button1_exit_armed = 0;
+		uint32_t cycle_but_armed = 0;
 
-			while (button_pushed(Button::Rev) || button_pushed(Button::Bank))
-				;
+		while (button_pushed(Button::Rev) || button_pushed(Button::Bank))
+			;
 
-			HAL_Delay(300);
+		HAL_Delay(300);
 
-			uint8_t exit_updater = false;
-			while (!exit_updater) {
-				stm_audio_bootloader::PacketDecoderState state;
-				uint32_t symbols_processed = 0;
-				uint8_t symbol;
-				bool rcv_err = false;
+		uint8_t exit_updater = false;
+		while (!exit_updater) {
+			stm_audio_bootloader::PacketDecoderState state;
+			uint32_t symbols_processed = 0;
+			uint8_t symbol;
+			bool rcv_err = false;
 
-				while (demodulator.available() && !rcv_err && !exit_updater) {
-					symbol = demodulator.NextSymbol();
-					state = decoder.ProcessSymbol(symbol);
-					symbols_processed++;
+			while (demodulator.available() && !rcv_err && !exit_updater) {
+				symbol = demodulator.NextSymbol();
+				state = decoder.ProcessSymbol(symbol);
+				symbols_processed++;
 
-					switch (state) {
-						case stm_audio_bootloader::PACKET_DECODER_STATE_SYNCING:
-							animate(ANI_SYNC);
-							break;
+				switch (state) {
+					case stm_audio_bootloader::PACKET_DECODER_STATE_SYNCING:
+						animate(ANI_SYNC);
+						break;
 
-						case stm_audio_bootloader::PACKET_DECODER_STATE_OK:
-							ui_state = UI_STATE_RECEIVING;
-							memcpy(recv_buffer + (packet_index % kPacketsPerBlock) * stm_audio_bootloader::kPacketSize,
-								   decoder.packet_data(),
-								   stm_audio_bootloader::kPacketSize);
-							++packet_index;
-							if ((packet_index % kPacketsPerBlock) == 0) {
-								ui_state = UI_STATE_WRITING;
-								bool write_ok = write_buffer();
-								if (!write_ok) {
-									ui_state = UI_STATE_ERROR;
-									rcv_err = true;
-								}
+					case stm_audio_bootloader::PACKET_DECODER_STATE_OK:
+						ui_state = UI_STATE_RECEIVING;
+						memcpy(recv_buffer + (packet_index % kPacketsPerBlock) * stm_audio_bootloader::kPacketSize,
+							   decoder.packet_data(),
+							   stm_audio_bootloader::kPacketSize);
+						++packet_index;
+						if ((packet_index % kPacketsPerBlock) == 0) {
+							ui_state = UI_STATE_WRITING;
+							bool write_ok = write_buffer();
+							if (!write_ok) {
+								ui_state = UI_STATE_ERROR;
+								rcv_err = true;
+							}
+							new_block();
+						} else {
+							new_packet();
+						}
+						break;
+
+					case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_SYNC:
+						rcv_err = true;
+						break;
+
+					case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_CRC:
+						rcv_err = true;
+						break;
+
+					case stm_audio_bootloader::PACKET_DECODER_STATE_END_OF_TRANSMISSION:
+						if (current_flash_address == kStartReceiveAddress) {
+							if (!write_buffer()) {
+								ui_state = UI_STATE_ERROR;
+								rcv_err = true;
 								new_block();
-							} else {
-								new_packet();
+								break;
 							}
-							break;
+						}
+						exit_updater = true;
+						ui_state = UI_STATE_DONE;
+						animate_until_button_pushed(ANI_SUCCESS, Button::Play);
+						animate(ANI_RESET);
+						HAL_Delay(100);
+						break;
 
-						case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_SYNC:
-							rcv_err = true;
-							break;
-
-						case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_CRC:
-							rcv_err = true;
-							break;
-
-						case stm_audio_bootloader::PACKET_DECODER_STATE_END_OF_TRANSMISSION:
-							if (current_flash_address == kStartReceiveAddress) {
-								if (!write_buffer()) {
-									ui_state = UI_STATE_ERROR;
-									rcv_err = true;
-									new_block();
-									break;
-								}
-							}
-							exit_updater = true;
-							ui_state = UI_STATE_DONE;
-							animate_until_button_pushed(ANI_SUCCESS, Button::Play);
-							animate(ANI_RESET);
-							HAL_Delay(100);
-							break;
-
-						default:
-							break;
-					}
+					default:
+						break;
 				}
-				if (rcv_err) {
-					ui_state = UI_STATE_ERROR;
-					animate_until_button_pushed(ANI_FAIL_ERR, Button::Play);
-					animate(ANI_RESET);
+			}
+			if (rcv_err) {
+				ui_state = UI_STATE_ERROR;
+				animate_until_button_pushed(ANI_FAIL_ERR, Button::Play);
+				animate(ANI_RESET);
+				HAL_Delay(100);
+				init_reception();
+				exit_updater = false;
+			}
+
+			if (button_pushed(Button::Rev)) {
+				if (cycle_but_armed) {
 					HAL_Delay(100);
 					init_reception();
-					exit_updater = false;
 				}
+				cycle_but_armed = 0;
+			} else
+				cycle_but_armed = 1;
 
-				if (button_pushed(Button::Rev)) {
-					if (cycle_but_armed) {
-						HAL_Delay(100);
-						init_reception();
+			if (button_pushed(Button::Play)) {
+				if (button1_exit_armed) {
+					if (ui_state == UI_STATE_WAITING) {
+						exit_updater = true;
 					}
-					cycle_but_armed = 0;
-				} else
-					cycle_but_armed = 1;
-
-				if (button_pushed(Button::Play)) {
-					if (button1_exit_armed) {
-						if (ui_state == UI_STATE_WAITING) {
-							exit_updater = true;
-						}
-					}
-					button1_exit_armed = 0;
-				} else
-					button1_exit_armed = 1;
-			}
-			ui_state = UI_STATE_DONE;
-			while (button_pushed(Button::Play) || button_pushed(Button::Rev)) {
-				;
-			}
+				}
+				button1_exit_armed = 0;
+			} else
+				button1_exit_armed = 1;
 		}
-
-		mdrivlib::System::reset_buses();
-		mdrivlib::System::reset_RCC();
-		mdrivlib::System::jump_to(kStartExecutionAddress);
+		ui_state = UI_STATE_DONE;
+		while (button_pushed(Button::Play) || button_pushed(Button::Rev)) {
+			;
+		}
 	}
 
 	void init_reception() {
@@ -293,12 +292,15 @@ void main() {
 										 .priority1 = 1,
 										 .priority2 = 1,
 									 },
-									 [&] {
-										 //
-										 bootloader.update_LEDs();
-									 }};
+									 [&] { bootloader.update_LEDs(); }};
 	update_task.start();
+
+	// if (bootloader.check_enter_bootloader())
 	bootloader.run();
+
+	mdrivlib::System::reset_buses();
+	mdrivlib::System::reset_RCC();
+	mdrivlib::System::jump_to(AppStartAddr);
 	while (true) {
 		__NOP();
 	}

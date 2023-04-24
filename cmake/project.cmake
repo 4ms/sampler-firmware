@@ -170,13 +170,12 @@ function(create_bootloader_target target)
   add_executable(
     ${target}-bootloader.elf
     ${root}/src/bootloader/bootloader.cc
-    # ${root}/src/bootloader/leds.cc
-    # ${root}/src/bootloader/animation.cc
-    # ${root}/src/bootloader/bl_utils.cc #
-    # ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
+    ${root}/src/bootloader/leds.cc
+    ${root}/src/bootloader/animation.cc
+    ${root}/src/bootloader/bl_utils.cc
+    ${root}/src/bootloader/stm_audio_bootloader/fsk/packet_decoder.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
-    # ${root}/src/shareddrv/flash.cc
     ${root}/lib/mdrivlib/drivers/pin.cc
     ${root}/lib/mdrivlib/drivers/timekeeper.cc
     ${root}/lib/mdrivlib/drivers/tim.cc

@@ -10,8 +10,8 @@
 #include "system.hh"
 #include "util/zip.hh"
 
-#define USING_FSK
-// #define USING_QPSK
+// #define USING_FSK
+#define USING_QPSK
 
 #ifdef USING_QPSK
 #include "stm_audio_bootloader/qpsk/demodulator.h"
@@ -26,9 +26,9 @@ namespace SamplerKit::Bootloader
 
 struct AudioBootloader {
 #ifdef USING_QPSK
-	constexpr float kModulationRate = 6000.0;
-	constexpr float kBitRate = 12000.0;
-	constexpr float kSampleRate = 48000.0;
+	static constexpr float kModulationRate = 6000.0;
+	static constexpr float kBitRate = 12000.0;
+	static constexpr float kSampleRate = 48000.0;
 #else
 	static constexpr uint32_t kSampleRate = BootloaderConf::SampleRate;		 //-s
 	static constexpr uint32_t kPausePeriod = BootloaderConf::Encoding.blank; //-b

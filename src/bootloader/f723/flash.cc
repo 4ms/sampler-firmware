@@ -129,7 +129,6 @@ HAL_StatusTypeDef flash_open_program_doubleword_array(uint64_t *arr, uint32_t ad
 
 HAL_StatusTypeDef flash_open_program_word_array(uint32_t *arr, uint32_t address, uint32_t num_bytes) {
 	HAL_StatusTypeDef status = HAL_OK;
-	uint64_t doubleword;
 
 	if (address & 0b11)
 		return HAL_ERROR; // address must be word-aligned

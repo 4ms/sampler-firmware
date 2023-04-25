@@ -1,3 +1,4 @@
+// TODO: don't include board_conf, make our own bootloader board_conf with just LEDS and buttons
 #include "../conf/board_conf.hh"
 #include "drivers/pin.hh"
 

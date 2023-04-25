@@ -23,3 +23,5 @@ flash:
 	$(info ------------------------------------------------------------------------)
 	dfu-util -a 0 -s 0x70080000 -D build/mp153/RelWithDebInfo/mp153.uimg
 
+wav:
+	cmake --build build --target 723.wav

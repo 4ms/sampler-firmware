@@ -33,7 +33,7 @@ set(TARGET_SOURCES
 
 set(WAV_ENCODE_PYTHON_CMD
     # cmake-format: off
-    python ${CMAKE_SOURCE_DIR}/src/bootloader/stm_audio_bootloader/fsk/encoder.py -s 22050 -b 16 -n 8 -z 4 -p 256 -g 40960 -k 1000 $<TARGET_FILE_DIR:${target}.elf>/${target}.bin
+    python3 ${CMAKE_SOURCE_DIR}/src/bootloader/stm_audio_bootloader/fsk/encoder.py -s 48000 -b 16 -n 8 -z 4 -p 256 -g 131072 -k 5000 $<TARGET_FILE_DIR:${target}.elf>/${target}.bin
     # cmake-format: on
 )
 

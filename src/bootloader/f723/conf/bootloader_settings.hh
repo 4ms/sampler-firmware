@@ -1,7 +1,7 @@
 #include <cstdint>
 namespace BootloaderConf
 {
-static constexpr uint32_t SampleRate = 22050;
+static constexpr uint32_t SampleRate = 48000;
 
 constexpr inline uint32_t ReceiveSectorSize = 128 * 1024;
 

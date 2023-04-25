@@ -2,7 +2,6 @@
 #include "bl_utils.hh"
 #include "bootloader/animation.hh"
 #include "bootloader/buttons.hh"
-#include "bootloader/gate_input.hh"
 #include "bootloader/leds.hh"
 #include "conf/bootloader_settings.hh"
 #include "conf/flash_layout.hh"
@@ -54,7 +53,6 @@ struct AudioBootloader {
 
 	AudioBootloader() {
 		init_buttons();
-
 		animate(Animation::RESET);
 	}
 
@@ -69,20 +67,20 @@ struct AudioBootloader {
 			else
 				button_debounce = 0;
 		}
-
 		HAL_Delay(100);
-
 		bool do_bootloader = (button_debounce > 15000);
 		return do_bootloader;
 	}
 
+	GCC_OPTIMIZE_OFF
 	void run() {
 		init_reception();
 
 		AudioStream audio_stream(
 			[this](const AudioStreamConf::AudioInBlock &inblock, AudioStreamConf::AudioOutBlock &outblock) {
 				for (auto [in, out] : zip(inblock, outblock)) {
-					bool sample = std::abs(in.sign_extend_chan(1)) > (0x007FFFFFU / 32U); // 10Vpeak => 300mV threshold
+					bool sample = in.sign_extend_chan(1) > 1000;
+					//(0x007FFFFFU / 32U); // 10Vpeak => 300mV threshold
 
 					if (!discard_samples) {
 						demodulator.PushSample(sample ? 1 : 0);
@@ -90,14 +88,14 @@ struct AudioBootloader {
 						--discard_samples;
 					}
 
-					out.chan[0] = this->ui_state != UI_STATE_ERROR ? in.chan[1] : 0;
+					out.chan[0] = in.chan[1];
 					out.chan[1] = sample ? 0xC00000 : 0x400000;
 				}
 			});
 		audio_stream.start();
 
-		uint32_t button1_exit_armed = 0;
-		uint32_t cycle_but_armed = 0;
+		uint32_t button_exit_armed = 0;
+		uint32_t rev_but_armed = 0;
 
 		while (button_pushed(Button::Rev) || button_pushed(Button::Bank))
 			;
@@ -142,10 +140,12 @@ struct AudioBootloader {
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_SYNC:
 						rcv_err = true;
+						Console::write("Sync Error\n");
 						break;
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_CRC:
 						rcv_err = true;
+						Console::write("CRC Error\n");
 						break;
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_END_OF_TRANSMISSION:
@@ -153,12 +153,16 @@ struct AudioBootloader {
 							if (!write_buffer()) {
 								ui_state = UI_STATE_ERROR;
 								rcv_err = true;
+								Console::write("Buffer Write Error\n");
 								new_block();
 								break;
 							}
 						}
 						exit_updater = true;
 						ui_state = UI_STATE_DONE;
+						Console::write("Copying Firmware!\n");
+						copy_firmware();
+						Console::write("Success!\n");
 						animate_until_button_pushed(Animation::SUCCESS, Button::Play);
 						animate(Animation::RESET);
 						HAL_Delay(100);
@@ -178,23 +182,23 @@ struct AudioBootloader {
 			}
 
 			if (button_pushed(Button::Rev)) {
-				if (cycle_but_armed) {
+				if (rev_but_armed) {
 					HAL_Delay(100);
 					init_reception();
 				}
-				cycle_but_armed = 0;
+				rev_but_armed = 0;
 			} else
-				cycle_but_armed = 1;
+				rev_but_armed = 1;
 
 			if (button_pushed(Button::Play)) {
-				if (button1_exit_armed) {
+				if (button_exit_armed) {
 					if (ui_state == UI_STATE_WAITING) {
 						exit_updater = true;
 					}
 				}
-				button1_exit_armed = 0;
+				button_exit_armed = 0;
 			} else
-				button1_exit_armed = 1;
+				button_exit_armed = 1;
 		}
 		ui_state = UI_STATE_DONE;
 		while (button_pushed(Button::Play) || button_pushed(Button::Rev)) {
@@ -224,12 +228,29 @@ struct AudioBootloader {
 	}
 
 	bool write_buffer() {
+		// uint32_t *b = (uint32_t *)recv_buffer;
+		// printf_("Writing to 0x%08x: 0x%08x 0x%08x ...\n", current_flash_address, b[0], b[1]);
+		Console::write("Writing\n");
 		if ((current_flash_address + kBlkSize) <= get_sector_addr(NumFlashSectors)) {
 			flash_write_page(recv_buffer, current_flash_address, kBlkSize);
 			current_flash_address += kBlkSize;
 			return true;
 		} else {
 			return false;
+		}
+	}
+
+	void copy_firmware() {
+		if (kStartReceiveAddress != AppFlashAddr) {
+			// copy
+			Console::write("Copying\n");
+			uint32_t src_addr = kStartReceiveAddress;
+			uint32_t dst_addr = AppFlashAddr;
+			while (dst_addr < kStartReceiveAddress) {
+				flash_write_page(reinterpret_cast<const uint8_t *>(src_addr), dst_addr, 16 * 1024);
+				src_addr += 16 * 1024;
+				dst_addr += 16 * 1024;
+			}
 		}
 	}
 

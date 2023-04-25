@@ -151,22 +151,22 @@ struct AudioBootloader {
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_SYNC:
 						rcv_err = true;
-						Console::write("Sync Error\n");
+						// Console::write("Sync Error\n");
 						break;
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_ERROR_CRC:
 						rcv_err = true;
-						Console::write("CRC Error\n");
+						// Console::write("CRC Error\n");
 						break;
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_END_OF_TRANSMISSION:
-						Console::write("End\n");
+						// Console::write("End\n");
 						// Write out buffer if we haven't yet (which happens if we load only to RAM)
 						if (current_flash_address == kStartReceiveAddress) {
 							if (!write_buffer()) {
 								ui_state = UI_STATE_ERROR;
 								rcv_err = true;
-								Console::write("Buffer Write Error\n");
+								// Console::write("Buffer Write Error\n");
 								new_block();
 								break;
 							}
@@ -174,7 +174,7 @@ struct AudioBootloader {
 						exit_updater = true;
 						ui_state = UI_STATE_DONE;
 						copy_firmware();
-						Console::write("Success!\n");
+						// Console::write("Success!\n");
 						animate_until_button_pushed(Animation::SUCCESS, Button::Play);
 						animate(Animation::RESET);
 						HAL_Delay(100);
@@ -239,9 +239,7 @@ struct AudioBootloader {
 	}
 
 	bool write_buffer() {
-		// uint32_t *b = (uint32_t *)recv_buffer;
-		// printf_("Writing to 0x%08x: 0x%08x 0x%08x ...\n", current_flash_address, b[0], b[1]);
-		Console::write("Writing\n");
+		// Console::write("Writing\n");
 		if ((current_flash_address + kBlkSize) <= get_sector_addr(NumFlashSectors)) {
 			flash_write_page(recv_buffer, current_flash_address, kBlkSize);
 			current_flash_address += kBlkSize;
@@ -253,8 +251,7 @@ struct AudioBootloader {
 
 	void copy_firmware() {
 		if (kStartReceiveAddress != AppFlashAddr) {
-			// copy
-			Console::write("Copying from receive sectors to execution sectors\n");
+			// Console::write("Copying from receive sectors to execution sectors\n");
 			uint32_t src_addr = kStartReceiveAddress;
 			uint32_t dst_addr = AppFlashAddr;
 			while (dst_addr < kStartReceiveAddress) {

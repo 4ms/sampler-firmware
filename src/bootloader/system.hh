@@ -17,7 +17,7 @@ struct System {
 
 		// SystemTarget::init();
 
-		Console::init();
+		// Console::init();
 		Debug::Pin0{};
 		Debug::Pin1{};
 		Debug::Pin2{};

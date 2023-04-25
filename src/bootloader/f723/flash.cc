@@ -185,7 +185,7 @@ HAL_StatusTypeDef flash_write(std::span<const uint8_t *> data, uint32_t dst_addr
 		return HAL_ERROR;
 	uint32_t last_sec_num = last_sec.value();
 
-	while (sec_num <= last_sec_num) {
+	while (sec_num < last_sec_num) {
 		if (auto err = flash_open_erase_page(get_sector_addr(sec_num)); err != HAL_OK) {
 			flash_end_open_program();
 			return err;
@@ -193,6 +193,7 @@ HAL_StatusTypeDef flash_write(std::span<const uint8_t *> data, uint32_t dst_addr
 		sec_num++;
 	}
 
+	// Write data
 	err = flash_open_program_word_array((uint32_t *)data.data(), dst_addr, bytes_to_write);
 	if (err != HAL_OK) {
 		flash_end_open_program();

@@ -193,6 +193,7 @@ STM32H7_BLOCK_SIZE = 0x10000
 STM32H7_APPLICATION_START = 0x08020000
 
 def main():
+  numpy.set_printoptions(threshold=65000)
   parser = optparse.OptionParser()
   parser.add_option(
       '-k',

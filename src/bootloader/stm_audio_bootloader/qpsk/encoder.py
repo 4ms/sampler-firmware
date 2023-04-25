@@ -75,18 +75,15 @@ class QpskEncoder(object):
     
   @staticmethod
   def _upsample(x, factor):
-    xx = x.reshape(len(x), 1)
-    f = (1, int(factor))
-    t = numpy.tile(xx, f)
-    r = t.ravel()
-    return r
-    #return numpy.tile(x.reshape(len(x), 1), (1, factor)).ravel()
+    return numpy.tile(x.reshape(len(x), 1), (1, factor)).ravel()
     
   def _encode_qpsk(self, symbol_stream):
-    ratio = self._sr / self._br * 2
+    ratio = int(self._sr / self._br * 2)
     symbol_stream = numpy.array(symbol_stream)
-    bitstream_even = 2 * self._upsample(symbol_stream % 2, ratio) - 1
-    bitstream_odd = 2 * self._upsample(symbol_stream / 2, ratio) - 1
+    # print((symbol_stream % 2).astype(int)) #same
+    # print((symbol_stream / 2).astype(int)) #same
+    bitstream_even = 2 * self._upsample((symbol_stream % 2).astype(int), ratio) - 1
+    bitstream_odd = 2 * self._upsample((symbol_stream / 2).astype(int), ratio) - 1
     return bitstream_even / numpy.sqrt(2.0), bitstream_odd / numpy.sqrt(2.0)
   
   def _modulate(self, q_mod, i_mod):

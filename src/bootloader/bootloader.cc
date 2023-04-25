@@ -117,7 +117,7 @@ struct AudioBootloader {
 			if (demodulator.state() == stm_audio_bootloader::DEMODULATOR_STATE_OVERFLOW) {
 				rcv_err = true;
 			} else {
-				demodulator.ProcessAtLeast(32);
+				demodulator.ProcessAtLeast(16);
 			}
 			while (demodulator.available() && !rcv_err && !exit_updater) {
 				uint8_t symbol = demodulator.NextSymbol();

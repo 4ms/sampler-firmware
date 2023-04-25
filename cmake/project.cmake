@@ -169,7 +169,7 @@ function(create_bootloader_target target)
   # Create bootloader elf file target
   add_executable(
     ${target}-bootloader.elf
-    ${root}/src/bootloader/bootloader.cc
+    ${root}/src/bootloader/main.cc
     ${root}/src/bootloader/animation.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/packet_decoder.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/demodulator.cc

@@ -28,35 +28,49 @@
 
 #include "conf/flash_layout.hh"
 #include "drivers/stm32xx.h"
+#include <optional>
+#include <span>
 
-// Does this work?
-uint32_t get_sector_num(uint32_t address) {
-	unsigned i = 0;
-	while (get_sector_addr(i)) {
-		if (address <= get_sector_addr(i))
-			return i;
-		i++;
-	}
-	return 0;
-}
-
-uint32_t get_sector_base_address(uint32_t sector_num) { return get_sector_num(sector_num); }
+static void flash_begin_open_program(void);
+static void flash_end_open_program(void);
+static HAL_StatusTypeDef flash_open_erase_page(uint32_t address);
+static HAL_StatusTypeDef flash_open_program_halfword(uint8_t halfword, uint32_t address);
+static HAL_StatusTypeDef flash_open_program_word(uint32_t word, uint32_t address);
+static HAL_StatusTypeDef flash_open_program_doubleword(uint64_t doubleword, uint32_t address);
+static HAL_StatusTypeDef flash_open_program_byte_array(uint8_t *arr, uint32_t address, uint32_t num_bytes);
+static HAL_StatusTypeDef flash_open_program_halfword_array(uint16_t *arr, uint32_t address, uint32_t num_bytes);
+static HAL_StatusTypeDef flash_open_program_word_array(uint32_t *arr, uint32_t address, uint32_t num_bytes);
+static HAL_StatusTypeDef flash_erase_page(uint32_t address);
+static uint16_t flash_read_halfword(uint32_t address);
+static uint32_t flash_read_word(uint32_t address);
+static uint8_t flash_read_byte(uint32_t address);
+static HAL_StatusTypeDef flash_read_byte_array(uint8_t *arr, uint32_t address, uint32_t num_bytes);
+static HAL_StatusTypeDef flash_read_halfword_array(uint16_t *arr, uint32_t address, uint32_t num_bytes);
+static HAL_StatusTypeDef flash_read_word_array(uint32_t *arr, uint32_t address, uint32_t num_bytes);
+static HAL_StatusTypeDef flash_read_doubleword_array(uint64_t *arr, uint32_t address, uint32_t num_bytes);
 
 HAL_StatusTypeDef _flash_erase(uint32_t address) {
-	HAL_StatusTypeDef status;
-	uint32_t page = get_sector_num(address);
+	auto sector_start = get_sector_num(address);
+	if (!sector_start)
+		return HAL_OK;
+
+	uint32_t sector = sector_start.value();
 	FLASH_EraseInitTypeDef eraseInit;
 	eraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
-	eraseInit.Sector = page;
+	eraseInit.Sector = sector;
 	eraseInit.NbSectors = 1;
 	eraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_3;
-	status = HAL_FLASHEx_Erase(&eraseInit, &page);
-	if (page != 0xFFFFFFFF)
+	uint32_t result = 0;
+	HAL_StatusTypeDef status = HAL_FLASHEx_Erase(&eraseInit, &result);
+	if (result != 0xFFFFFFFF)
 		return HAL_ERROR;
 	else {
 		return status;
 	}
 }
+
+void flash_begin_open_program(void) { HAL_FLASH_Unlock(); }
+void flash_end_open_program(void) { HAL_FLASH_Lock(); }
 
 HAL_StatusTypeDef flash_erase_page(uint32_t address) {
 	HAL_StatusTypeDef status;
@@ -68,8 +82,6 @@ HAL_StatusTypeDef flash_erase_page(uint32_t address) {
 }
 
 HAL_StatusTypeDef flash_open_erase_page(uint32_t address) { return _flash_erase(address); }
-
-void flash_begin_open_program(void) { HAL_FLASH_Unlock(); }
 
 HAL_StatusTypeDef flash_open_program_halfword(uint8_t halfword, uint32_t address) {
 	// return FLASH_ProgramHalfWord(address, halfword);
@@ -89,8 +101,6 @@ HAL_StatusTypeDef flash_open_program_word(uint32_t word, uint32_t address) {
 
 	return HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, address, word);
 }
-
-void flash_end_open_program(void) { HAL_FLASH_Lock(); }
 
 HAL_StatusTypeDef flash_open_program_byte_array(uint8_t *arr, uint32_t address, uint32_t num_bytes) {
 	HAL_StatusTypeDef status = HAL_OK;
@@ -148,6 +158,49 @@ HAL_StatusTypeDef flash_open_program_word_array(uint32_t *arr, uint32_t address,
 		address += 4;
 	}
 	return status;
+}
+
+HAL_StatusTypeDef flash_write(std::span<const uint8_t *> data, uint32_t dst_addr) {
+	uint32_t bytes_to_write = data.size_bytes();
+	if (!bytes_to_write)
+		return HAL_OK;
+
+	flash_begin_open_program();
+
+	// Erase sector if dst_addr is a sector start
+	auto err = flash_open_erase_page(dst_addr);
+	if (err != HAL_OK) {
+		flash_end_open_program();
+		return err;
+	}
+
+	// Erase all sectors that start within our span of data
+	auto sec = get_containing_sector_num(dst_addr);
+	if (!sec)
+		return HAL_ERROR;
+	uint32_t sec_num = sec.value();
+
+	auto last_sec = get_containing_sector_num(dst_addr + bytes_to_write - 1);
+	if (!last_sec)
+		return HAL_ERROR;
+	uint32_t last_sec_num = last_sec.value();
+
+	while (sec_num <= last_sec_num) {
+		if (auto err = flash_open_erase_page(get_sector_addr(sec_num)); err != HAL_OK) {
+			flash_end_open_program();
+			return err;
+		}
+		sec_num++;
+	}
+
+	err = flash_open_program_word_array((uint32_t *)data.data(), dst_addr, bytes_to_write);
+	if (err != HAL_OK) {
+		flash_end_open_program();
+		return err;
+	}
+
+	flash_end_open_program();
+	return HAL_OK;
 }
 
 HAL_StatusTypeDef flash_write_page(const uint8_t *data, uint32_t dst_addr, uint32_t bytes_to_write) {

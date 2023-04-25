@@ -1,5 +1,4 @@
 #include "audio_stream.hh"
-#include "bl_utils.hh"
 #include "bootloader/animation.hh"
 #include "bootloader/buttons.hh"
 #include "bootloader/leds.hh"
@@ -10,6 +9,7 @@
 #include "system.hh"
 #include "util/analyzed_signal.hh"
 #include "util/zip.hh"
+#include <cstring> //for memcpy: adds 100Bytes to binary vs. using our own
 
 // #define USING_FSK
 #define USING_QPSK

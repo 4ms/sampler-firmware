@@ -72,24 +72,32 @@ struct AudioBootloader {
 		return do_bootloader;
 	}
 
-	GCC_OPTIMIZE_OFF
+	// GCC_OPTIMIZE_OFF
 	void run() {
 		init_reception();
 
 		AudioStream audio_stream(
 			[this](const AudioStreamConf::AudioInBlock &inblock, AudioStreamConf::AudioOutBlock &outblock) {
 				for (auto [in, out] : zip(inblock, outblock)) {
-					bool sample = in.sign_extend_chan(1) > 1000;
-					//(0x007FFFFFU / 32U); // 10Vpeak => 300mV threshold
-
 					if (!discard_samples) {
+#ifdef USING_FSK
+						bool sample = in.sign_extend_chan(1) > 1000;
 						demodulator.PushSample(sample ? 1 : 0);
+						out.chan[0] = in.chan[1];
+						out.chan[1] = sample ? 0xC00000 : 0x400000;
+#else
+						// (in >> 4) + 2048;
+						// s16bit (-32k..32k) ->s12bit (-2048..2048) -> u12bit (0..4096)
+
+						// int32_t sample = (in.sign_extend_chan(1) / 512) + 2048; //starts to work with 5Vpp signal
+						int32_t sample = (in.sign_extend_chan(1) / 256) + 2048;
+						demodulator.PushSample(sample);
+						out.chan[0] = in.chan[1];
+						out.chan[1] = sample;
+#endif
 					} else {
 						--discard_samples;
 					}
-
-					out.chan[0] = in.chan[1];
-					out.chan[1] = sample ? 0xC00000 : 0x400000;
 				}
 			});
 		audio_stream.start();
@@ -104,15 +112,16 @@ struct AudioBootloader {
 
 		uint8_t exit_updater = false;
 		while (!exit_updater) {
-			stm_audio_bootloader::PacketDecoderState state;
-			uint32_t symbols_processed = 0;
-			uint8_t symbol;
 			bool rcv_err = false;
 
+			if (demodulator.state() == stm_audio_bootloader::DEMODULATOR_STATE_OVERFLOW) {
+				rcv_err = true;
+			} else {
+				demodulator.ProcessAtLeast(32);
+			}
 			while (demodulator.available() && !rcv_err && !exit_updater) {
-				symbol = demodulator.NextSymbol();
-				state = decoder.ProcessSymbol(symbol);
-				symbols_processed++;
+				uint8_t symbol = demodulator.NextSymbol();
+				auto state = decoder.ProcessSymbol(symbol);
 
 				switch (state) {
 					case stm_audio_bootloader::PACKET_DECODER_STATE_SYNCING:

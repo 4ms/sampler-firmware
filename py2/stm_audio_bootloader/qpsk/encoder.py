@@ -251,6 +251,14 @@ def main():
       default=0,
       help='Application starting sector number',
       ) 
+  parser.add_option(
+      '-z',
+      '--block_size',
+      dest='block_size',
+      type='int',
+      default=0,
+      help='Block size',
+      ) 
   
   options, args = parser.parse_args()
   data = file(args[0], 'rb').read()
@@ -293,23 +301,35 @@ def main():
         writer.append(block)
   elif options.target == 'stm32f4' or options.target == 'stm32h7':
     if options.target == 'stm32f4':
-      block_size = STM32F4_BLOCK_SIZE
       sector_base = STM32F4_SECTOR_BASE_ADDRESS
       erase_pause = 3.5
     else:
-      block_size = STM32H7_BLOCK_SIZE
       sector_base = STM32H7_SECTOR_BASE_ADDRESS
       erase_pause = 3.0
 
-    if options.start_addr == 0: #default
+    if options.start_sector == 0: #default
       start_address = STM32F4_APPLICATION_START if options.target == 'stm32f4' else STM32H7_APPLICATION_START
     else:
       start_address = sector_base[options.start_sector]
 
+    if options.block_size == 0: #default
+      block_size = STM32F4_BLOCK_SIZE if options.target == 'stm32f4' else STM32H7_BLOCK_SIZE
+    else:
+      block_size = options.block_size
+
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Encoding with block_size ")
+    logging.info(block_size)
+    logging.info(" starting address ")
+    logging.info(hex(start_address))
     for x in xrange(0, len(data), block_size):
       address = start_address + x
       block = data[x:x+block_size]
       pause = erase_pause if address in sector_base else 0.2
+      logging.info("Block @ ")
+      logging.info(hex(address))
+      logging.info(" pause = ")
+      logging.info(pause)
       for block in encoder.code(block, block_size, pause):
         if len(block):
           writer.append(block)

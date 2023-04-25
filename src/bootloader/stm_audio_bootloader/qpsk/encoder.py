@@ -108,7 +108,7 @@ class QpskEncoder(object):
     assert len(data) <= self._packet_size
     if len(data) != self._packet_size:
       data = data + '\xff' * (self._packet_size - len(data))
-
+    
     if self._scrambler:
       data = self._scrambler.scramble(data)
     
@@ -249,7 +249,15 @@ def main():
       default='stm32f1',
       help='Set page size and erase time for TARGET',
       metavar='TARGET')
-      
+  parser.add_option(
+      '-a',
+      '--start_sector',
+      dest='start_sector',
+      type='int',
+      default=0,
+      help='Application starting sector number',
+      )
+  
   options, args = parser.parse_args()
   # data = file(args[0], 'rb').read()
   with open(args[0], 'rb') as input_file:
@@ -301,10 +309,13 @@ def main():
       sector_base = STM32H7_SECTOR_BASE_ADDRESS
       erase_pause = 3.0
 
+    if options.start_addr == 0:
       if options.target == 'stm32f4':
         start_address = STM32F4_APPLICATION_START
       else:
         start_address = STM32H7_APPLICATION_START
+    else:
+      start_address = sector_base[options.start_sector]
 
 
     for x in xrange(0, len(data), block_size):

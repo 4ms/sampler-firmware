@@ -30,8 +30,8 @@ const RCC_PeriphCLKInitTypeDef rcc_periph_conf = {
 	.PeriphClockSelection = RCC_PERIPHCLK_SAI1 | RCC_PERIPHCLK_UART4 | RCC_PERIPHCLK_CLK48 | RCC_PERIPHCLK_SDMMC1,
 	.PLLSAI =
 		{
-			.PLLSAIN = 197,
-			.PLLSAIQ = 8,
+			.PLLSAIN = 295,
+			.PLLSAIQ = 12,
 			.PLLSAIP = RCC_PLLSAIP_DIV2,
 		},
 	.PLLSAIDivQ = 2,

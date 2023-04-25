@@ -290,6 +290,7 @@ struct AudioBootloader {
 #ifdef USING_FSK
 		decoder.Reset(); // FSK
 #else
+		decoder.Reset(); 
 		demodulator.SyncDecision();		// QPSK
 #endif
 	}

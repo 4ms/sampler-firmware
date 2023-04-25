@@ -44,8 +44,8 @@ struct AudioBootloader {
 	stm_audio_bootloader::PacketDecoder decoder;
 	stm_audio_bootloader::Demodulator demodulator;
 
-	uint16_t packet_index;
-	uint16_t discard_samples = 8000;
+	uint16_t packet_index = 0;
+	uint16_t discard_samples = 16000;
 	uint32_t current_flash_address;
 
 	enum UiState { UI_STATE_WAITING, UI_STATE_RECEIVING, UI_STATE_ERROR, UI_STATE_WRITING, UI_STATE_DONE };

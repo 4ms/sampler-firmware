@@ -8,6 +8,7 @@
 #include "drivers/stm32xx.h"
 #include "flash.hh"
 #include "system.hh"
+#include "util/analyzed_signal.hh"
 #include "util/zip.hh"
 
 // #define USING_FSK
@@ -48,8 +49,12 @@ struct AudioBootloader {
 	uint16_t discard_samples = 16000;
 	uint32_t current_flash_address;
 
+	int32_t atten = 256;
+
 	enum UiState { UI_STATE_WAITING, UI_STATE_RECEIVING, UI_STATE_ERROR, UI_STATE_WRITING, UI_STATE_DONE };
 	UiState ui_state;
+
+	PeakMeter<int32_t> meter;
 
 	AudioBootloader() {
 		init_buttons();
@@ -86,11 +91,8 @@ struct AudioBootloader {
 						out.chan[0] = in.chan[1];
 						out.chan[1] = sample ? 0xC00000 : 0x400000;
 #else
-						// (in >> 4) + 2048;
-						// s16bit (-32k..32k) ->s12bit (-2048..2048) -> u12bit (0..4096)
-
-						// int32_t sample = (in.sign_extend_chan(1) / 512) + 2048; //starts to work with 5Vpp signal
-						int32_t sample = (in.sign_extend_chan(1) / 256);// + 2048;
+						int32_t sample = (in.sign_extend_chan(1) / atten);
+						meter.update(sample);
 						demodulator.PushSample(sample);
 						out.chan[0] = in.chan[1];
 						out.chan[1] = sample;
@@ -231,7 +233,6 @@ struct AudioBootloader {
 		demodulator.Init(kPausePeriod, kOnePeriod, kZeroPeriod); // pause_thresh = 24. one_thresh = 6.
 		demodulator.Sync();
 #endif
-
 		current_flash_address = kStartReceiveAddress;
 		packet_index = 0;
 		ui_state = UI_STATE_WAITING;
@@ -265,6 +266,12 @@ struct AudioBootloader {
 	}
 
 	void update_LEDs() {
+		int32_t max = meter.max;
+		int32_t min = meter.min;
+		meter.reset();
+		auto peak = std::max(std::abs(max), std::abs(min));
+		animate_signal(peak);
+
 		if (ui_state == UI_STATE_RECEIVING)
 			animate(Animation::RECEIVING);
 
@@ -291,8 +298,8 @@ struct AudioBootloader {
 #ifdef USING_FSK
 		decoder.Reset(); // FSK
 #else
-		decoder.Reset(); 
-		demodulator.SyncDecision();		// QPSK
+		decoder.Reset();
+		demodulator.SyncDecision(); // QPSK
 #endif
 	}
 

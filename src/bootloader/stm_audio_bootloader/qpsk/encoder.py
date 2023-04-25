@@ -306,23 +306,22 @@ def main():
         writer.append(block)
   elif options.target == 'stm32f4' or options.target == 'stm32h7':
     if options.target == 'stm32f4':
-      block_size = STM32F4_BLOCK_SIZE
       sector_base = STM32F4_SECTOR_BASE_ADDRESS
       erase_pause = 3.5
     else:
-      block_size = STM32H7_BLOCK_SIZE
       sector_base = STM32H7_SECTOR_BASE_ADDRESS
       erase_pause = 3.0
 
-    if options.start_sector == 0:
-      if options.target == 'stm32f4':
-        start_address = STM32F4_APPLICATION_START
-      else:
-        start_address = STM32H7_APPLICATION_START
+    if options.start_sector == 0: #default
+      start_address = STM32F4_APPLICATION_START if options.target == 'stm32f4' else STM32H7_APPLICATION_START
     else:
       start_address = sector_base[options.start_sector]
 
-    logging.basicConfig(level=logging.INFO)
+    if options.block_size == 0: #default
+      block_size = STM32F4_BLOCK_SIZE if options.target == 'stm32f4' else STM32H7_BLOCK_SIZE
+    else:
+      block_size = options.block_size
+
     logging.info(f"Encoding with block_size {block_size}, starting address {hex(start_address)}")
     for x in range(0, len(data), block_size):
       address = start_address + x

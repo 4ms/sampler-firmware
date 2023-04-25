@@ -158,6 +158,8 @@ struct AudioBootloader {
 						break;
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_END_OF_TRANSMISSION:
+						Console::write("End\n");
+						// Write out buffer if we haven't yet (which happens if we load only to RAM)
 						if (current_flash_address == kStartReceiveAddress) {
 							if (!write_buffer()) {
 								ui_state = UI_STATE_ERROR;
@@ -169,7 +171,6 @@ struct AudioBootloader {
 						}
 						exit_updater = true;
 						ui_state = UI_STATE_DONE;
-						Console::write("Copying Firmware!\n");
 						copy_firmware();
 						Console::write("Success!\n");
 						animate_until_button_pushed(Animation::SUCCESS, Button::Play);
@@ -252,7 +253,7 @@ struct AudioBootloader {
 	void copy_firmware() {
 		if (kStartReceiveAddress != AppFlashAddr) {
 			// copy
-			Console::write("Copying\n");
+			Console::write("Copying from receive sectors to execution sectors\n");
 			uint32_t src_addr = kStartReceiveAddress;
 			uint32_t dst_addr = AppFlashAddr;
 			while (dst_addr < kStartReceiveAddress) {

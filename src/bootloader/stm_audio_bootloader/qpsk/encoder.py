@@ -257,6 +257,14 @@ def main():
       default=0,
       help='Application starting sector number',
       )
+  parser.add_option(
+      '-g',
+      '--block_size',
+      dest='block_size',
+      type='int',
+      default=0,
+      help='Block size',
+      ) 
   
   options, args = parser.parse_args()
   # data = file(args[0], 'rb').read()

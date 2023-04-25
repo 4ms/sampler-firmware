@@ -252,7 +252,7 @@ def main():
       help='Application starting sector number',
       ) 
   parser.add_option(
-      '-z',
+      '-g',
       '--block_size',
       dest='block_size',
       type='int',
@@ -317,7 +317,7 @@ def main():
     else:
       block_size = options.block_size
 
-    logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
     logging.info("Encoding with block_size ")
     logging.info(block_size)
     logging.info(" starting address ")

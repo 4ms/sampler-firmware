@@ -317,11 +317,13 @@ def main():
     else:
       start_address = sector_base[options.start_sector]
 
-    print(f"Encoding with block_size {block_size}, starting address {hex(start_address)}")
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f"Encoding with block_size {block_size}, starting address {hex(start_address)}")
     for x in range(0, len(data), block_size):
       address = start_address + x
       block = data[x:x+block_size]
       pause = erase_pause if address in sector_base else 0.2
+      logging.info(f"Block @ {hex(address)}, pause = {pause} ")
       for block in encoder.code(block, block_size, pause):
         if len(block):
           writer.append(block)

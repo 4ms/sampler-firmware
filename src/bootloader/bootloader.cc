@@ -90,7 +90,7 @@ struct AudioBootloader {
 						// s16bit (-32k..32k) ->s12bit (-2048..2048) -> u12bit (0..4096)
 
 						// int32_t sample = (in.sign_extend_chan(1) / 512) + 2048; //starts to work with 5Vpp signal
-						int32_t sample = (in.sign_extend_chan(1) / 256) + 2048;
+						int32_t sample = (in.sign_extend_chan(1) / 256);// + 2048;
 						demodulator.PushSample(sample);
 						out.chan[0] = in.chan[1];
 						out.chan[1] = sample;

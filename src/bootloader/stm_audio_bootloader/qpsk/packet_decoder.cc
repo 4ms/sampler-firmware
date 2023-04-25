@@ -24,7 +24,7 @@
 
 #include "packet_decoder.h"
 
-#include "crc32.h"
+#include "utils/crc32.h"
 
 namespace stm_audio_bootloader {
 

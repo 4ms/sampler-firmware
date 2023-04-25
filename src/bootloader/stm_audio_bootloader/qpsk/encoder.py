@@ -309,7 +309,7 @@ def main():
       sector_base = STM32H7_SECTOR_BASE_ADDRESS
       erase_pause = 3.0
 
-    if options.start_addr == 0:
+    if options.start_sector == 0:
       if options.target == 'stm32f4':
         start_address = STM32F4_APPLICATION_START
       else:
@@ -317,8 +317,8 @@ def main():
     else:
       start_address = sector_base[options.start_sector]
 
-
-    for x in xrange(0, len(data), block_size):
+    print(f"Encoding with block_size {block_size}, starting address {hex(start_address)}")
+    for x in range(0, len(data), block_size):
       address = start_address + x
       block = data[x:x+block_size]
       pause = erase_pause if address in sector_base else 0.2

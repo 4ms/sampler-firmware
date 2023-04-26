@@ -22,15 +22,12 @@ struct CalibrationStorage {
 	float rgbled_adjustments[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
 	void factory_reset();
-	uint32_t load_flash_params();
-	void save_flash_params(uint8_t num_led_blinks);
-	void update_flash_params_version();
+	std::pair<uint32_t, uint32_t> load_flash_params();
+	bool save_flash_params();
 
 private:
+	void update_flash_params_version();
 	void apply_firmware_specific_adjustments();
-	void copy_system_calibrations_into_staging();
-	void set_firmware_version();
-	void write_all_system_calibrations_to_FLASH();
 };
 
 } // namespace SamplerKit

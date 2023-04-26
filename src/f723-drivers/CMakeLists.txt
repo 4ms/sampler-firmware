@@ -23,6 +23,7 @@ set(TARGET_INCLUDES
 )
 set(TARGET_SOURCES
     ${root}/src/f723-drivers/sd.cc
+    ${root}/src/f723-drivers/flash.cc
     ${root}/lib/mdrivlib/drivers/sdram.cc
     ${root}/lib/mdrivlib/drivers/hal_handlers.cc
     ${root}/lib/mdrivlib/target/stm32f7xx/drivers/sai_tdm.cc

@@ -15,8 +15,8 @@ void main() {
 									 [&] { bootloader.update_LEDs(); }};
 	update_task.start();
 
-	// if (bootloader.check_enter_bootloader())
-	bootloader.run();
+	if (bootloader.check_enter_bootloader())
+		bootloader.run();
 
 	mdrivlib::System::reset_buses();
 	mdrivlib::System::reset_RCC();

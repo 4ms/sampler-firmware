@@ -173,7 +173,6 @@ function(create_bootloader_target target)
     ${root}/src/bootloader/animation.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/packet_decoder.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/demodulator.cc
-    ${root}/src/console.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
     ${root}/lib/mdrivlib/drivers/pin.cc

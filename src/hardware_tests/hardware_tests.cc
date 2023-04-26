@@ -112,7 +112,7 @@ void run(Controls &controls) {
 	// 100'000 = ADC 10, ~190mV
 	// -4'600'000 > ADC 4095, ~4.97V
 	CenterFlatRamp test_waveform_0_5{1., 0.3, -4'600'000, 100'000, 0, 48000};
-	CenterFlatRamp test_waveform_n5_5{1., 0.3, 4'400'000, -4'600'000, 0, 48000};
+	CenterFlatRamp test_waveform_n5_5{1., 0.3, 4'600'000, -4'600'000, 0, 48000};
 	audio.set_callback([&](const AudioStreamConf::AudioInBlock &in, AudioStreamConf::AudioOutBlock &out) {
 		for (auto &o : out) {
 			o.chan[0] = test_waveform_0_5.update();	 // R

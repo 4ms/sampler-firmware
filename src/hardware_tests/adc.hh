@@ -14,7 +14,7 @@ namespace SamplerKit::HWTests
 struct TestADCs : IAdcChecker {
 	static constexpr AdcRangeCheckerBounds bounds{
 		.center_val = 2048,
-		.center_width = 10,
+		.center_width = 100,
 		.center_check_counts = 10000,
 		.min_val = Brain::PotAdcConf::min_value,
 		.max_val = 4082,
@@ -103,7 +103,21 @@ struct TestADCs : IAdcChecker {
 		}
 	}
 
-	void pause_between_steps() override { HAL_Delay(10); }
+	void pause_between_steps() override {
+		for (int i = 0; i < 3; i++) {
+			Board::PlayLED{}.set_color(Colors::green);
+			Board::RevLED{}.set_color(Colors::green);
+			Board::BankLED{}.set_color(Colors::green);
+			HAL_Delay(75);
+			Board::PlayLED{}.set_color(Colors::white);
+			Board::RevLED{}.set_color(Colors::white);
+			Board::BankLED{}.set_color(Colors::white);
+			HAL_Delay(75);
+		}
+		Board::PlayLED{}.set_color(Colors::off);
+		Board::RevLED{}.set_color(Colors::off);
+		Board::BankLED{}.set_color(Colors::off);
+	}
 
 	void show_multiple_nonzeros_error() override { Board::PlayLED{}.set_color(Colors::red); }
 

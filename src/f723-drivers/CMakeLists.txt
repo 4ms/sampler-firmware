@@ -30,6 +30,8 @@ set(TARGET_SOURCES
     ${root}/lib/mdrivlib/target/stm32f7xx/drivers/interrupt_handler.cc
     ${root}/lib/mdrivlib/target/stm32f7xx/boot/startup.s
     ${root}/lib/mdrivlib/target/stm32f7xx/boot/system_init.c
+    ${root}/lib/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.c
+    ${root}/lib/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash_ex.c
 )
 
 set(WAV_ENCODE_PYTHON_CMD

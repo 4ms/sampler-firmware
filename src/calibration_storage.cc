@@ -4,53 +4,55 @@
 #include <bit>
 #include <span>
 
-// TODO
 namespace SamplerKit
 {
+
 void CalibrationStorage::factory_reset() {
-	uint32_t major_firmware_version = FirmwareMajorVersion;
-	uint32_t minor_firmware_version = FirmwareMinorVersion;
-	int32_t cv_calibration_offset[NumCVs] = {-Brain::CVAdcConf::bi_min_value,
-											 -Brain::CVAdcConf::uni_min_value,
-											 -Brain::CVAdcConf::uni_min_value,
-											 -Brain::CVAdcConf::uni_min_value,
-											 -Brain::CVAdcConf::uni_min_value};
-	int32_t codec_adc_calibration_dcoffset[2] = {0, 0};
-	int32_t codec_dac_calibration_dcoffset[2] = {0, 0};
-	uint32_t led_brightness = 0;
-	float tracking_comp = 1.f;
-	int32_t pitch_pot_detent_offset = 0;
-	float rgbled_adjustments[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	cal_data.major_firmware_version = FirmwareMajorVersion;
+	cal_data.minor_firmware_version = FirmwareMinorVersion;
+	cal_data.cv_calibration_offset[0] = -Brain::CVAdcConf::bi_min_value;
+	cal_data.cv_calibration_offset[1] = -Brain::CVAdcConf::uni_min_value;
+	cal_data.cv_calibration_offset[2] = -Brain::CVAdcConf::uni_min_value;
+	cal_data.cv_calibration_offset[3] = -Brain::CVAdcConf::uni_min_value;
+	cal_data.cv_calibration_offset[4] = -Brain::CVAdcConf::uni_min_value;
+	cal_data.codec_adc_calibration_dcoffset[0] = 0;
+	cal_data.codec_adc_calibration_dcoffset[1] = 0;
+	cal_data.codec_dac_calibration_dcoffset[0] = 0;
+	cal_data.codec_dac_calibration_dcoffset[1] = 0;
+	cal_data.led_brightness = 4;
+	cal_data.tracking_comp = 1.f;
+	cal_data.pitch_pot_detent_offset = 0;
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			cal_data.rgbled_adjustments[i][j] = 0;
+
+	save_flash_params();
 }
 
-// Returns firmware version [major,minor] or 0 if failed
-[[maybe_unused]] std::pair<uint32_t, uint32_t> CalibrationStorage::load_flash_params() {
-	auto this_bits = reinterpret_cast<uint8_t *>(this);
-	std::span<uint8_t> stored_data{this_bits, sizeof(CalibrationStorage)};
-
-	if (!flash_read(stored_data, SettingsFlashAddr))
-		return {0, 0};
-
-	return {major_firmware_version, major_firmware_version};
+CalibrationStorage::CalibrationStorage() {
+	if (!flash.read(cal_data) || !cal_data.validate()) {
+		cal_data = CalibrationData{}; // default init
+		flash.write(cal_data);
+	}
+	handle_updated_firmware();
 }
 
-bool CalibrationStorage::save_flash_params() {
-	auto this_bits = reinterpret_cast<uint8_t *>(this);
-	std::span<const uint8_t> stored_data{this_bits, sizeof(CalibrationStorage)};
+void CalibrationStorage::save_flash_params() { flash.write(cal_data); }
 
-	return flash_erase_and_write(stored_data, SettingsFlashAddr);
-}
+void CalibrationStorage::handle_updated_firmware() {
+	if (cal_data.major_firmware_version == FirmwareMajorVersion &&
+		cal_data.minor_firmware_version == FirmwareMinorVersion)
+		return;
 
-void CalibrationStorage::update_flash_params_version() {
 	apply_firmware_specific_adjustments();
-	major_firmware_version = FirmwareMajorVersion;
-	minor_firmware_version = FirmwareMinorVersion;
+	cal_data.major_firmware_version = FirmwareMajorVersion;
+	cal_data.minor_firmware_version = FirmwareMinorVersion;
 	save_flash_params();
 }
 
 void CalibrationStorage::apply_firmware_specific_adjustments() {
-	if (major_firmware_version == 0 && minor_firmware_version == 1) {
-		//
+	if (cal_data.major_firmware_version == 0 && cal_data.minor_firmware_version == 0) {
+		// v0.0 => newer
 	}
 }
 

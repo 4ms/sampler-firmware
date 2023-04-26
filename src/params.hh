@@ -43,11 +43,14 @@ enum class RecStates {
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
 struct Params {
+
 	Controls &controls;
 	Flags &flags;
-	CalibrationStorage &system_calibrations;
 	UserSettings &settings;
 	BankManager &banks;
+
+	CalibrationStorage cal_storage;
+	CalibrationData &calibration;
 
 	// i_param[]:
 	uint32_t bank = 0;
@@ -62,8 +65,8 @@ struct Params {
 	float volume = 1.f;
 
 	// These are what's playing, even if the controls have selected something else
-	uint8_t sample_num_now_playing;
-	uint8_t sample_bank_now_playing;
+	uint8_t sample_num_now_playing = 0;
+	uint8_t sample_bank_now_playing = 0;
 
 	uint32_t play_trig_timestamp = 0;
 	int32_t voct_latch_value = 0;
@@ -75,16 +78,12 @@ struct Params {
 
 	OperationMode op_mode = OperationMode::Playback;
 
-	Params(Controls &controls,
-		   Flags &flags,
-		   CalibrationStorage &system_calibrations,
-		   UserSettings &settings,
-		   BankManager &banks)
+	Params(Controls &controls, Flags &flags, UserSettings &settings, BankManager &banks)
 		: controls{controls}
 		, flags{flags}
-		, system_calibrations{system_calibrations}
 		, settings{settings}
-		, banks{banks} {
+		, banks{banks}
+		, calibration{cal_storage.cal_data} {
 
 		controls.start();
 	}
@@ -132,7 +131,7 @@ struct Params {
 private:
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
-		auto potval = std::clamp(pot.cur_val + (int16_t)system_calibrations.pitch_pot_detent_offset, 0, 4095);
+		auto potval = std::clamp(pot.cur_val + (int16_t)calibration.pitch_pot_detent_offset, 0, 4095);
 
 		// Flag::LatchVoltOctCV is set after a Play Trig happens
 		// and the current CV value is stored into voct_latch_value.
@@ -145,8 +144,7 @@ private:
 
 		pitch_cv = MathTools::plateau<12, 2048>(pitch_cv) + 2048;
 
-		uint32_t compensated_pitch_cv =
-			TuningCalcs::apply_tracking_compensation(pitch_cv, system_calibrations.tracking_comp);
+		uint32_t compensated_pitch_cv = TuningCalcs::apply_tracking_compensation(pitch_cv, calibration.tracking_comp);
 
 		if (settings.quantize)
 			pitch = pitch_pot_lut[potval] * TuningCalcs::quantized_semitone_voct(compensated_pitch_cv);
@@ -253,7 +251,7 @@ private:
 			if (op_mode == OperationMode::Calibrate) {
 				// TODO: use raw values, without calibration offset
 			} else
-				cv.cur_val += system_calibrations.cv_calibration_offset[i];
+				cv.cur_val += calibration.cv_calibration_offset[i];
 
 			int16_t diff = std::abs(cv.cur_val - cv.prev_val);
 			if (diff > Brain::MinCVChange) {

@@ -33,8 +33,8 @@
 
 static HAL_StatusTypeDef flash_erase(uint32_t address);
 
-template<std::integral T>
-bool flash_read(std::span<T> data, uint32_t address) {
+// template<std::integral T>
+bool flash_read(std::span<uint8_t> data, uint32_t address) {
 	// for (auto &d : data) {
 	// 	d = (T)(*(/*volatile*/ T *)address);
 	// 	address += sizeof(T);

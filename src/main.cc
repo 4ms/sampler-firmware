@@ -32,10 +32,6 @@ void main() {
 		HWTests::run(controls);
 	}
 
-	CalibrationStorage system_calibrations;
-	auto fw_version = system_calibrations.load_flash_params();
-	// check_calibration_mode();
-
 	Sdcard sd;
 	sd.reload_disk();
 
@@ -44,7 +40,7 @@ void main() {
 	Flags flags;
 	SampleList samples;
 	BankManager banks{samples};
-	Params params{controls, flags, system_calibrations, settings_storage.settings, banks};
+	Params params{controls, flags, settings_storage.settings, banks};
 
 	// Load sample index file (map files to sample slots and banks)
 	SampleIndexLoader index_loader{sd, samples, banks, flags};
@@ -57,11 +53,11 @@ void main() {
 
 	Sampler sampler{params, flags, sd, banks};
 	AudioStream audio_stream([&sampler, &params](const AudioInBlock &in, AudioOutBlock &out) {
-		Debug::Pin0::high();
+		// Debug::Pin0::high();
 		params.update();
 		sampler.recorder.record_audio_to_buffer(in);
 		sampler.audio.update(in, out);
-		Debug::Pin0::low();
+		// Debug::Pin0::low();
 	});
 
 	sampler.start();

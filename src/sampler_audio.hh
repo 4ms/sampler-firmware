@@ -55,8 +55,8 @@ public:
 			// calibration value, until we get a DC level of zero volts on the
 			// audio outut jacks.
 			for (auto [L, R] : zip(outL, outR)) {
-				L = params.system_calibrations.codec_dac_calibration_dcoffset[0];
-				R = params.system_calibrations.codec_dac_calibration_dcoffset[1];
+				L = params.calibration.codec_dac_calibration_dcoffset[0];
+				R = params.calibration.codec_dac_calibration_dcoffset[1];
 			}
 			return;
 		}

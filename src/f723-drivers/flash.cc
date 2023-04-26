@@ -37,11 +37,19 @@
 // static HAL_StatusTypeDef flash_program_doubleword(uint64_t doubleword, uint32_t address);
 static HAL_StatusTypeDef flash_erase(uint32_t address);
 
-template<std::integral T>
-bool flash_read(std::span<T> data, uint32_t address) {
+// template<std::integral T>
+// bool flash_read(std::span<T> data, uint32_t address){
+// 	for (auto &d : data) {
+// 		d = (T)(*(/*volatile*/ T *)address);
+// 		address += sizeof(T);
+// 	}
+// 	return true;
+// }
+
+bool flash_read(std::span<uint8_t> data, uint32_t address) {
 	for (auto &d : data) {
-		d = (T)(*(/*volatile*/ T *)address);
-		address += sizeof(T);
+		d = (uint8_t)(*(/*volatile*/ uint8_t *)address);
+		address += sizeof(uint8_t);
 	}
 	return true;
 }

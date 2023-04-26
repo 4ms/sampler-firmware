@@ -26,6 +26,8 @@
  * -----------------------------------------------------------------------------
  */
 
+#include "flash.hh"
+#include "../src/flash_math.hh"
 #include "conf/flash_layout.hh"
 #include "drivers/stm32xx.h"
 #include <optional>

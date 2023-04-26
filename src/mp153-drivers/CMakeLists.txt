@@ -33,8 +33,8 @@ set(TARGET_INCLUDES
     ${root}/lib/STM32MP1xx_HAL_Driver/Inc
 )
 set(TARGET_SOURCES
-    mmu_ca7.c
-    aux_core_main.cc
+    ${root}/src/mp153-drivers/mmu_ca7.c
+    ${root}/src/mp153-drivers/aux_core_main.cc
     ${root}/src/mp153-drivers/flash.cc
     ${root}/lib/mdrivlib/target/stm32mp1_ca7/boot/irq_ctrl.c
     ${root}/lib/mdrivlib/target/stm32mp1/drivers/sai_tdm.cc

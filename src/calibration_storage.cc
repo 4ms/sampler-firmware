@@ -1,13 +1,12 @@
 #include "calibration_storage.hh"
 #include "conf/flash_layout.hh"
 #include "flash.hh"
-#include <bit>
 #include <span>
 
 namespace SamplerKit
 {
 
-void CalibrationStorage::factory_reset() {
+void CalibrationStorage::set_default_cal() {
 	cal_data.major_firmware_version = FirmwareMajorVersion;
 	cal_data.minor_firmware_version = FirmwareMinorVersion;
 	cal_data.cv_calibration_offset[0] = -Brain::CVAdcConf::bi_min_value;
@@ -25,19 +24,26 @@ void CalibrationStorage::factory_reset() {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			cal_data.rgbled_adjustments[i][j] = 0;
+}
 
+void CalibrationStorage::factory_reset() {
+	set_default_cal();
 	save_flash_params();
 }
 
 CalibrationStorage::CalibrationStorage() {
+	__BKPT(1);
 	if (!flash.read(cal_data) || !cal_data.validate()) {
-		cal_data = CalibrationData{}; // default init
-		flash.write(cal_data);
+		set_default_cal();
+		if (!flash.write(cal_data))
+			__BKPT(2);
 	}
 	handle_updated_firmware();
 }
 
-void CalibrationStorage::save_flash_params() { flash.write(cal_data); }
+bool CalibrationStorage::save_flash_params() { //
+	return flash.write(cal_data);
+}
 
 void CalibrationStorage::handle_updated_firmware() {
 	if (cal_data.major_firmware_version == FirmwareMajorVersion &&

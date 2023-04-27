@@ -9,6 +9,9 @@ namespace SamplerKit
 
 struct SystemTarget {
 	static void init() {
+		HAL_Init();
+		HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_2);
+
 		mdrivlib::SDRAMPeriph sdram{Brain::SDRAM_conf, Brain::SdramBank, Brain::SdramKernelClock};
 		SCB_InvalidateICache();
 		SCB_EnableICache();

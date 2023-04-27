@@ -80,7 +80,9 @@ void run(Controls &controls) {
 	printf_("  3) End Out: 750Hz square wave, 0V to +8V [+/- 0.5V]\n");
 
 	print_press_button();
+	Board::BankLED{}.set_color(Colors::orange);
 	Util::flash_mainbut_until_pressed();
+	Board::BankLED{}.set_color(Colors::off);
 
 	//////////////////////////////
 	print_test_name("Audio Input Test");
@@ -95,7 +97,9 @@ void run(Controls &controls) {
 	printf_("  3) Unpatch In R. Patch Out R to In L, verify right-leaning 3.4kHz 20Vpp wave [+/- 0.3V] on Out L\n");
 
 	print_press_button();
+	Board::RevLED{}.set_color(Colors::orange);
 	Util::flash_mainbut_until_pressed();
+	Board::RevLED{}.set_color(Colors::off);
 	controls.play_button.clear_events();
 
 	//////////////////////////////

@@ -48,8 +48,16 @@ static HAL_StatusTypeDef flash_erase(uint32_t address);
 
 bool flash_read(std::span<uint8_t> data, uint32_t address) {
 	for (auto &d : data) {
-		d = (uint8_t)(*(/*volatile*/ uint8_t *)address);
+		d = (uint8_t)(*(volatile uint8_t *)address);
 		address += sizeof(uint8_t);
+	}
+	return true;
+}
+
+bool flash_read(std::span<uint32_t> data, uint32_t address) {
+	for (auto &d : data) {
+		d = (uint32_t)(*(volatile uint32_t *)address);
+		address += sizeof(uint32_t);
 	}
 	return true;
 }

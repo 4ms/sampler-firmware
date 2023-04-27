@@ -21,7 +21,11 @@ struct FlashBlock {
 			return false;
 
 		uint32_t addr = FlashAddr + cell * aligned_data_size_;
-		std::span<uint8_t> stored_data{reinterpret_cast<uint8_t *>(&data), data_size_};
+
+		// std::span<uint8_t> stored_data{reinterpret_cast<uint8_t *>(&data), data_size_};
+		// return flash_read(stored_data, addr);
+
+		std::span<uint32_t> stored_data{reinterpret_cast<uint32_t *>(&data), data_size_ / 4};
 		return flash_read(stored_data, addr);
 	}
 

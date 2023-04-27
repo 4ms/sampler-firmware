@@ -8,6 +8,7 @@
 
 namespace SamplerKit
 {
+
 struct CalibrationData {
 	uint32_t major_firmware_version = FirmwareMajorVersion;
 	uint32_t minor_firmware_version = FirmwareMinorVersion;
@@ -31,7 +32,7 @@ struct CalibrationData {
 };
 
 struct CalibrationStorage {
-	WearLevel<FlashBlock<SettingsFlashAddr, CalibrationData>> flash;
+	WearLevel<FlashBlock<SettingsFlashAddr, CalibrationData, 8>> flash;
 	CalibrationData cal_data;
 
 	CalibrationStorage();

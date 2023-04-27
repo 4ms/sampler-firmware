@@ -42,6 +42,14 @@ bool flash_read(std::span<uint8_t> data, uint32_t address) {
 	return true;
 }
 
+bool flash_read(std::span<uint32_t> data, uint32_t address) {
+	// for (auto &d : data) {
+	// 	d = (T)(*(/*volatile*/ T *)address);
+	// 	address += sizeof(T);
+	// }
+	return true;
+}
+
 bool flash_erase_sector(uint32_t address) {
 	// HAL_FLASH_Unlock();
 	// auto status = flash_erase(address);

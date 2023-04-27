@@ -58,7 +58,7 @@ bool flash_erase_sector(uint32_t address) {
 	return true;
 }
 
-bool flash_write(std::span<const uint8_t> data, uint32_t address) {
+bool flash_write(std::span<const uint32_t> data, uint32_t address) {
 	// TODO optimize for 16, 32, 64
 	// for (auto d : data) {
 	// 	if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, address, d) != HAL_OK)

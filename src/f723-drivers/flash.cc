@@ -27,6 +27,7 @@
  */
 
 #include "conf/flash_layout.hh"
+#include "debug.hh"
 #include "drivers/stm32xx.h"
 #include "flash_math.hh"
 #include <optional>
@@ -69,54 +70,60 @@ bool flash_erase_sector(uint32_t address) {
 	return status == HAL_OK;
 }
 
-bool flash_write(std::span<const uint8_t> data, uint32_t address) {
+bool flash_write(std::span<const uint32_t> data, uint32_t address) {
 	// TODO optimize for 16, 32, 64
+	HAL_FLASH_Unlock();
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 	for (auto d : data) {
-		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, address, d) != HAL_OK)
-			break;
-		address++;
+		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, address, d) != HAL_OK) {
+			__BKPT();
+			HAL_FLASH_Lock();
+			return false;
+		}
+		address += 4;
 	}
+	HAL_FLASH_Lock();
 	return true;
 }
 
 // Erases any sector whose starting address is contained in data (if any)
 // Then, writes data
 bool flash_erase_and_write(std::span<const uint8_t> data, uint32_t dst_addr) {
-	uint32_t bytes_to_write = data.size_bytes();
-	if (!bytes_to_write)
-		return HAL_OK;
+	// uint32_t bytes_to_write = data.size_bytes();
+	// if (!bytes_to_write)
+	// 	return HAL_OK;
 
-	HAL_FLASH_Unlock();
+	// HAL_FLASH_Unlock();
 
-	// Erase sector if dst_addr is a sector start
-	if (flash_erase(dst_addr) != HAL_OK) {
-		HAL_FLASH_Lock();
-		return false;
-	}
+	// // Erase sector if dst_addr is a sector start
+	// if (flash_erase(dst_addr) != HAL_OK) {
+	// 	HAL_FLASH_Lock();
+	// 	return false;
+	// }
 
-	// Erase all sectors that start within our span of data
-	auto sec_num = get_containing_sector_num(dst_addr).value_or(-1);
-	if (sec_num == -1)
-		return false;
+	// // Erase all sectors that start within our span of data
+	// auto sec_num = get_containing_sector_num(dst_addr).value_or(-1);
+	// if (sec_num == -1)
+	// 	return false;
 
-	auto last_sec_num = get_containing_sector_num(dst_addr + bytes_to_write - 1).value_or(-1);
-	if (last_sec_num == -1)
-		return false;
+	// auto last_sec_num = get_containing_sector_num(dst_addr + bytes_to_write - 1).value_or(-1);
+	// if (last_sec_num == -1)
+	// 	return false;
 
-	while (sec_num < last_sec_num) {
-		if (flash_erase(get_sector_addr(sec_num++)) != HAL_OK) {
-			HAL_FLASH_Lock();
-			return false;
-		}
-	}
+	// while (sec_num < last_sec_num) {
+	// 	if (flash_erase(get_sector_addr(sec_num++)) != HAL_OK) {
+	// 		HAL_FLASH_Lock();
+	// 		return false;
+	// 	}
+	// }
 
-	// Write data
-	if (!flash_write(data, dst_addr)) {
-		HAL_FLASH_Lock();
-		return false;
-	}
+	// // Write data
+	// if (!flash_write(data, dst_addr)) {
+	// 	HAL_FLASH_Lock();
+	// 	return false;
+	// }
 
-	HAL_FLASH_Lock();
+	// HAL_FLASH_Lock();
 	return true;
 }
 
@@ -134,6 +141,7 @@ static HAL_StatusTypeDef flash_erase(uint32_t address) {
 	eraseInit.NbSectors = 1;
 	eraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_3;
 	uint32_t result = 0;
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 	HAL_StatusTypeDef status = HAL_FLASHEx_Erase(&eraseInit, &result);
 	if (result != 0xFFFFFFFF)
 		return HAL_ERROR;

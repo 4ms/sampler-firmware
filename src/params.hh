@@ -333,12 +333,15 @@ private:
 			}
 		}
 
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held() > (Brain::ParamUpdateHz * 0.3f)) {
-			if (!controls.rev_button.is_pressed() && !controls.play_button.is_pressed()) {
-				calibration.cv_calibration_offset[0] = bank;
-				cal_storage.save_flash_params();
-				ignore_bank_longhold = true;
-				ignore_bank_release = true;
+		if (controls.bank_button.is_pressed()) {
+			if (!ignore_bank_longhold && controls.bank_button.how_long_held() > (Brain::ParamUpdateHz * 0.5f)) {
+				if (!controls.rev_button.is_pressed() && !controls.play_button.is_pressed()) {
+					calibration.cv_calibration_offset[0] = bank;
+					cal_storage.save_flash_params();
+					printf_("%d\n", bank);
+					ignore_bank_longhold = true;
+					ignore_bank_release = true;
+				}
 			}
 		}
 

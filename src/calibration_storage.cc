@@ -32,16 +32,19 @@ void CalibrationStorage::factory_reset() {
 }
 
 CalibrationStorage::CalibrationStorage() {
-	__BKPT(1);
 	if (!flash.read(cal_data) || !cal_data.validate()) {
 		set_default_cal();
-		if (!flash.write(cal_data))
-			__BKPT(2);
+		if (!flash.write(cal_data)) {
+			storage_is_ok = false;
+			// __BKPT(2); // ERROR!
+		}
 	}
 	handle_updated_firmware();
 }
 
 bool CalibrationStorage::save_flash_params() { //
+	if (!storage_is_ok)
+		return false;
 	return flash.write(cal_data);
 }
 

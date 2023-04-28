@@ -30,6 +30,7 @@ struct CalibrationData {
 struct CalibrationStorage {
 	WearLevel<FlashBlock<SettingsFlashAddr, CalibrationData, 8>> flash;
 	CalibrationData cal_data;
+	bool storage_is_ok = true;
 
 	CalibrationStorage();
 	bool save_flash_params();

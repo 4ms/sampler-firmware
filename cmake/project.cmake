@@ -59,6 +59,7 @@ endfunction()
 
 # ############### Common commands #####################
 
+# TODO: use driver_arch parameter like in looping-delay
 function(create_target target)
   message("Creating target ${target}")
 
@@ -190,6 +191,7 @@ function(create_bootloader_target target)
             ${root}/src/bootloader
             ${root}/src/bootloader/stmlib
             ${root}/src
+            ${root}/lib/brainboard
             ${root}/lib/mdrivlib
             ${root}/lib/mdrivlib/drivers
             ${root}/lib/cpputil

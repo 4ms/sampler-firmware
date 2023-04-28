@@ -5,13 +5,7 @@
 #ifdef __cplusplus
 #include <cstdint>
 
-constexpr uint32_t NumFlashSectors = (16 * 1024 * 1024) / (4 * 1024); // 16MB / 4k sectors
-
-constexpr uint32_t get_sector_addr(uint32_t sector_num) {
-	if (sector_num <= NumFlashSectors)
-		return sector_num * 4 * 1024; // 4k sectors
-	return 0;
-}
+#include "flash_sectors.hh"
 
 constexpr inline uint32_t FSBL1FlashAddr = get_sector_addr(0);			// 0x000000
 constexpr inline uint32_t FSBL2FlashAddr = get_sector_addr(64);			// 0x040000

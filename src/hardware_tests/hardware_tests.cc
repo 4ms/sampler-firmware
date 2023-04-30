@@ -51,14 +51,14 @@ void run(Controls &controls) {
 	printf_("Press the Play button to verify each LED. You'll see red=>green=>blue\n");
 	printf_("The LEDs will each turn white for you to verify color balance\n");
 	TestLEDs ledtester;
-	// ledtester.run_test();
+	ledtester.run_test();
 
 	//////////////////////////////
 	print_test_name("Button Test");
 	printf_("Press each button once when it lights up\n");
 	all_lights_off();
 	TestButtons buttontester;
-	// buttontester.run_test();
+	buttontester.run_test();
 
 	//////////////////////////////
 	print_test_name("Audio Output Test");
@@ -75,8 +75,8 @@ void run(Controls &controls) {
 	});
 	audio.start();
 	printf_("Verify:\n");
-	printf_("  1) Out Left: 440Hz sine, -10V to +10V [+/- 0.3V]\n");
-	printf_("  2) Out Right: 2.7kHz sine, -10V to +10V [+/- 0.3V]\n");
+	printf_("  1) Out Left: 440Hz sine (A4), -10V to +10V [+/- 0.3V]\n");
+	printf_("  2) Out Right: 2.637kHz sine (E7), -10V to +10V [+/- 0.3V]\n");
 	printf_("  3) End Out: 1.5kHz square wave, 0V to +8V [+/- 0.5V]\n");
 
 	print_press_button();

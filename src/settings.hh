@@ -5,6 +5,26 @@
 
 namespace SamplerKit
 {
+enum class PlayStates {
+	SILENT,
+	PREBUFFERING,
+	PLAY_FADEUP,
+	PERC_FADEUP,
+	PLAYING,
+	PLAYING_PERC,
+	PLAY_FADEDOWN,
+	RETRIG_FADEDOWN,
+	REV_PERC_FADEDOWN,
+	PAD_SILENCE,
+};
+enum class RecStates {
+	REC_OFF,
+	CREATING_FILE,
+	RECORDING,
+	CLOSING_FILE,
+	CLOSING_FILE_TO_REC_AGAIN,
+};
+
 enum class GateType { Gate, Trig };
 enum class AutoStopMode { Off = 0, Always = 1, Looping = 2 };
 

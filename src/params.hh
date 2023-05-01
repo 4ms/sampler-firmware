@@ -14,31 +14,13 @@
 #include "settings.hh"
 #include "timing_calcs.hh"
 #include "tuning_calcs.hh"
+#include "ui.hh"
 #include "util/colors.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
 
 namespace SamplerKit
 {
-enum class PlayStates {
-	SILENT,
-	PREBUFFERING,
-	PLAY_FADEUP,
-	PERC_FADEUP,
-	PLAYING,
-	PLAYING_PERC,
-	PLAY_FADEDOWN,
-	RETRIG_FADEDOWN,
-	REV_PERC_FADEDOWN,
-	PAD_SILENCE,
-};
-enum class RecStates {
-	REC_OFF,
-	CREATING_FILE,
-	RECORDING,
-	CLOSING_FILE,
-	CLOSING_FILE_TO_REC_AGAIN,
-};
 
 // Params holds all the modes, settings and parameters for the sampler
 // Params are set by controls (knobs, jacks, buttons, etc)
@@ -51,6 +33,8 @@ struct Params {
 
 	CalibrationStorage cal_storage;
 	CalibrationData &calibration;
+
+	Ui ui{flags, controls};
 
 	// i_param[]:
 	uint32_t bank = 0;
@@ -103,7 +87,7 @@ struct Params {
 		update_pitch();
 		update_bank_cv();
 
-		update_leds();
+		ui.update_leds({op_mode, play_state, rec_state, reverse, looping, bank});
 		// check_entering_system_mode();
 
 		if (op_mode == OperationMode::Calibrate) {
@@ -125,7 +109,7 @@ struct Params {
 
 	void startup_animation() {
 		controls.update();
-		update_leds();
+		ui.animate_startup();
 	}
 
 private:
@@ -309,10 +293,10 @@ private:
 			ignore_play_longhold = false;
 		}
 
-		if (controls.play_button.is_pressed()) {
-			// Long hold Play and Rev to toggle Rec/Play mode
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held() > (Brain::ParamUpdateHz)) {
-				if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz)) {
+		// Long hold Play and Rev to toggle Rec/Play mode
+		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
+			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
+				if (!controls.bank_button.is_pressed()) {
 					op_mode = OperationMode::Record;
 					looping = false;
 					flags.set(Flag::EnterRecordMode);
@@ -322,29 +306,52 @@ private:
 					ignore_rev_release = true;
 				}
 			}
+		}
 
-			// Long hold Play to toggle looping (Rev cannot be down)
-			if (!ignore_play_longhold && controls.play_button.how_long_held() > (Brain::ParamUpdateHz * 0.3f)) {
-				if (!controls.rev_button.is_pressed()) {
-					flags.set(Flag::ToggleLooping);
-					ignore_play_longhold = true;
-					ignore_play_release = true;
-				}
+		// Long hold Play to toggle looping
+		if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.3f)) {
+			if (!controls.rev_button.is_pressed() && !controls.bank_button.is_pressed()) {
+				flags.set(Flag::ToggleLooping);
+				ignore_play_longhold = true;
+				ignore_play_release = true;
 			}
 		}
 
-		if (controls.bank_button.is_pressed()) {
-			if (!ignore_bank_longhold && controls.bank_button.how_long_held() > (Brain::ParamUpdateHz * 0.5f)) {
-				if (!controls.rev_button.is_pressed() && !controls.play_button.is_pressed()) {
-					calibration.cv_calibration_offset[0] = bank;
-					cal_storage.save_flash_params();
-					printf_("%d\n", bank);
-					ignore_bank_longhold = true;
+		// Long hold Bank + Rev for CV Calibration
+		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
+				if (!controls.play_button.is_pressed()) {
+					// calibration.cv_calibration_offset[0] = bank;
+					// cal_storage.save_flash_params();
+					printf_("CV Cal %d\n", bank);
 					ignore_bank_release = true;
+					ignore_rev_release = true;
+					ignore_bank_longhold = true;
+					ignore_rev_longhold = true;
 				}
 			}
 		}
 
+		// Long hold Play + Bank + Rev for LED Calibration
+		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
+				if (!ignore_play_longhold &&
+					controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f))
+				{
+					// calibration.cv_calibration_offset[0] = bank;
+					// cal_storage.save_flash_params();
+					printf_("LED Cal %d\n", bank);
+					ignore_bank_release = true;
+					ignore_play_release = true;
+					ignore_rev_release = true;
+					ignore_bank_longhold = true;
+					ignore_play_longhold = true;
+					ignore_rev_longhold = true;
+				}
+			}
+		}
+
+		// Bank -> change bank
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
 				if (controls.rev_button.is_pressed()) {
@@ -363,6 +370,7 @@ private:
 		}
 
 		// STS: TODO: long-hold Reverse with Length at extreme toggles env modes
+		// Reverse -> toggle
 		if (controls.rev_button.is_just_released()) {
 			if (!ignore_rev_release) {
 				flags.set(Flag::RevTrig);
@@ -466,90 +474,6 @@ private:
 		int32_t next_diff = std::abs(next - t_bank);
 		int32_t prev_diff = std::abs(t_bank - prev);
 		bank = (next_diff < prev_diff) ? next : prev;
-	}
-
-	void update_leds() {
-		Color rev_color;
-		Color play_color;
-		Color bank_color;
-
-		if (op_mode == OperationMode::Playback) {
-			rev_color = reverse ? Colors::blue : Colors::off;
-
-			if (play_state != PlayStates::SILENT && play_state != PlayStates::PREBUFFERING) {
-				play_color = looping ? SamplerColors::cyan : SamplerColors::green;
-			} else
-				play_color = Colors::off;
-		}
-		if (op_mode == OperationMode::Record) {
-			rev_color = Colors::off;
-			if (rec_state == RecStates::REC_OFF) {
-				play_color = Colors::off;
-				controls.play_led.breathe(Colors::red, 4.f);
-			} else {
-				play_color = Colors::red;
-				controls.play_led.reset_breathe();
-			}
-		}
-
-		if (op_mode == OperationMode::Calibrate) {
-			// TODO: calibration and system modes
-		}
-		if (op_mode == OperationMode::SystemMode) {
-			// TODO: calibration and system modes
-		}
-
-		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
-
-		// Output to the LEDs
-		if (last_play_color != play_color) {
-			last_play_color = play_color;
-			controls.play_led.set_base_color(play_color);
-		}
-		if (last_rev_color != rev_color) {
-			last_rev_color = rev_color;
-			controls.rev_led.set_base_color(rev_color);
-		}
-		if (last_bank_color != bank_color) {
-			last_bank_color = bank_color;
-			controls.bank_led.set_base_color(bank_color);
-		}
-
-		// Breathe / flash
-
-		// Sample Slot Change
-		if (flags.take(Flag::PlaySampleChangedValid))
-			controls.play_led.flash_once_ms(Colors::white, 20);
-		if (flags.take(Flag::PlaySampleChangedValidBright))
-			controls.play_led.flash_once_ms(Colors::white, 120);
-		if (flags.take(Flag::PlaySampleChangedEmpty))
-			controls.play_led.flash_once_ms(Colors::red, 20);
-		if (flags.take(Flag::PlaySampleChangedEmptyBright))
-			controls.play_led.flash_once_ms(Colors::red, 120);
-
-		// Startup sequence
-		if (flags.take(Flag::StartupParsing))
-			controls.rev_led.flash_once_ms(Colors::yellow, 100);
-		if (flags.take(Flag::StartupLoadingIndex)) {
-			controls.bank_led.set_base_color(Colors::orange);
-			controls.bank_led.breathe(SamplerColors::Bank::purple, 1);
-		}
-		if (flags.take(Flag::StartupNewIndex)) {
-			controls.bank_led.set_base_color(Colors::off);
-			controls.bank_led.breathe(Colors::white, 1);
-		}
-		if (flags.take(Flag::StartupWritingIndex)) {
-			controls.bank_led.set_base_color(Colors::off);
-			controls.bank_led.breathe(Colors::magenta, 1);
-		}
-		if (flags.take(Flag::StartupWritingHTML)) {
-			controls.bank_led.set_base_color(Colors::off);
-			controls.bank_led.breathe(Colors::magenta, 0.5);
-		}
-		if (flags.take(Flag::StartupDone)) {
-			controls.bank_led.set_base_color(bank_color);
-			controls.bank_led.reset_breathe();
-		}
 	}
 
 private:

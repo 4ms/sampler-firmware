@@ -506,10 +506,6 @@ private:
 	bool ignore_bank_longhold = false;
 	bool ignore_rev_longhold = false;
 	bool ignore_play_longhold = false;
-
-	Color last_play_color = Colors::off;
-	Color last_rev_color = Colors::off;
-	Color last_bank_color = Colors::off;
 };
 
 constexpr auto ParamsSize = sizeof(Params);

@@ -2,13 +2,16 @@
 #include "audio_stream_conf.hh"
 #include "bank.hh"
 #include "bank_blink.hh"
+#include "button_actions.hh"
 #include "calibration_storage.hh"
 #include "controls.hh"
+#include "cv_calibration.hh"
 #include "elements.hh"
 #include "flags.hh"
 #include "lut/pitch_pot_lut.h"
 #include "lut/voltoct.h"
 #include "palette.hh"
+#include "pot_state.hh"
 #include "sample_file.hh"
 #include "sample_pot_detents.hh"
 #include "settings.hh"
@@ -32,9 +35,11 @@ struct Params {
 	BankManager &banks;
 
 	CalibrationStorage cal_storage;
-	CalibrationData &calibration;
+	CalibrationData &calibration{cal_storage.cal_data};
+	CVCalibrator cv_cal{controls};
 
 	Ui ui{flags, controls};
+	ButtonActionHandler button_handler{flags, controls, pot_state};
 
 	// i_param[]:
 	uint32_t bank = 0;
@@ -66,12 +71,9 @@ struct Params {
 		: controls{controls}
 		, flags{flags}
 		, settings{settings}
-		, banks{banks}
-		, calibration{cal_storage.cal_data} {
-
+		, banks{banks} {
 		controls.start();
 	}
-
 	void update() {
 		controls.update();
 
@@ -81,6 +83,8 @@ struct Params {
 		update_pot_states();
 		update_cv_states();
 
+		update_bank_changes();
+
 		update_length();
 		update_startpos();
 		update_sample();
@@ -88,23 +92,15 @@ struct Params {
 		update_bank_cv();
 
 		ui.update_leds({op_mode, play_state, rec_state, reverse, looping, bank});
-		// check_entering_system_mode();
+		button_handler.process(op_mode, looping);
 
-		if (op_mode == OperationMode::Calibrate) {
-			// TODO: Calibrate mode
-			//  update_calibration();
+		// Handle CV Cal mode
+		if (flags.take(Flag::EnterCVCalibrateMode)) {
+			op_mode = OperationMode::Calibrate;
+			cv_cal.reset();
 		}
-
-		if (op_mode == OperationMode::SystemMode) {
-			// TODO: System Settings mode
-			//  update_system_settings();
-		}
-
-		if (op_mode == OperationMode::Playback) {
-			update_play_mode_buttons();
-		} else if (op_mode == OperationMode::Record) {
-			update_rec_mode_buttons();
-		}
+		if (op_mode == OperationMode::Calibrate)
+			cv_cal.update();
 	}
 
 	void startup_animation() {
@@ -214,7 +210,7 @@ private:
 						pot.latched_val = pot.cur_val;
 					pot.moved_while_rev_down = true;
 					if (i == StartPot)
-						ignore_rev_release = true;
+						button_handler.ignore_rev_release = true;
 				}
 
 				if (controls.bank_button.is_pressed()) {
@@ -223,7 +219,7 @@ private:
 					pot.moved_while_bank_down = true;
 					// Allow Sample + Bank since the combo does nothing
 					if (i != SamplePot)
-						ignore_bank_release = true;
+						button_handler.ignore_bank_release = true;
 				}
 			}
 		}
@@ -276,159 +272,11 @@ private:
 		}
 	}
 
-	void update_play_mode_buttons() {
-		// if (flags.take(Flag::SkipProcessButtons)) return;
-
-		if (controls.play_button.is_just_pressed()) {
-			if (!looping)
-				flags.set(Flag::PlayBut);
-		}
-
-		if (controls.play_button.is_just_released()) {
-			if (looping && !ignore_play_release) {
-				flags.set(Flag::PlayBut);
-			}
-
-			ignore_play_release = false;
-			ignore_play_longhold = false;
-		}
-
-		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-				if (!controls.bank_button.is_pressed()) {
-					op_mode = OperationMode::Record;
-					looping = false;
-					flags.set(Flag::EnterRecordMode);
-					ignore_play_longhold = true;
-					ignore_rev_longhold = true;
-					ignore_play_release = true;
-					ignore_rev_release = true;
-				}
-			}
-		}
-
-		// Long hold Play to toggle looping
-		if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.3f)) {
-			if (!controls.rev_button.is_pressed() && !controls.bank_button.is_pressed()) {
-				flags.set(Flag::ToggleLooping);
-				ignore_play_longhold = true;
-				ignore_play_release = true;
-			}
-		}
-
-		// Long hold Bank + Rev for CV Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-				if (!controls.play_button.is_pressed()) {
-					// calibration.cv_calibration_offset[0] = bank;
-					// cal_storage.save_flash_params();
-					printf_("CV Cal %d\n", bank);
-					ignore_bank_release = true;
-					ignore_rev_release = true;
-					ignore_bank_longhold = true;
-					ignore_rev_longhold = true;
-				}
-			}
-		}
-
-		// Long hold Play + Bank + Rev for LED Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-				if (!ignore_play_longhold &&
-					controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f))
-				{
-					// calibration.cv_calibration_offset[0] = bank;
-					// cal_storage.save_flash_params();
-					printf_("LED Cal %d\n", bank);
-					ignore_bank_release = true;
-					ignore_play_release = true;
-					ignore_rev_release = true;
-					ignore_bank_longhold = true;
-					ignore_play_longhold = true;
-					ignore_rev_longhold = true;
-				}
-			}
-		}
-
-		// Bank -> change bank
-		if (controls.bank_button.is_just_released()) {
-			if (!ignore_bank_release) {
-				if (controls.rev_button.is_pressed()) {
-					bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
-					ignore_rev_release = true;
-				} else {
-					bank_button_sel = banks.next_enabled_bank(bank_button_sel);
-				}
-			}
-
-			for (auto &pot : pot_state)
-				pot.moved_while_bank_down = false;
-
-			ignore_bank_longhold = false;
-			ignore_bank_release = false;
-		}
-
-		// STS: TODO: long-hold Reverse with Length at extreme toggles env modes
-		// Reverse -> toggle
-		if (controls.rev_button.is_just_released()) {
-			if (!ignore_rev_release) {
-				flags.set(Flag::RevTrig);
-			}
-
-			for (auto &pot : pot_state) {
-				if (pot.moved_while_rev_down)
-					pot.is_catching_up = true;
-				pot.moved_while_rev_down = false;
-			}
-
-			ignore_rev_release = false;
-			ignore_rev_longhold = false;
-		}
-	}
-
-	void update_rec_mode_buttons() {
-		if (controls.play_button.is_just_pressed()) {
-		}
-
-		if (controls.play_button.is_just_released()) {
-			if (!ignore_play_release)
-				flags.set(Flag::RecBut);
-			ignore_play_longhold = false;
-			ignore_play_release = false;
-		}
-
-		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-
-				controls.play_led.reset_breathe();
-				flags.set(Flag::EnterPlayMode);
-				op_mode = OperationMode::Playback;
-				ignore_play_longhold = true;
-				ignore_rev_longhold = true;
-				ignore_play_release = true;
-				ignore_rev_release = true;
-			}
-		}
-
-		if (controls.bank_button.is_just_released()) {
-			if (!ignore_bank_release) {
-				if (controls.rev_button.is_pressed()) {
-					bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
-					ignore_rev_release = true;
-				} else {
-					bank_button_sel = banks.next_enabled_bank(bank_button_sel);
-				}
-			}
-			ignore_bank_longhold = false;
-			ignore_bank_release = false;
-		}
-
-		if (controls.rev_button.is_just_released()) {
-			ignore_rev_longhold = false;
-			ignore_rev_release = false;
-		}
+	void update_bank_changes() {
+		if (flags.take(Flag::BankNextEnabled))
+			bank_button_sel = banks.next_enabled_bank(bank_button_sel);
+		if (flags.take(Flag::BankPrevEnabled))
+			bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
 	}
 
 	void update_bank_cv() {
@@ -477,17 +325,6 @@ private:
 	}
 
 private:
-	struct PotState {
-		int16_t cur_val = 0;
-		int16_t prev_val = 0;		  // old_i_smoothed_potadc
-		int16_t track_moving_ctr = 0; // track_moving_pot
-		int16_t delta = 0;			  // pot_delta
-		int16_t latched_val = 0;
-		bool is_catching_up = false;
-		bool moved_while_bank_down = false; // flag_pot_changed_infdown
-		bool moved_while_rev_down = false;	// flag_pot_changed_revdown
-											// bool moved = false;					// flag_pot_changed
-	};
 	std::array<PotState, NumPots> pot_state;
 
 	struct CVState {
@@ -498,14 +335,6 @@ private:
 	std::array<CVState, NumCVs> cv_state;
 
 	uint32_t end_out_ctr = 0;
-
-	bool ignore_bank_release = false;
-	bool ignore_rev_release = false;
-	bool ignore_play_release = false;
-
-	bool ignore_bank_longhold = false;
-	bool ignore_rev_longhold = false;
-	bool ignore_play_longhold = false;
 };
 
 constexpr auto ParamsSize = sizeof(Params);

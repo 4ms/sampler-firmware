@@ -30,12 +30,12 @@ struct Ui {
 	Color last_bank_color = Colors::off;
 
 	void update_leds(LedCriteria state) {
-		OperationMode &op_mode = state.op_mode;
-		PlayStates &play_state = state.play_state;
-		RecStates &rec_state = state.rec_state;
-		bool &reverse = state.reverse;
-		bool &looping = state.looping;
-		uint32_t &bank = state.bank;
+		const OperationMode &op_mode = state.op_mode;
+		const PlayStates &play_state = state.play_state;
+		const RecStates &rec_state = state.rec_state;
+		const bool &reverse = state.reverse;
+		const bool &looping = state.looping;
+		const uint32_t &bank = state.bank;
 
 		Color rev_color;
 		Color play_color;
@@ -60,14 +60,16 @@ struct Ui {
 			}
 		}
 
+		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
+
 		if (op_mode == OperationMode::Calibrate) {
-			// TODO: calibration and system modes
+			rev_color = Colors::purple;
+			play_color = Colors::purple;
+			bank_color = Colors::purple;
 		}
 		if (op_mode == OperationMode::SystemMode) {
 			// TODO: calibration and system modes
 		}
-
-		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
 
 		// Output to the LEDs
 		if (last_play_color != play_color) {
@@ -84,6 +86,9 @@ struct Ui {
 		}
 
 		// Breathe / flash
+		if (flags.take(Flag::StartupDone)) {
+			controls.bank_led.reset_breathe();
+		}
 
 		// Sample Slot Change
 		if (flags.take(Flag::PlaySampleChangedValid))
@@ -94,11 +99,6 @@ struct Ui {
 			controls.play_led.flash_once_ms(Colors::red, 20);
 		if (flags.take(Flag::PlaySampleChangedEmptyBright))
 			controls.play_led.flash_once_ms(Colors::red, 120);
-
-		if (flags.take(Flag::StartupDone)) {
-			controls.bank_led.set_base_color(bank_color);
-			controls.bank_led.reset_breathe();
-		}
 	}
 
 	void animate_startup() {

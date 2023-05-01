@@ -361,13 +361,10 @@ FRESULT Recorder::write_wav_info_chunk(FIL *wavfil, unsigned int *total_written)
 // If we need to close the file because we reached the size limit, but need to
 // continue recording, it handles all of that.
 //
-GCC_OPTIMIZE_OFF
 void Recorder::write_buffer_to_storage() {
 	using enum RecStates;
 
-	if (flags.take(Flag::RecSampleChanged)) {
-		sample_num_to_record_in = params.sample;
-	}
+	sample_num_to_record_in = params.sample;
 
 	static uint32_t write_size_ctr = 0;
 

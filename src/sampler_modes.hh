@@ -141,7 +141,12 @@ public:
 				toggle_playing();
 		}
 
+		if (flags.take(Flag::EnterPlayMode))
+			params.op_mode = OperationMode::Playback;
+
 		if (flags.take(Flag::EnterRecordMode)) {
+			params.op_mode = OperationMode::Record;
+			params.looping = false;
 			// Stop playing
 			switch (params.play_state) {
 				case PlayStates::PLAYING:

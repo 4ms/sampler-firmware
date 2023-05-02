@@ -36,7 +36,7 @@ struct Params {
 
 	CalibrationStorage cal_storage;
 	CalibrationData &calibration{cal_storage.cal_data};
-	CVCalibrator cv_cal{controls};
+	CVCalibrator cv_cal{flags};
 
 	Ui ui{flags, controls};
 	ButtonActionHandler button_handler{flags, controls, pot_state};
@@ -94,11 +94,20 @@ struct Params {
 
 		// Handle CV Cal mode
 		if (flags.take(Flag::EnterCVCalibrateMode)) {
-			op_mode = OperationMode::Calibrate;
+			op_mode = OperationMode::CVCalibrateStep1;
 			cv_cal.reset();
 		}
-		if (op_mode == OperationMode::Calibrate)
-			cv_cal.update();
+		if (flags.take(Flag::EnterCVCalibrationStep2))
+			op_mode = OperationMode::CVCalibrateStep2;
+
+		if (op_mode == OperationMode::CVCalibrateStep1 || op_mode == OperationMode::CVCalibrateStep2)
+			cv_cal.update(cv_state[PitchCV].cur_val);
+
+		if (flags.take(Flag::CVCalibrationSuccess)) {
+			calibration.cv_calibration_offset[PitchCV] = -cv_cal.offset();
+			// Ideal slope is 10V : 4096
+			calibration.tracking_comp = cv_cal.slope() / 409.6f;
+		}
 	}
 
 	void startup_animation() {
@@ -226,9 +235,7 @@ private:
 	void update_cv_states() {
 		for (auto [i, cv] : enumerate(cv_state)) {
 			cv.cur_val = (int16_t)controls.read_cv(static_cast<CVAdcElement>(i));
-			if (op_mode == OperationMode::Calibrate) {
-				// TODO: use raw values, without calibration offset
-			} else
+			if (op_mode != OperationMode::CVCalibrateStep1 && op_mode != OperationMode::CVCalibrateStep2)
 				cv.cur_val += calibration.cv_calibration_offset[i];
 
 			int16_t diff = std::abs(cv.cur_val - cv.prev_val);

@@ -27,7 +27,13 @@ enum class Flag : uint64_t {
 
 	EnterPlayMode,
 	EnterRecordMode,
+
 	EnterCVCalibrateMode,
+	EnterCVCalibrationStep2,
+	StepCVCalibration, // Buttons -> CV Cal
+	CVCalibrationSuccess,
+	CVCalibrationFail,
+
 	EnterLEDCalibrateMode,
 
 	StartFadeUp,   // env_level => 0
@@ -39,14 +45,13 @@ enum class Flag : uint64_t {
 	BankNextEnabled,
 	BankPrevEnabled,
 
-	StepCVCalibration,
-
 	StartupParsing,
 	StartupLoadingIndex,
 	StartupNewIndex,
 	StartupWritingIndex,
 	StartupWritingHTML,
 	StartupDone,
+
 	NUM_FLAGS
 };
 

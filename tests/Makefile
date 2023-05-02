@@ -19,6 +19,7 @@ CXXFLAGS = 	-Wall \
 			-I. \
 			-I.. \
 			-Isrc \
+			-Ilib/cpputil \
 			-I../src \
 			-I$(TEST_DIR) \
 			-Wno-unused-const-variable \

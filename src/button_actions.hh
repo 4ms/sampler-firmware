@@ -28,7 +28,8 @@ struct ButtonActionHandler {
 	// TODO: put all button ops in process() and check in each button combo for op_mode
 	void process(OperationMode op_mode, bool looping) {
 		switch (op_mode) {
-			case OperationMode::Calibrate:
+			case OperationMode::CVCalibrateStep1:
+			case OperationMode::CVCalibrateStep2:
 				process_cvcal_mode();
 				break;
 

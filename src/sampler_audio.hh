@@ -49,17 +49,17 @@ public:
 
 		play_audio_from_buffer(outL, outR);
 
-		if (params.op_mode == OperationMode::Calibrate) {
-			// Calibrate mode: output a null signal plus the calibration offset
-			// This allows us to use a scope or meter while finely adjusting the
-			// calibration value, until we get a DC level of zero volts on the
-			// audio outut jacks.
-			for (auto [L, R] : zip(outL, outR)) {
-				L = params.calibration.codec_dac_calibration_dcoffset[0];
-				R = params.calibration.codec_dac_calibration_dcoffset[1];
-			}
-			return;
-		}
+		// if (params.op_mode == OperationMode::Calibrate) {
+		// 	// Calibrate mode: output a null signal plus the calibration offset
+		// 	// This allows us to use a scope or meter while finely adjusting the
+		// 	// calibration value, until we get a DC level of zero volts on the
+		// 	// audio outut jacks.
+		// 	for (auto [L, R] : zip(outL, outR)) {
+		// 		L = params.calibration.codec_dac_calibration_dcoffset[0];
+		// 		R = params.calibration.codec_dac_calibration_dcoffset[1];
+		// 	}
+		// 	return;
+		// }
 
 		if (params.settings.stereo_mode) {
 			// Stereo mode

@@ -62,11 +62,17 @@ struct Ui {
 
 		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
 
-		if (op_mode == OperationMode::Calibrate) {
+		if (op_mode == OperationMode::CVCalibrateStep1) {
+			rev_color = Colors::blue;
+			play_color = Colors::blue;
+			bank_color = Colors::blue;
+		}
+		if (op_mode == OperationMode::CVCalibrateStep2) {
 			rev_color = Colors::purple;
 			play_color = Colors::purple;
 			bank_color = Colors::purple;
 		}
+
 		if (op_mode == OperationMode::SystemMode) {
 			// TODO: calibration and system modes
 		}
@@ -88,6 +94,17 @@ struct Ui {
 		// Breathe / flash
 		if (flags.take(Flag::StartupDone)) {
 			controls.bank_led.reset_breathe();
+		}
+
+		if (flags.take(Flag::CVCalibrationSuccess)) {
+			controls.rev_led.flash_once_ms(Colors::green, 250);
+			controls.bank_led.flash_once_ms(Colors::green, 250);
+			controls.play_led.flash_once_ms(Colors::green, 250);
+		}
+		if (flags.take(Flag::CVCalibrationFail)) {
+			controls.rev_led.flash_once_ms(Colors::red, 250);
+			controls.bank_led.flash_once_ms(Colors::red, 250);
+			controls.play_led.flash_once_ms(Colors::red, 250);
 		}
 
 		// Sample Slot Change

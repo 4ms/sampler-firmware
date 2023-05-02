@@ -1,6 +1,7 @@
 #pragma once
 #include "controls.hh"
 #include "flags.hh"
+#include "log.hh"
 #include "pot_state.hh"
 #include "settings.hh"
 #include "util/voct_calibrator.hh"
@@ -28,8 +29,7 @@ struct ButtonActionHandler {
 	// TODO: put all button ops in process() and check in each button combo for op_mode
 	void process(OperationMode op_mode, bool looping) {
 		switch (op_mode) {
-			case OperationMode::CVCalibrateStep1:
-			case OperationMode::CVCalibrateStep2:
+			case OperationMode::CVCalibrate:
 				process_cvcal_mode();
 				break;
 
@@ -166,7 +166,7 @@ struct ButtonActionHandler {
 		// Long hold Play and Rev to toggle Rec/Play mode
 		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
 			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-
+				pr_log("RB\n");
 				controls.play_led.reset_breathe();
 				flags.set(Flag::EnterPlayMode);
 				ignore_play_longhold = true;

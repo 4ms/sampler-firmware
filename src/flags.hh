@@ -29,10 +29,14 @@ enum class Flag : uint64_t {
 	EnterRecordMode,
 
 	EnterCVCalibrateMode,
-	EnterCVCalibrationStep2,
 	StepCVCalibration, // Buttons -> CV Cal
 	CVCalibrationSuccess,
 	CVCalibrationFail,
+
+	CVCalibrationStep1Animate,
+	CVCalibrationStep2Animate,
+	CVCalibrationSuccessAnimate,
+	CVCalibrationFailAnimate,
 
 	EnterLEDCalibrateMode,
 

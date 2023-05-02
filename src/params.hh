@@ -8,6 +8,8 @@
 #include "cv_calibration.hh"
 #include "elements.hh"
 #include "flags.hh"
+#include "leds.hh"
+#include "log.hh"
 #include "lut/pitch_pot_lut.h"
 #include "lut/voltoct.h"
 #include "palette.hh"
@@ -17,7 +19,6 @@
 #include "settings.hh"
 #include "timing_calcs.hh"
 #include "tuning_calcs.hh"
-#include "ui.hh"
 #include "util/colors.hh"
 #include "util/countzip.hh"
 #include "util/math.hh"
@@ -38,7 +39,7 @@ struct Params {
 	CalibrationData &calibration{cal_storage.cal_data};
 	CVCalibrator cv_cal{flags};
 
-	Ui ui{flags, controls};
+	Leds leds{flags, controls};
 	ButtonActionHandler button_handler{flags, controls, pot_state};
 
 	uint32_t bank = 0;
@@ -89,30 +90,16 @@ struct Params {
 		update_pitch();
 		update_bank_cv();
 
-		ui.update_leds({op_mode, play_state, rec_state, reverse, looping, bank});
 		button_handler.process(op_mode, looping);
 
-		// Handle CV Cal mode
-		if (flags.take(Flag::EnterCVCalibrateMode)) {
-			op_mode = OperationMode::CVCalibrateStep1;
-			cv_cal.reset();
-		}
-		if (flags.take(Flag::EnterCVCalibrationStep2))
-			op_mode = OperationMode::CVCalibrateStep2;
+		update_cv_cal();
 
-		if (op_mode == OperationMode::CVCalibrateStep1 || op_mode == OperationMode::CVCalibrateStep2)
-			cv_cal.update(cv_state[PitchCV].cur_val);
-
-		if (flags.take(Flag::CVCalibrationSuccess)) {
-			calibration.cv_calibration_offset[PitchCV] = -cv_cal.offset();
-			// Ideal slope is 10V : 4096
-			calibration.tracking_comp = cv_cal.slope() / 409.6f;
-		}
+		leds.update({op_mode, play_state, rec_state, reverse, looping, bank});
 	}
 
 	void startup_animation() {
 		controls.update();
-		ui.animate_startup();
+		leds.animate_startup();
 	}
 
 private:
@@ -235,7 +222,7 @@ private:
 	void update_cv_states() {
 		for (auto [i, cv] : enumerate(cv_state)) {
 			cv.cur_val = (int16_t)controls.read_cv(static_cast<CVAdcElement>(i));
-			if (op_mode != OperationMode::CVCalibrateStep1 && op_mode != OperationMode::CVCalibrateStep2)
+			if (op_mode != OperationMode::CVCalibrate)
 				cv.cur_val += calibration.cv_calibration_offset[i];
 
 			int16_t diff = std::abs(cv.cur_val - cv.prev_val);
@@ -327,6 +314,33 @@ private:
 		int32_t next_diff = std::abs(next - t_bank);
 		int32_t prev_diff = std::abs(t_bank - prev);
 		bank = (next_diff < prev_diff) ? next : prev;
+	}
+
+	void update_cv_cal() {
+		// Handle CV Cal mode
+		if (flags.take(Flag::EnterCVCalibrateMode)) {
+			cv_cal.reset();
+			op_mode = OperationMode::CVCalibrate;
+			flags.set(Flag::CVCalibrationStep1Animate);
+		}
+
+		if (op_mode == OperationMode::CVCalibrate)
+			cv_cal.update(cv_state[PitchCV].cur_val);
+
+		if (flags.take(Flag::CVCalibrationFail)) {
+			op_mode = OperationMode::Playback;
+			flags.set(Flag::CVCalibrationFailAnimate);
+		}
+
+		if (flags.take(Flag::CVCalibrationSuccess)) {
+			calibration.cv_calibration_offset[PitchCV] = 2048.f - cv_cal.offset();
+			calibration.tracking_comp = -cv_cal.slope() / 409.6f;
+			op_mode = OperationMode::Playback;
+			flags.set(Flag::CVCalibrationSuccessAnimate);
+			pr_log("Calibrated tracking = %f, offset = %d\n",
+				   (double)calibration.tracking_comp,
+				   calibration.cv_calibration_offset[PitchCV]);
+		}
 	}
 
 private:

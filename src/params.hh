@@ -41,13 +41,11 @@ struct Params {
 	Ui ui{flags, controls};
 	ButtonActionHandler button_handler{flags, controls, pot_state};
 
-	// i_param[]:
 	uint32_t bank = 0;
 	uint32_t sample = 0;
 	bool reverse = 0;
 	bool looping = 0;
 
-	// f_param[]:
 	float pitch = 1.0f;
 	float start = 0.f;
 	float length = 1.f;

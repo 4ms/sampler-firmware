@@ -39,6 +39,8 @@ enum class Flag : uint64_t {
 	BankNextEnabled,
 	BankPrevEnabled,
 
+	StepCVCalibration,
+
 	StartupParsing,
 	StartupLoadingIndex,
 	StartupNewIndex,

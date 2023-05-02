@@ -25,6 +25,7 @@ struct ButtonActionHandler {
 		, controls{controls}
 		, pot_state{pot_state} {}
 
+	// TODO: put all button ops in process() and check in each button combo for op_mode
 	void process(OperationMode op_mode, bool looping) {
 		switch (op_mode) {
 			case OperationMode::Calibrate:
@@ -195,8 +196,8 @@ struct ButtonActionHandler {
 
 	void process_cvcal_mode() {
 		// Long hold Bank + Rev to exit CV Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
+		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 2.0f)) {
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 2.0f)) {
 				if (!controls.play_button.is_pressed()) {
 					flags.set(Flag::EnterPlayMode);
 					ignore_bank_release = true;
@@ -205,6 +206,22 @@ struct ButtonActionHandler {
 					ignore_rev_longhold = true;
 				}
 			}
+		}
+
+		if (controls.rev_button.is_just_released()) {
+			ignore_rev_longhold = false;
+			ignore_rev_release = false;
+		}
+
+		if (controls.play_button.is_just_released()) {
+			flags.set(Flag::StepCVCalibration);
+			ignore_play_longhold = false;
+			ignore_play_release = false;
+		}
+
+		if (controls.bank_button.is_just_released()) {
+			ignore_bank_longhold = false;
+			ignore_bank_release = false;
 		}
 	}
 

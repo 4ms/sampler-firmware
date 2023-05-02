@@ -2,6 +2,7 @@
 #include "bank.hh"
 #include "circular_buffer.hh"
 #include "flags.hh"
+#include "log.hh"
 #include "params.hh"
 #include "sampler_modes.hh"
 #include "sdcard.hh"
@@ -413,18 +414,6 @@ public:
 				}
 			}
 		}
-	}
-
-	// static void pr_dbg(...) {}
-	template<typename... Ts>
-	static void pr_dbg(Ts... args) {
-		printf_(args...);
-	}
-
-	// static void pr_log(...) {}
-	template<typename... Ts>
-	static void pr_log(Ts... args) {
-		printf_(args...);
 	}
 };
 } // namespace SamplerKit

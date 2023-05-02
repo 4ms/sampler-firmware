@@ -30,20 +30,10 @@
 #include "bank_util.hh"
 #include "elements.hh"
 #include "ff.h"
+#include "log.hh"
 
 namespace SamplerKit
 {
-
-static void pr_dbg(...) {}
-// template<typename... Ts>
-// static void pr_dbg(Ts... args){
-// 	printf_(args...);
-// }
-// static void pr_log(...) {}
-template<typename... Ts>
-static void pr_log(Ts... args) {
-	printf_(args...);
-}
 
 #define ALL_BANKS MaxNumBanks
 

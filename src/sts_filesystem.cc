@@ -39,6 +39,7 @@
 #include "bank_util.hh"
 #include "elements.hh"
 #include "ff.h"
+#include "log.hh"
 #include "params.hh"
 #include "sample_file.hh"
 #include "str_util.h"
@@ -47,18 +48,6 @@
 
 namespace SamplerKit
 {
-
-static void pr_dbg(...) {}
-// template<typename... Ts>
-// static void pr_dbg(Ts... args) {
-// 	printf_(args...);
-// }
-
-// static void pr_log(...) {}
-template<typename... Ts>
-static void pr_log(Ts... args) {
-	printf_(args...);
-}
 
 uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 

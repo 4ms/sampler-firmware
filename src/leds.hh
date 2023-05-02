@@ -3,16 +3,17 @@
 #include "bank_blink.hh"
 #include "controls.hh"
 #include "flags.hh"
+#include "log.hh"
 #include "palette.hh"
 #include "settings.hh"
 
 namespace SamplerKit
 {
-struct Ui {
+struct Leds {
 	Flags &flags;
 	Controls &controls;
 
-	Ui(Flags &flags, Controls &controls)
+	Leds(Flags &flags, Controls &controls)
 		: flags{flags}
 		, controls{controls} {}
 
@@ -29,7 +30,7 @@ struct Ui {
 	Color last_rev_color = Colors::off;
 	Color last_bank_color = Colors::off;
 
-	void update_leds(LedCriteria state) {
+	void update(LedCriteria state) {
 		const OperationMode &op_mode = state.op_mode;
 		const PlayStates &play_state = state.play_state;
 		const RecStates &rec_state = state.rec_state;
@@ -53,24 +54,30 @@ struct Ui {
 			rev_color = Colors::off;
 			if (rec_state == RecStates::REC_OFF) {
 				play_color = Colors::off;
-				controls.play_led.breathe(Colors::red, 4.f);
+				if (!flags.read(Flag::EnterPlayMode)) // don't flash is exiting rec mode is pending
+					controls.play_led.breathe(Colors::red, 4.f);
 			} else {
 				play_color = Colors::red;
 				controls.play_led.reset_breathe();
 			}
 		}
 
-		bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
-
-		if (op_mode == OperationMode::CVCalibrateStep1) {
-			rev_color = Colors::blue;
-			play_color = Colors::blue;
-			bank_color = Colors::blue;
-		}
-		if (op_mode == OperationMode::CVCalibrateStep2) {
-			rev_color = Colors::purple;
-			play_color = Colors::purple;
-			bank_color = Colors::purple;
+		if (op_mode == OperationMode::CVCalibrate) {
+			if (flags.take(Flag::CVCalibrationStep1Animate)) {
+				rev_color = Colors::blue;
+				play_color = Colors::blue;
+				bank_color = Colors::blue;
+			} else if (flags.take(Flag::CVCalibrationStep2Animate)) {
+				rev_color = Colors::purple;
+				play_color = Colors::purple;
+				bank_color = Colors::purple;
+			} else {
+				rev_color = last_rev_color;
+				play_color = last_play_color;
+				bank_color = last_bank_color;
+			}
+		} else {
+			bank_color = blink_bank(bank, HAL_GetTick()) ? BankColors[bank % 10] : Colors::off;
 		}
 
 		if (op_mode == OperationMode::SystemMode) {
@@ -96,15 +103,15 @@ struct Ui {
 			controls.bank_led.reset_breathe();
 		}
 
-		if (flags.take(Flag::CVCalibrationSuccess)) {
-			controls.rev_led.flash_once_ms(Colors::green, 250);
-			controls.bank_led.flash_once_ms(Colors::green, 250);
-			controls.play_led.flash_once_ms(Colors::green, 250);
+		if (flags.take(Flag::CVCalibrationSuccessAnimate)) {
+			controls.rev_led.fade_once_ms(Colors::green, 1000);
+			controls.bank_led.fade_once_ms(Colors::green, 1000);
+			controls.play_led.fade_once_ms(Colors::green, 1000);
 		}
-		if (flags.take(Flag::CVCalibrationFail)) {
-			controls.rev_led.flash_once_ms(Colors::red, 250);
-			controls.bank_led.flash_once_ms(Colors::red, 250);
-			controls.play_led.flash_once_ms(Colors::red, 250);
+		if (flags.take(Flag::CVCalibrationFailAnimate)) {
+			controls.rev_led.fade_once_ms(Colors::red, 1000);
+			controls.bank_led.fade_once_ms(Colors::red, 1000);
+			controls.play_led.fade_once_ms(Colors::red, 1000);
 		}
 
 		// Sample Slot Change

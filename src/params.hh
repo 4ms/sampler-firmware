@@ -73,6 +73,10 @@ struct Params {
 		, settings{settings}
 		, banks{banks}
 		, cal_storage{cal_storage} {
+
+		controls.bank_led.set_color_calibration(calibration.bank_rgb_adj);
+		controls.play_led.set_color_calibration(calibration.play_rgb_adj);
+		controls.rev_led.set_color_calibration(calibration.rev_rgb_adj);
 		controls.start();
 	}
 	void update() {

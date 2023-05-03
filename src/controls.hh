@@ -74,7 +74,6 @@ public:
 	}
 
 	void update() {
-		// Debug::Pin1::high();
 		play_button.update();
 		rev_button.update();
 		bank_button.update();
@@ -90,7 +89,6 @@ public:
 			rev_led.update_animation();
 			bank_led.update_animation();
 		}
-		// Debug::Pin1::low();
 	}
 };
 } // namespace SamplerKit

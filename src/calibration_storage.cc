@@ -21,9 +21,15 @@ void CalibrationStorage::set_default_cal() {
 	cal_data.led_brightness = 4;
 	cal_data.tracking_comp = 1.f;
 	cal_data.pitch_pot_detent_offset = 0;
-	for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-			cal_data.rgbled_adjustments[i][j] = 0;
+	cal_data.bank_rgb_adj.r = 128;
+	cal_data.bank_rgb_adj.g = 128;
+	cal_data.bank_rgb_adj.b = 128;
+	cal_data.play_rgb_adj.r = 128;
+	cal_data.play_rgb_adj.g = 128;
+	cal_data.play_rgb_adj.b = 128;
+	cal_data.rev_rgb_adj.r = 128;
+	cal_data.rev_rgb_adj.g = 128;
+	cal_data.rev_rgb_adj.b = 128;
 }
 
 void CalibrationStorage::factory_reset() {

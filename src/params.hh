@@ -337,6 +337,7 @@ private:
 			calibration.tracking_comp = -cv_cal.slope() / 409.6f;
 			op_mode = OperationMode::Playback;
 			flags.set(Flag::CVCalibrationSuccessAnimate);
+			cal_storage.save_flash_params();
 			pr_log("Calibrated tracking = %f, offset = %d\n",
 				   (double)calibration.tracking_comp,
 				   calibration.cv_calibration_offset[PitchCV]);

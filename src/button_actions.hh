@@ -166,7 +166,6 @@ struct ButtonActionHandler {
 		// Long hold Play and Rev to toggle Rec/Play mode
 		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
 			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-				pr_log("RB\n");
 				controls.play_led.reset_breathe();
 				flags.set(Flag::EnterPlayMode);
 				ignore_play_longhold = true;

@@ -11,6 +11,7 @@
 #include "hardware_tests/leds.hh"
 #include "hardware_tests/sd.hh"
 #include "hardware_tests/util.hh"
+#include "led_calibration.hh"
 #include "libhwtests/CodecCallbacks.hh"
 #include "printf.h"
 #include "util/term_codes.hh"
@@ -61,29 +62,14 @@ void run(Controls &controls, CalibrationStorage &cal_storage) {
 		printf_("Calibrating LEDs...\n");
 		// TODO:
 		// led_cal{controls.
-		LEDCalibrator led_cal;
-		while (true) {
-			if (controls.bank_button.is_just_pressed())
-				led_cal.select_led(0);
-			if (controls.play_button.is_just_pressed())
-				led_cal.select_led(1);
-			if (controls.rev_button.is_just_pressed())
-				led_cal.select_led(2);
-
-			auto red = controls.read_pot(PitchPot);
-			auto green = controls.read_pot(StartPot);
-			auto blue = controls.read_pot(LengthPot);
-			led_cal.update(red, green, blue);
-
-			if (led_cal.result() == LedCalibration::Save) {
-				cal_storage.save_flash_params();
-				break;
-			}
-			if (led_cal.result() == LedCalibration::Cancel) {
-				break;
-			}
+		LEDCalibrator led_cal{controls};
+		if (led_cal.run()) {
+			auto adj = led_cal.get_adjustments();
+			cal_storage.cal_data.bank_rgb_adj = adj.bank;
+			cal_storage.cal_data.play_rgb_adj = adj.play;
+			cal_storage.cal_data.rev_rgb_adj = adj.rev;
+			cal_storage.save_flash_params();
 		}
-		cal_storage.save_flash_params();
 	}
 
 	//////////////////////////////

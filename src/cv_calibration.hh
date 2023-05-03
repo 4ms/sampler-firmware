@@ -34,7 +34,7 @@ public:
 	void update(int16_t pitch_cv) {
 		if (cv_cal_step == C0) {
 			if (measure(pitch_cv, 2048.f)) {
-				pr_log("C0: %f\n", (double)avg_cv);
+				pr_dbg("C0: %f\n", (double)avg_cv);
 				cal.record_measurement(VoctCalibrator<>::C0, avg_cv);
 				cv_cal_step = WaitC2;
 				reset_accum();
@@ -42,14 +42,14 @@ public:
 
 		} else if (cv_cal_step == WaitC2) {
 			if (flags.take(Flag::StepCVCalibration)) {
-				pr_log("Start Measure C2\n");
+				pr_dbg("Start Measure C2\n");
 				cv_cal_step = MeasureC2;
 				reset_accum();
 			}
 
 		} else if (cv_cal_step == MeasureC2) {
 			if (measure(pitch_cv, 1228.8f)) {
-				pr_log("C2: %f\n", (double)avg_cv);
+				pr_dbg("C2: %f\n", (double)avg_cv);
 				cal.record_measurement(VoctCalibrator<>::C2, avg_cv);
 				cv_cal_step = WaitC4;
 				flags.set(Flag::CVCalibrationStep2Animate);
@@ -58,13 +58,13 @@ public:
 
 		} else if (cv_cal_step == WaitC4) {
 			if (flags.take(Flag::StepCVCalibration)) {
-				pr_log("Start Measure C4\n");
+				pr_dbg("Start Measure C4\n");
 				cv_cal_step = MeasureC4;
 			}
 
 		} else if (cv_cal_step == MeasureC4) {
 			if (measure(pitch_cv, 409.6f)) {
-				pr_log("C4: %f\n", (double)avg_cv);
+				pr_dbg("C4: %f\n", (double)avg_cv);
 				cal.record_measurement(VoctCalibrator<>::C4, avg_cv);
 				cv_cal_step = Done;
 				flags.set(Flag::CVCalibrationSuccess);
@@ -90,7 +90,7 @@ private:
 			if (std::abs(avg - expected) > Tolerance) {
 				flags.set(Flag::CVCalibrationFail);
 				cv_cal_step = Done;
-				pr_log("Fail: avg=%f, expected=%f\n", (double)avg, (double)expected);
+				pr_dbg("Fail: avg=%f, expected=%f\n", (double)avg, (double)expected);
 			} else {
 				avg_cv = avg;
 				return true;

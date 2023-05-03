@@ -18,7 +18,6 @@ void CalibrationStorage::set_default_cal() {
 	cal_data.codec_adc_calibration_dcoffset[1] = 0;
 	cal_data.codec_dac_calibration_dcoffset[0] = 0;
 	cal_data.codec_dac_calibration_dcoffset[1] = 0;
-	cal_data.led_brightness = 4;
 	cal_data.tracking_comp = 1.f;
 	cal_data.pitch_pot_detent_offset = 0;
 	cal_data.bank_rgb_adj.r = 128;

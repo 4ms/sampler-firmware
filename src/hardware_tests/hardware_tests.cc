@@ -30,8 +30,12 @@ void print_test_name(std::string_view nm) {
 	printf_("\n-------------------------------------\n");
 	printf_("%s%.64s%s\n", Term::BoldYellow, nm.data(), Term::Normal);
 }
-void print_press_button_msg() { printf_("%sPress button to continue%s\n", Term::BlinkGreen, Term::Normal); }
-void print_error(std::string_view err) { printf_("%s%.255s%s\n", Term::BoldRed, err.data(), Term::Normal); }
+void print_press_button_msg() {
+	printf_("%sPress button to continue%s\n", Term::BlinkGreen, Term::Normal);
+}
+void print_error(std::string_view err) {
+	printf_("%s%.255s%s\n", Term::BoldRed, err.data(), Term::Normal);
+}
 
 void run(Controls &controls, CalibrationStorage &cal_storage) {
 	printf_("\n\n%sSampler Kit Hardware Test%s\n", Term::BoldGreen, Term::Normal);
@@ -55,22 +59,42 @@ void run(Controls &controls, CalibrationStorage &cal_storage) {
 	TestLEDs ledtester;
 	ledtester.run_test();
 
-	printf_("If the LEDs need calibration, press and hold Play for 3 seconds Reverse. Otherwise press Play briefly to "
-			"continue\n");
-	Util::pause_until_button_released();
+	printf_("If the LEDs need calibration, press and hold Play for 3 seconds, then release.\n");
+	printf_("Otherwise press Play briefly to continue\n");
+	Board::PlayLED{}.set_color(Colors::green);
+	Util::pause_until_button_pressed();
 	if (Util::check_for_longhold_button()) {
-		printf_("Calibrating LEDs...\n");
-		// TODO:
-		// led_cal{controls.
+		print_test_name("Calibrating LEDs\n");
+		printf_("Turn Sample to select a color. Start with Sample at 1 to select white\n");
+		printf_("Tap a button to adjust the relative brightness of its red, green, and blue.\n");
+		printf_("Pitch adjusts red, Start Pos adjusts green, Length adjusts blue.\n");
+		printf_("When the knob is centered, there is adjustment.\n");
+		printf_("\n");
+		printf_("NOTE: The red color for Play and Reverse cannot be adjusted. It is on or off.\n");
+		printf_("\n");
+		printf_("Tip: Do not try to match the colors of two buttons.\n");
+		printf_("Instead, make each button look good across the range of colors it normally displays\n");
+		printf_("\n");
+		printf_("Hold down Play for 2 seconds to save. To cancel, hold down Rev or Bank for 2 seconds\n");
 		LEDCalibrator led_cal{controls};
 		if (led_cal.run()) {
+			controls.play_led.set_color(Colors::green);
+			Util::pause_until_button_released();
+
 			auto adj = led_cal.get_adjustments();
 			cal_storage.cal_data.bank_rgb_adj = adj.bank;
 			cal_storage.cal_data.play_rgb_adj = adj.play;
 			cal_storage.cal_data.rev_rgb_adj = adj.rev;
 			cal_storage.save_flash_params();
+		} else {
+			controls.play_led.set_color(Colors::red);
+			controls.rev_led.set_color(Colors::red);
+			controls.bank_led.set_color(Colors::red);
+			Util::pause_until_button_released();
 		}
 	}
+	all_lights_off();
+	Util::pause_until_button_released();
 
 	//////////////////////////////
 	print_test_name("Button Test");

@@ -2,6 +2,7 @@
 #include "controls.hh"
 #include "flags.hh"
 #include "log.hh"
+#include "palette.hh"
 #include "util/colors.hh"
 #include <cmath>
 
@@ -18,20 +19,29 @@ struct LEDCalibrator {
 		// Start with bank LED
 		cur_led_adj = &adjustments.bank;
 
+		Board::PlayPWM play_led;
+		Board::RevPWM rev_led;
+		Board::BankPWM bank_led;
+		controls.start(); // to start ADC readings
+
 		while (true) {
+			HAL_Delay(1);
 			controls.bank_button.update();
 			controls.play_button.update();
 			controls.rev_button.update();
 
 			// Select LED by pressing a button
-			if (controls.bank_button.is_just_pressed())
+			if (controls.bank_button.is_just_pressed()) {
 				cur_led_adj = &adjustments.bank;
+			}
 
-			if (controls.play_button.is_just_pressed())
+			if (controls.play_button.is_just_pressed()) {
 				cur_led_adj = &adjustments.play;
+			}
 
-			if (controls.rev_button.is_just_pressed())
+			if (controls.rev_button.is_just_pressed()) {
 				cur_led_adj = &adjustments.rev;
+			}
 
 			// Read R,G,B adjustments from pots
 			cur_led_adj->r = controls.read_pot(PitchPot) >> 4;
@@ -40,20 +50,24 @@ struct LEDCalibrator {
 
 			// Shine each LED with adjusted white color
 			// TODO: flash current led?
-			controls.bank_led.set_color(Colors::white.adjust(adjustments.bank));
-			controls.play_led.set_color(Colors::white.adjust(adjustments.play));
-			controls.rev_led.set_color(Colors::white.adjust(adjustments.rev));
+			auto col = BankColors[controls.read_pot(SamplePot) / 409];
+			controls.bank_led.set_color(col.adjust(adjustments.bank));
+			controls.play_led.set_color(col.adjust(adjustments.play));
+			controls.rev_led.set_color(col.adjust(adjustments.rev));
 
 			// Long hold Play to exit and save
-			if (controls.play_button.how_long_held_pressed() > 1000)
+			if (controls.play_button.how_long_held_pressed() > 2000) {
 				return true;
+			}
 
 			// Long hold Bank or Rev to exit/cancel
-			if (controls.rev_button.how_long_held_pressed() > 1000)
+			if (controls.rev_button.how_long_held_pressed() > 2000) {
 				return false;
+			}
 
-			if (controls.bank_button.how_long_held_pressed() > 1000)
+			if (controls.bank_button.how_long_held_pressed() > 2000) {
 				return false;
+			}
 		}
 		return false;
 	}

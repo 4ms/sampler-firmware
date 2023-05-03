@@ -20,7 +20,7 @@ struct SamplerColors {
 	static constexpr Color magenta = Color(200, 0, 100);
 
 	struct Bank {
-		static constexpr Color white = Color(180, 220, 220);
+		static constexpr Color white = Color(220, 220, 220);
 		static constexpr Color red = Color(255, 0, 0);
 		static constexpr Color orange = Color(255, 127, 0);
 		static constexpr Color yellow = Color(200, 255, 0);

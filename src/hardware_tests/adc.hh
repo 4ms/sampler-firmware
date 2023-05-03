@@ -17,7 +17,7 @@ struct TestADCs : IAdcChecker {
 		.center_width = 100,
 		.center_check_counts = 10000,
 		.min_val = Brain::PotAdcConf::min_value,
-		.max_val = 4082,
+		.max_val = 4072,
 	};
 
 	uint32_t last_update = 0;

@@ -1,5 +1,6 @@
 #include "audio_stream.hh"
 #include "brain_conf.hh"
+#include "calibration_storage.hh"
 #include "conf/board_conf.hh"
 #include "console.hh"
 #include "drivers/ram_test.hh"
@@ -28,10 +29,10 @@ void print_test_name(std::string_view nm) {
 	printf_("\n-------------------------------------\n");
 	printf_("%s%.64s%s\n", Term::BoldYellow, nm.data(), Term::Normal);
 }
-void print_press_button() { printf_("%sPress button to continue%s\n", Term::BlinkGreen, Term::Normal); }
+void print_press_button_msg() { printf_("%sPress button to continue%s\n", Term::BlinkGreen, Term::Normal); }
 void print_error(std::string_view err) { printf_("%s%.255s%s\n", Term::BoldRed, err.data(), Term::Normal); }
 
-void run(Controls &controls) {
+void run(Controls &controls, CalibrationStorage &cal_storage) {
 	printf_("\n\n%sSampler Kit Hardware Test%s\n", Term::BoldGreen, Term::Normal);
 
 	//////////////////////////////
@@ -43,7 +44,7 @@ void run(Controls &controls) {
 	all_lights_off();
 	Util::pause_until_button_released();
 
-	print_press_button();
+	print_press_button_msg();
 	Util::flash_mainbut_until_pressed();
 
 	//////////////////////////////
@@ -52,6 +53,38 @@ void run(Controls &controls) {
 	printf_("The LEDs will each turn white for you to verify color balance\n");
 	TestLEDs ledtester;
 	ledtester.run_test();
+
+	printf_("If the LEDs need calibration, press and hold Play for 3 seconds Reverse. Otherwise press Play briefly to "
+			"continue\n");
+	Util::pause_until_button_released();
+	if (Util::check_for_longhold_button()) {
+		printf_("Calibrating LEDs...\n");
+		// TODO:
+		// led_cal{controls.
+		LEDCalibrator led_cal;
+		while (true) {
+			if (controls.bank_button.is_just_pressed())
+				led_cal.select_led(0);
+			if (controls.play_button.is_just_pressed())
+				led_cal.select_led(1);
+			if (controls.rev_button.is_just_pressed())
+				led_cal.select_led(2);
+
+			auto red = controls.read_pot(PitchPot);
+			auto green = controls.read_pot(StartPot);
+			auto blue = controls.read_pot(LengthPot);
+			led_cal.update(red, green, blue);
+
+			if (led_cal.result() == LedCalibration::Save) {
+				cal_storage.save_flash_params();
+				break;
+			}
+			if (led_cal.result() == LedCalibration::Cancel) {
+				break;
+			}
+		}
+		cal_storage.save_flash_params();
+	}
 
 	//////////////////////////////
 	print_test_name("Button Test");
@@ -79,7 +112,7 @@ void run(Controls &controls) {
 	printf_("  2) Out Right: 2.637kHz sine (E7), -10V to +10V [+/- 0.3V]\n");
 	printf_("  3) End Out: 1.5kHz square wave, 0V to +8V [+/- 0.5V]\n");
 
-	print_press_button();
+	print_press_button_msg();
 	Board::BankLED{}.set_color(Colors::orange);
 	Util::flash_mainbut_until_pressed();
 	Board::BankLED{}.set_color(Colors::off);
@@ -102,7 +135,7 @@ void run(Controls &controls) {
 	printf_("  2) Patch Out R to In R, verify 377Hz sine 8Vpp wave [+/- 0.4V] on Out L\n");
 	printf_("  3) Patch EndOut to In L (keep other cable patched), verify beat freq 2Hz on Out L\n");
 
-	print_press_button();
+	print_press_button_msg();
 	Board::RevLED{}.set_color(Colors::orange);
 	Util::flash_mainbut_until_pressed();
 	Board::RevLED{}.set_color(Colors::off);

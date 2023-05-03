@@ -35,7 +35,7 @@ struct Params {
 	UserSettings &settings;
 	BankManager &banks;
 
-	CalibrationStorage cal_storage;
+	CalibrationStorage &cal_storage;
 	CalibrationData &calibration{cal_storage.cal_data};
 	CVCalibrator cv_cal{flags};
 
@@ -66,11 +66,13 @@ struct Params {
 
 	OperationMode op_mode = OperationMode::Playback;
 
-	Params(Controls &controls, Flags &flags, UserSettings &settings, BankManager &banks)
+	Params(
+		Controls &controls, Flags &flags, UserSettings &settings, BankManager &banks, CalibrationStorage &cal_storage)
 		: controls{controls}
 		, flags{flags}
 		, settings{settings}
-		, banks{banks} {
+		, banks{banks}
+		, cal_storage{cal_storage} {
 		controls.start();
 	}
 	void update() {

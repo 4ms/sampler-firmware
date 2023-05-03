@@ -28,8 +28,9 @@ void main() {
 	using AudioOutBlock = AudioStreamConf::AudioOutBlock;
 
 	Controls controls;
+	CalibrationStorage cal_storage;
 	if (Board::PlayButton::PinT::read() && Board::RevButton::PinT::read()) {
-		HWTests::run(controls);
+		HWTests::run(controls, cal_storage);
 	}
 
 	Sdcard sd;
@@ -40,7 +41,7 @@ void main() {
 	Flags flags;
 	SampleList samples;
 	BankManager banks{samples};
-	Params params{controls, flags, settings_storage.settings, banks};
+	Params params{controls, flags, settings_storage.settings, banks, cal_storage};
 
 	// Load sample index file (map files to sample slots and banks)
 	SampleIndexLoader index_loader{sd, samples, banks, flags};

@@ -60,7 +60,9 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	}
 
 	FRESULT res;
-	FRESULT queue_valid;
+
+	bool must_write_index = false;
+
 	if (!force_reload) // sampleindex file was ok
 	{
 		pr_log("Valid sample index found\n");
@@ -84,10 +86,14 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 		// Check for empty slots
 		pr_log("Looking for samples to fill empty slots\n");
 		load_empty_slots();
+
+		// TODO: set this true only if we found new folders, missing files, or filled empty slots
+		must_write_index = true;
 	}
 
 	else // sampleindex file was not ok, or we requested to force a full reload from disk
 	{
+		must_write_index = true;
 		pr_log("No valid sample index found, or reload was requested\n");
 
 		// Ignore index and create new banks from disk:
@@ -108,15 +114,28 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 		banks.check_enabled_banks();
 	}
 
+	if (must_write_index)
+		return write_index_and_html();
+	else
+		return FR_OK;
+}
+
+void SampleIndexLoader::handle_events() {
+	if (flags.take(Flag::WriteIndexToSD)) {
+		write_index_and_html();
+	}
+}
+
+uint8_t SampleIndexLoader::write_index_and_html() {
 	// Write samples struct to index
 	// ... so sample info gets updated with latest .wav header content
 	// Buttons are red for index file, then orange for html file
 
 	// Check for system dir
-	FRESULT res_sysdir = sd.check_sys_dir();
-	if (res_sysdir != FR_OK) {
+	FRESULT res = sd.check_sys_dir();
+	if (res != FR_OK) {
 		flags.set(Flag::StartupDone);
-		return res_sysdir;
+		return res;
 	}
 
 	// WRITE INDEX FILE
@@ -124,26 +143,27 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 	flags.set(Flag::StartupWritingIndex);
 	res = index.write_sampleindex_file();
 	if (res != FR_OK) {
+		// g_error |= CANNOT_WRITE_INDEX;
 		flags.set(Flag::StartupDone);
-		return FR_OK;
+		pr_log("Cannot write index\n");
+		return res;
 	}
 
 	// WRITE SAMPLE LIST HTML FILE
 	pr_log("Writing HTML index\n");
 	flags.set(Flag::StartupWritingHTML);
 	res = index.write_samplelist();
+	if (res != FR_OK) {
+		// g_error |= CANNOT_WRITE_INDEX;
+		pr_log("Cannot write html file\n");
+		flags.set(Flag::StartupDone);
+		return res;
+	}
 
 	flags.set(Flag::StartupDone);
 	pr_log("Done!\n");
 
-	// check if there was an error writing to index file
-	// ToDo: push this to error log
-	if (res) {
-		// g_error |= CANNOT_WRITE_INDEX;
-		return 0;
-	}
-
-	return 1;
+	return FR_OK;
 }
 
 // Go through all enabled banks, looking for empty sample slots

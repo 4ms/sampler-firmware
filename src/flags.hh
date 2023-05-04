@@ -56,6 +56,9 @@ enum class Flag : uint64_t {
 	StartupWritingHTML,
 	StartupDone,
 
+	WriteSettingsToSD,
+	WriteIndexToSD,
+
 	NUM_FLAGS
 };
 

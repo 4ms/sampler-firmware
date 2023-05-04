@@ -21,12 +21,18 @@ struct ButtonActionHandler {
 	bool ignore_rev_longhold = false;
 	bool ignore_play_longhold = false;
 
+	static constexpr uint32_t short_press = Brain::ParamUpdateHz * 0.3f;
+	static constexpr uint32_t half_sec = Brain::ParamUpdateHz * 0.5f;
+	static constexpr uint32_t one_sec = Brain::ParamUpdateHz;
+	static constexpr uint32_t two_sec = Brain::ParamUpdateHz * 2.f;
+
 	ButtonActionHandler(Flags &flags, Controls &controls, std::array<PotState, NumPots> &pot_state)
 		: flags{flags}
 		, controls{controls}
 		, pot_state{pot_state} {}
 
 	// TODO: put all button ops in process() and check in each button combo for op_mode
+	// Combine ignore_*_release and ignore_*_longhold: they are always set to the same value
 	void process(OperationMode op_mode, bool looping) {
 		switch (op_mode) {
 			case OperationMode::CVCalibrate:
@@ -62,8 +68,8 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
+		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > one_sec) {
+			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > one_sec) {
 				if (!controls.bank_button.is_pressed()) {
 					flags.set(Flag::EnterRecordMode);
 					ignore_play_longhold = true;
@@ -75,7 +81,7 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Play to toggle looping
-		if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.3f)) {
+		if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > short_press) {
 			if (!controls.rev_button.is_pressed() && !controls.bank_button.is_pressed()) {
 				flags.set(Flag::ToggleLooping);
 				ignore_play_longhold = true;
@@ -84,8 +90,8 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Bank + Rev for CV Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
+		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > half_sec) {
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > half_sec) {
 				if (!controls.play_button.is_pressed()) {
 					// calibration.cv_calibration_offset[0] = bank;
 					// cal_storage.save_flash_params();
@@ -98,14 +104,11 @@ struct ButtonActionHandler {
 			}
 		}
 
-		// Long hold Play + Bank + Rev for LED Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f)) {
-				if (!ignore_play_longhold &&
-					controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 0.5f))
-				{
-					// calibration.cv_calibration_offset[0] = bank;
-					// cal_storage.save_flash_params();
+		// Long hold Play + Bank + Rev to save index
+		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > half_sec) {
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > half_sec) {
+				if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > half_sec) {
+					flags.set(Flag::WriteIndexToSD);
 					ignore_bank_release = true;
 					ignore_play_release = true;
 					ignore_rev_release = true;
@@ -164,8 +167,8 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
-			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > (Brain::ParamUpdateHz)) {
+		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > one_sec) {
+			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > one_sec) {
 				controls.play_led.reset_breathe();
 				flags.set(Flag::EnterPlayMode);
 				ignore_play_longhold = true;
@@ -196,8 +199,8 @@ struct ButtonActionHandler {
 
 	void process_cvcal_mode() {
 		// Long hold Bank + Rev to exit CV Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 2.0f)) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > (Brain::ParamUpdateHz * 2.0f)) {
+		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > two_sec) {
+			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > two_sec) {
 				if (!controls.play_button.is_pressed()) {
 					flags.set(Flag::EnterPlayMode);
 					ignore_bank_release = true;

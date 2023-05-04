@@ -17,9 +17,6 @@ struct ButtonActionHandler {
 	bool ignore_bank_release = false;
 	bool ignore_rev_release = false;
 	bool ignore_play_release = false;
-	bool ignore_bank_longhold = false;
-	bool ignore_rev_longhold = false;
-	bool ignore_play_longhold = false;
 
 	static constexpr uint32_t short_press = Brain::ParamUpdateHz * 0.3f;
 	static constexpr uint32_t half_sec = Brain::ParamUpdateHz * 0.5f;
@@ -32,7 +29,6 @@ struct ButtonActionHandler {
 		, pot_state{pot_state} {}
 
 	// TODO: put all button ops in process() and check in each button combo for op_mode
-	// Combine ignore_*_release and ignore_*_longhold: they are always set to the same value
 	void process(OperationMode op_mode, bool looping) {
 		switch (op_mode) {
 			case OperationMode::CVCalibrate:
@@ -64,16 +60,13 @@ struct ButtonActionHandler {
 			}
 
 			ignore_play_release = false;
-			ignore_play_longhold = false;
 		}
 
 		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > one_sec) {
-			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > one_sec) {
+		if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > one_sec) {
+			if (!ignore_play_release && controls.play_button.how_long_held_pressed() > one_sec) {
 				if (!controls.bank_button.is_pressed()) {
 					flags.set(Flag::EnterRecordMode);
-					ignore_play_longhold = true;
-					ignore_rev_longhold = true;
 					ignore_play_release = true;
 					ignore_rev_release = true;
 				}
@@ -81,39 +74,33 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Play to toggle looping
-		if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > short_press) {
+		if (!ignore_play_release && controls.play_button.how_long_held_pressed() > short_press) {
 			if (!controls.rev_button.is_pressed() && !controls.bank_button.is_pressed()) {
 				flags.set(Flag::ToggleLooping);
-				ignore_play_longhold = true;
 				ignore_play_release = true;
 			}
 		}
 
 		// Long hold Bank + Rev for CV Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > half_sec) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > half_sec) {
+		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > half_sec) {
+			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > half_sec) {
 				if (!controls.play_button.is_pressed()) {
 					flags.set(Flag::EnterCVCalibrateMode);
 					ignore_bank_release = true;
 					ignore_rev_release = true;
-					ignore_bank_longhold = true;
-					ignore_rev_longhold = true;
 				}
 			}
 		}
 
 		// Long hold Play + Bank + Rev to save index
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > two_sec) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > two_sec) {
-				if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > two_sec) {
+		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > two_sec) {
+			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {
+				if (!ignore_play_release && controls.play_button.how_long_held_pressed() > two_sec) {
 					flags.set(Flag::WriteIndexToSD);
 					// flags.set(Flag::WriteSettingsToSD);
 					ignore_bank_release = true;
 					ignore_play_release = true;
 					ignore_rev_release = true;
-					ignore_bank_longhold = true;
-					ignore_play_longhold = true;
-					ignore_rev_longhold = true;
 				}
 			}
 		}
@@ -132,7 +119,6 @@ struct ButtonActionHandler {
 			for (auto &pot : pot_state)
 				pot.moved_while_bank_down = false;
 
-			ignore_bank_longhold = false;
 			ignore_bank_release = false;
 		}
 
@@ -149,7 +135,6 @@ struct ButtonActionHandler {
 			}
 
 			ignore_rev_release = false;
-			ignore_rev_longhold = false;
 		}
 	}
 
@@ -160,17 +145,14 @@ struct ButtonActionHandler {
 		if (controls.play_button.is_just_released()) {
 			if (!ignore_play_release)
 				flags.set(Flag::RecBut);
-			ignore_play_longhold = false;
 			ignore_play_release = false;
 		}
 
 		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > one_sec) {
-			if (!ignore_play_longhold && controls.play_button.how_long_held_pressed() > one_sec) {
+		if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > one_sec) {
+			if (!ignore_play_release && controls.play_button.how_long_held_pressed() > one_sec) {
 				controls.play_led.reset_breathe();
 				flags.set(Flag::EnterPlayMode);
-				ignore_play_longhold = true;
-				ignore_rev_longhold = true;
 				ignore_play_release = true;
 				ignore_rev_release = true;
 			}
@@ -185,43 +167,36 @@ struct ButtonActionHandler {
 					flags.set(Flag::BankNextEnabled);
 				}
 			}
-			ignore_bank_longhold = false;
 			ignore_bank_release = false;
 		}
 
 		if (controls.rev_button.is_just_released()) {
-			ignore_rev_longhold = false;
 			ignore_rev_release = false;
 		}
 	}
 
 	void process_cvcal_mode() {
 		// Long hold Bank + Rev to exit CV Calibration
-		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > two_sec) {
-			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > two_sec) {
+		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > two_sec) {
+			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {
 				if (!controls.play_button.is_pressed()) {
 					flags.set(Flag::EnterPlayMode);
 					ignore_bank_release = true;
 					ignore_rev_release = true;
-					ignore_bank_longhold = true;
-					ignore_rev_longhold = true;
 				}
 			}
 		}
 
 		if (controls.rev_button.is_just_released()) {
-			ignore_rev_longhold = false;
 			ignore_rev_release = false;
 		}
 
 		if (controls.play_button.is_just_released()) {
 			flags.set(Flag::StepCVCalibration);
-			ignore_play_longhold = false;
 			ignore_play_release = false;
 		}
 
 		if (controls.bank_button.is_just_released()) {
-			ignore_bank_longhold = false;
 			ignore_bank_release = false;
 		}
 	}

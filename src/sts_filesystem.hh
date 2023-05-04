@@ -66,6 +66,10 @@ struct SampleIndexLoader {
 
 	uint8_t dir_contains_assigned_samples(const char *path);
 
+	uint8_t write_index_and_html();
+
+	void handle_events();
+
 private:
 	Sdcard &sd;
 	SampleList &samples;

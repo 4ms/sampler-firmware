@@ -10,6 +10,7 @@ namespace SamplerKit
 struct UserSettingsStorage {
 	UserSettings settings;
 	Sdcard &sd;
+	Flags &flags;
 
 	enum Settings {
 		NoSetting,
@@ -29,11 +30,18 @@ struct UserSettingsStorage {
 		AutoIncRecSlot,
 	};
 
-	UserSettingsStorage(Sdcard &sd)
-		: sd{sd} {
+	UserSettingsStorage(Sdcard &sd, Flags &flags)
+		: sd{sd}
+		, flags{flags} {
 		set_default_user_settings();
 		read_user_settings();
 		settings.update_timing_calcs();
+	}
+
+	void handle_events() {
+		// if (flags.take(Flag::WriteSettingsToSD)) {
+		// 	save_user_settings();
+		// }
 	}
 
 	void set_default_user_settings() {

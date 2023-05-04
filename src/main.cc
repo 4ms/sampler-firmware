@@ -36,9 +36,9 @@ void main() {
 	Sdcard sd;
 	sd.reload_disk();
 
-	UserSettingsStorage settings_storage{sd};
-
 	Flags flags;
+	UserSettingsStorage settings_storage{sd, flags};
+
 	SampleList samples;
 	BankManager banks{samples};
 	Params params{controls, flags, settings_storage.settings, banks, cal_storage};
@@ -72,4 +72,6 @@ void main() {
 	}
 }
 
-void recover_from_task_fault(void) { __BKPT(); }
+void recover_from_task_fault(void) {
+	__BKPT();
+}

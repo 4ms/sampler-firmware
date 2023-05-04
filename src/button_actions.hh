@@ -93,8 +93,6 @@ struct ButtonActionHandler {
 		if (!ignore_bank_longhold && controls.bank_button.how_long_held_pressed() > half_sec) {
 			if (!ignore_rev_longhold && controls.rev_button.how_long_held_pressed() > half_sec) {
 				if (!controls.play_button.is_pressed()) {
-					// calibration.cv_calibration_offset[0] = bank;
-					// cal_storage.save_flash_params();
 					flags.set(Flag::EnterCVCalibrateMode);
 					ignore_bank_release = true;
 					ignore_rev_release = true;

@@ -39,9 +39,9 @@ struct UserSettingsStorage {
 	}
 
 	void handle_events() {
-		// if (flags.take(Flag::WriteSettingsToSD)) {
-		// 	save_user_settings();
-		// }
+		if (flags.take(Flag::WriteSettingsToSD)) {
+			save_user_settings();
+		}
 	}
 
 	void set_default_user_settings() {

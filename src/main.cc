@@ -66,7 +66,8 @@ void main() {
 
 	while (true) {
 		sampler.update();
-		// settings_storage.handle_events();
+		settings_storage.handle_events();
+		index_loader.handle_events();
 
 		__NOP();
 	}

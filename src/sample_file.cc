@@ -119,133 +119,128 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 		return g_error;
 	} // first header error (not a valid wav file)
 
-	else
-	{
-		// Look for a WaveFmtChunk (which starts off as a chunk)
-		chunk.chunkId = 0;
-		rd = sizeof(WaveChunk);
+	// Look for a WaveFmtChunk (which starts off as a chunk)
+	chunk.chunkId = 0;
+	rd = sizeof(WaveChunk);
 
-		while (chunk.chunkId != ccFMT) {
-			res = f_read(sample_file, &chunk, rd, &br);
+	while (chunk.chunkId != ccFMT) {
+		res = f_read(sample_file, &chunk, rd, &br);
 
-			if (res != FR_OK) {
-				g_error |= HEADER_READ_FAIL;
-				f_close(sample_file);
-				break;
-			}
-			if (br < rd) {
-				g_error |= FILE_WAVEFORMATERR;
-				f_close(sample_file);
-				break;
-			}
-
-			// Fix an odd-sized chunk, it should always be even
-			if (chunk.chunkSize & 0b1)
-				chunk.chunkSize++;
-
-			next_chunk_start = f_tell(sample_file) + chunk.chunkSize;
-			// fast-forward to the next chunk
-			if (chunk.chunkId != ccFMT)
-				f_lseek(sample_file, next_chunk_start);
+		if (res != FR_OK) {
+			g_error |= HEADER_READ_FAIL;
+			f_close(sample_file);
+			return g_error;
+		}
+		if (br < rd) {
+			g_error |= FILE_WAVEFORMATERR;
+			f_close(sample_file);
+			return g_error;
 		}
 
-		if (chunk.chunkId == ccFMT) {
-			// Go back to beginning of chunk --probably could do this more elegantly by removing fmtID and fmtSize from
-			// WaveFmtChunk and just reading the next bit of data
-			f_lseek(sample_file, f_tell(sample_file) - br);
+		// Fix an odd-sized chunk, it should always be even
+		if (chunk.chunkSize & 0b1)
+			chunk.chunkSize++;
 
-			// Re-read the whole chunk (or at least the fields we need) since it's a WaveFmtChunk
-			rd = sizeof(WaveFmtChunk);
-			res = f_read(sample_file, &fmt_chunk, rd, &br);
+		next_chunk_start = f_tell(sample_file) + chunk.chunkSize;
+		// fast-forward to the next chunk
+		if (chunk.chunkId != ccFMT)
+			f_lseek(sample_file, next_chunk_start);
+	}
 
-			if (res != FR_OK) {
-				g_error |= HEADER_READ_FAIL;
-				return g_error;
-			} // file not read
-			else if (br < rd)
-			{
-				g_error |= FILE_WAVEFORMATERR;
-				f_close(sample_file);
-				return g_error;
-			} // file ended unexpectedly when reading format header
-			else if (!is_valid_format_chunk(fmt_chunk))
-			{
-				g_error |= FILE_WAVEFORMATERR;
-				f_close(sample_file);
-				return g_error;
-			} // format header error (not a valid wav file)
-			else
-			{
-				// We found the 'fmt ' chunk, now skip to the next chunk
-				// Note: this is necessary in case the 'fmt ' chunk is not exactly sizeof(WaveFmtChunk) bytes, even
-				// though that's how many we care about
-				f_lseek(sample_file, next_chunk_start);
+	// Go back to beginning of chunk --probably could do this more elegantly by removing fmtID and fmtSize from
+	// WaveFmtChunk and just reading the next bit of data
+	f_lseek(sample_file, f_tell(sample_file) - br);
 
-				// Look for the DATA chunk
-				chunk.chunkId = 0;
-				rd = sizeof(WaveChunk);
+	// Re-read the whole chunk (or at least the fields we need) since it's a WaveFmtChunk
+	rd = sizeof(WaveFmtChunk);
+	res = f_read(sample_file, &fmt_chunk, rd, &br);
 
-				while (chunk.chunkId != ccDATA) {
-					res = f_read(sample_file, &chunk, rd, &br);
+	if (res != FR_OK) {
+		g_error |= HEADER_READ_FAIL;
+		return g_error;
+	} // file not read
+	else if (br < rd)
+	{
+		g_error |= FILE_WAVEFORMATERR;
+		f_close(sample_file);
+		return g_error;
+	} // file ended unexpectedly when reading format header
+	else if (!is_valid_format_chunk(fmt_chunk))
+	{
+		g_error |= FILE_WAVEFORMATERR;
+		f_close(sample_file);
+		return g_error;
+	} // format header error (not a valid wav file)
+	// We found the 'fmt ' chunk, now skip to the next chunk
+	// Note: this is necessary in case the 'fmt ' chunk is not exactly sizeof(WaveFmtChunk) bytes, even
+	// though that's how many we care about
+	f_lseek(sample_file, next_chunk_start);
 
-					if (res != FR_OK) {
-						g_error |= HEADER_READ_FAIL;
-						f_close(sample_file);
-						break;
-					}
-					if (br < rd) {
-						g_error |= FILE_WAVEFORMATERR;
-						f_close(sample_file);
-						break;
-					}
+	// Look for the DATA chunk
+	chunk.chunkId = 0;
+	rd = sizeof(WaveChunk);
 
-					// Fix an odd-sized chunk, it should always be even
-					if (chunk.chunkSize & 0b1)
-						chunk.chunkSize++;
+	while (chunk.chunkId != ccDATA) {
+		res = f_read(sample_file, &chunk, rd, &br);
 
-					// fast-forward to the next chunk
-					if (chunk.chunkId != ccDATA)
-						f_lseek(sample_file, f_tell(sample_file) + chunk.chunkSize);
+		if (res != FR_OK) {
+			g_error |= HEADER_READ_FAIL;
+			f_close(sample_file);
+			return FR_INT_ERR;
+		}
+		if (br < rd) {
+			g_error |= FILE_WAVEFORMATERR;
+			f_close(sample_file);
+			return FR_INT_ERR;
+		}
 
-					// Set the sampleSize as defined in the chunk
-					else {
-						if (chunk.chunkSize == 0) {
-							f_close(sample_file);
-							break;
-						}
+		// Fix an odd-sized chunk, it should always be even
+		if (chunk.chunkSize & 0b1)
+			chunk.chunkSize++;
 
-						// Check the file is really as long as the data chunkSize says it is
-						if (f_size(sample_file) < (f_tell(sample_file) + chunk.chunkSize)) {
-							chunk.chunkSize = f_size(sample_file) - f_tell(sample_file);
-						}
+		// keeping scanning until we find the data chunk
+		if (chunk.chunkId != ccDATA) {
+			f_lseek(sample_file, f_tell(sample_file) + chunk.chunkSize);
+			continue;
+		}
 
-						s_sample->sampleSize = chunk.chunkSize;
-						s_sample->sampleByteSize = fmt_chunk.bitsPerSample >> 3;
-						s_sample->sampleRate = fmt_chunk.sampleRate;
-						s_sample->numChannels = fmt_chunk.numChannels;
-						s_sample->blockAlign = fmt_chunk.numChannels * fmt_chunk.bitsPerSample >> 3;
-						s_sample->startOfData = f_tell(sample_file);
+		// check valid data chunk size
+		if (chunk.chunkSize == 0) {
+			f_close(sample_file);
+			return FR_INT_ERR;
+		}
 
-						if (fmt_chunk.audioFormat == 0xFFFE)
-							s_sample->PCM = 3;
-						else
-							s_sample->PCM = fmt_chunk.audioFormat;
+		// Check the file is really as long as the data chunkSize says it is
+		if (f_size(sample_file) < (f_tell(sample_file) + chunk.chunkSize)) {
+			chunk.chunkSize = f_size(sample_file) - f_tell(sample_file);
+		}
 
-						s_sample->file_status = FileStatus::Found;
-						s_sample->inst_end = s_sample->sampleSize;
-						s_sample->inst_size = s_sample->sampleSize;
-						s_sample->inst_start = 0;
-						s_sample->inst_gain = 1.0;
+		s_sample->sampleSize = chunk.chunkSize;
+		s_sample->sampleByteSize = fmt_chunk.bitsPerSample >> 3;
+		s_sample->sampleRate = fmt_chunk.sampleRate;
+		s_sample->numChannels = fmt_chunk.numChannels;
+		s_sample->blockAlign = fmt_chunk.numChannels * fmt_chunk.bitsPerSample >> 3;
+		s_sample->startOfData = f_tell(sample_file);
 
-						return 0;
+		if (fmt_chunk.audioFormat == 0xFFFE)
+			s_sample->PCM = 3;
+		else
+			s_sample->PCM = fmt_chunk.audioFormat;
 
-					} // else chunk
-				}	  // while chunk
-			}		  // is_valid_format_chunk
-		}			  // if ccFMT
-	}				  // no file error
+		s_sample->file_status = FileStatus::Found;
+		s_sample->inst_end = s_sample->sampleSize;
+		s_sample->inst_size = s_sample->sampleSize;
+		s_sample->inst_start = 0;
+		s_sample->inst_gain = 1.0;
 
-	return FR_INT_ERR; // Unknown error?
+		// TODO: populate from cues chunk
+		s_sample->num_cues = 0;
+		break;
+	}
+
+	// TODO: populate cues from labels txt file
+	// if s_sample->num_cues == 0
+	return 0;
 }
 
 //

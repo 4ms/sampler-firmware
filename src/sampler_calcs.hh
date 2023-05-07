@@ -68,6 +68,36 @@ inline uint32_t calc_resampled_buffer_size(const Sample &sample, float resample_
 	return ((uint32_t)((FramesPerBlock * sample.numChannels * 2) * resample_rate));
 }
 
+inline std::pair<uint32_t, uint32_t> calc_start_cue(float start_param, const Sample *const sample) {
+	int cuenum = (int)(start_param * (float)sample->num_cues);
+	cuenum = std::clamp<int>(cuenum, 0, sample->num_cues - 1);
+
+	uint32_t cue = sample->cue[cuenum];
+	if (cue >= sample->inst_start && cue <= sample->inst_end)
+		return {align_addr(cue, sample->blockAlign), cuenum};
+	else
+		return {sample->inst_start, 0};
+}
+
+
+inline uint32_t calc_stop_cue(uint32_t start_cuenum, float length_param, const Sample *const sample) {
+	uint32_t stop;
+
+	float scaled_length = length_param * 2.f - 1.f; //0.5..1 => 0..1
+	int length_cues = (int)(scaled_length * (float)sample->num_cues);
+	int cuenum = start_cuenum + length_cues + 1;
+	if (cuenum >= sample->num_cues)
+		return sample->inst_end;
+	if (cuenum < 1)
+		cuenum = 1;
+
+	uint32_t cue = sample->cue[cuenum];
+	if (cue >= sample->inst_start && cue <= sample->inst_end)
+		return align_addr(cue, sample->blockAlign);
+	else
+		return sample->inst_end; // error; cue point is out of range, just play whole sample
+}
+
 // calc_start_point()
 inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 	uint32_t zeropt;
@@ -76,21 +106,18 @@ inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 	zeropt = sample->inst_start;
 	inst_size = sample->inst_end - sample->inst_start;
 
-	// If the sample size is smaller than two blocks, the start point is forced to the start
+	// If the sample size is smaller than two blocks, the start point is forced to the beginning
 	if (inst_size <= (READ_BLOCK_SIZE * 2))
-		return (align_addr(zeropt, sample->blockAlign));
+		return align_addr(zeropt, sample->blockAlign);
 
 	if (start_param < 0.002f)
-		return (align_addr(zeropt, sample->blockAlign));
+		return align_addr(zeropt, sample->blockAlign);
 
-	else if (sample->num_cues) {
-		return 0;
-	} else if (start_param > 0.998f)
+	if (start_param > 0.998f)
 		// just play the last 32 blocks (~64k samples)
-		return (align_addr((zeropt + inst_size - (READ_BLOCK_SIZE * 2)), sample->blockAlign));
+		return align_addr((zeropt + inst_size - (READ_BLOCK_SIZE * 2)), sample->blockAlign);
 
-	else
-		return (align_addr((zeropt + ((uint32_t)(start_param * (float)inst_size))), sample->blockAlign));
+	return align_addr((zeropt + ((uint32_t)(start_param * (float)inst_size))), sample->blockAlign);
 }
 
 inline uint32_t ceil(float num) {

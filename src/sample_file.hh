@@ -52,6 +52,7 @@ struct Sample {
 	FileStatus file_status;
 
 	uint8_t num_cues;
+	uint32_t cue[4];
 
 	Sample() { clear(); }
 	void clear() {
@@ -71,10 +72,12 @@ struct Sample {
 		num_cues = 0;
 	}
 };
-constexpr auto SampleSize = sizeof(Sample);
 
 using Bank = std::array<Sample, NumSamplesPerBank>;
 using SampleList = std::array<Bank, MaxNumBanks>;
+
+constexpr auto SampleSize = sizeof(Sample);
+constexpr auto SampleListSize = sizeof(SampleList);
 
 uint32_t load_sample_header(Sample *s_sample, FIL *sample_file);
 FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd);

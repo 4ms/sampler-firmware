@@ -234,7 +234,17 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 		s_sample->inst_gain = 1.0;
 
 		// TODO: populate from cues chunk
+		// Add a cue at 0 if it doesn't exist
+		// Sort them in order, low to high
 		s_sample->num_cues = 0;
+		if (s_sample->sampleSize == 3045772) // Wobbly Sample
+		{
+			s_sample->num_cues = 4;
+			s_sample->cue[0] = 0;
+			s_sample->cue[1] = 95600;
+			s_sample->cue[2] = 286800;
+			s_sample->cue[3] = 571083;
+		}
 		break;
 	}
 

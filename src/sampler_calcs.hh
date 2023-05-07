@@ -68,23 +68,6 @@ inline uint32_t calc_resampled_buffer_size(const Sample &sample, float resample_
 	return ((uint32_t)((FramesPerBlock * sample.numChannels * 2) * resample_rate));
 }
 
-// calc_dist_to_end()
-// How many samples left to go before we hit the stopping point
-inline int32_t calc_dist_to_end() {
-
-	// Find out where the audio output data is relative to the start of the cache
-	// uint32_t sample_file_playpos = cache[samplenum].map_buffer_to_cache(
-	// 	play_buff[samplenum]->out, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
-
-	// Calculate the distance left to the end that we should be playing
-	// TODO: check if playpos is in bounds of startpos as well
-	// if (!params.reverse)
-	// 	return (sample_file_endpos[chan] > sample_file_playpos) ? (sample_file_endpos[chan] - sample_file_playpos) : 0;
-	// else
-	// 	return (sample_file_playpos > sample_file_endpos[chan]) ? (sample_file_playpos - sample_file_endpos[chan]) : 0;
-	return -1;
-}
-
 // calc_start_point()
 inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 	uint32_t zeropt;
@@ -99,9 +82,13 @@ inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 
 	if (start_param < 0.002f)
 		return (align_addr(zeropt, sample->blockAlign));
-	else if (start_param > 0.998f)
-		return (align_addr((zeropt + inst_size - (READ_BLOCK_SIZE * 2)),
-						   sample->blockAlign)); // just play the last 32 blocks (~64k samples)
+
+	else if (sample->num_cues) {
+		return 0;
+	} else if (start_param > 0.998f)
+		// just play the last 32 blocks (~64k samples)
+		return (align_addr((zeropt + inst_size - (READ_BLOCK_SIZE * 2)), sample->blockAlign));
+
 	else
 		return (align_addr((zeropt + ((uint32_t)(start_param * (float)inst_size))), sample->blockAlign));
 }

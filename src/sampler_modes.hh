@@ -168,7 +168,6 @@ public:
 		}
 	}
 
-	// GCC_OPTIMIZE_OFF
 	void start_playing() {
 		FRESULT res;
 		float rs;
@@ -234,14 +233,14 @@ public:
 		rs = params.pitch * ((float)s_sample->sampleRate / params.settings.record_sample_rate);
 
 		// Determine starting and ending addresses
+		auto earlier_pos = calc_start_point(params.start, s_sample);
+		auto later_pos = calc_stop_point(params.length, rs, s_sample, earlier_pos, params.settings.record_sample_rate);
 		if (params.reverse) {
-			sample_file_endpos = calc_start_point(params.start, s_sample);
-			sample_file_startpos =
-				calc_stop_point(params.length, rs, s_sample, sample_file_endpos, params.settings.record_sample_rate);
+			sample_file_endpos = earlier_pos;
+			sample_file_startpos = later_pos;
 		} else {
-			sample_file_startpos = calc_start_point(params.start, s_sample);
-			sample_file_endpos =
-				calc_stop_point(params.length, rs, s_sample, sample_file_startpos, params.settings.record_sample_rate);
+			sample_file_startpos = earlier_pos;
+			sample_file_endpos = later_pos;
 		}
 
 		// See if the starting position is already cached

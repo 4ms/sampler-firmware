@@ -32,7 +32,7 @@
 
 namespace SamplerKit
 {
-enum class FileStatus { NotFound = 0, Found = 1, NewFile = 2 };
+enum class FileStatus : uint8_t { NotFound = 0, Found = 1, NewFile = 2 };
 
 struct Sample {
 	char filename[FF_MAX_LFN];
@@ -51,6 +51,8 @@ struct Sample {
 	uint16_t PCM;
 	FileStatus file_status;
 
+	uint8_t num_cues;
+
 	Sample() { clear(); }
 	void clear() {
 		filename[0] = 0;
@@ -66,8 +68,10 @@ struct Sample {
 		inst_end = 0;
 		inst_size = 0;
 		inst_gain = 1.0;
+		num_cues = 0;
 	}
 };
+constexpr auto SampleSize = sizeof(Sample);
 
 using Bank = std::array<Sample, NumSamplesPerBank>;
 using SampleList = std::array<Bank, MaxNumBanks>;

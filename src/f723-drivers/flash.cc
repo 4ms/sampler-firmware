@@ -76,7 +76,7 @@ bool flash_write(std::span<const uint32_t> data, uint32_t address) {
 	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 	for (auto d : data) {
 		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, address, d) != HAL_OK) {
-			__BKPT();
+			// __BKPT();
 			HAL_FLASH_Lock();
 			return false;
 		}

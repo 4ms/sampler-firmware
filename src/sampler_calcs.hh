@@ -68,22 +68,23 @@ inline uint32_t calc_resampled_buffer_size(const Sample &sample, float resample_
 	return ((uint32_t)((FramesPerBlock * sample.numChannels * 2) * resample_rate));
 }
 
-inline std::pair<uint32_t, uint32_t> calc_start_cue(float start_param, const Sample *const sample) {
+inline uint32_t calc_start_cue(float start_param, const Sample *const sample) {
 	int cuenum = (int)(start_param * (float)sample->num_cues);
 	cuenum = std::clamp<int>(cuenum, 0, sample->num_cues - 1);
 
 	uint32_t cue = sample->cue[cuenum];
 	if (cue >= sample->inst_start && cue <= sample->inst_end)
-		return {align_addr(cue, sample->blockAlign), cuenum};
+		return align_addr(cue, sample->blockAlign);
 	else
-		return {sample->inst_start, 0};
+		return sample->inst_start;
 }
 
-
-inline uint32_t calc_stop_cue(uint32_t start_cuenum, float length_param, const Sample *const sample) {
+inline uint32_t calc_stop_cue(float start_param, float length_param, const Sample *const sample) {
 	uint32_t stop;
 
-	float scaled_length = length_param * 2.f - 1.f; //0.5..1 => 0..1
+	uint32_t start_cuenum = calc_start_cue(start_param, sample);
+
+	float scaled_length = length_param * 2.f - 1.f; // 0.5..1 => 0..1
 	int length_cues = (int)(scaled_length * (float)sample->num_cues);
 	int cuenum = start_cuenum + length_cues + 1;
 	if (cuenum >= sample->num_cues)

@@ -238,13 +238,13 @@ public:
 		uint32_t later_pos;
 
 		if (s_sample->num_cues > 0) {
-			auto [earlier_pos, start_cuenum] = calc_start_cue(params.start, s_sample);
+			earlier_pos = calc_start_cue(params.start, s_sample);
 			if (params.length > 0.5f)
-				later_pos = calc_stop_cue(start_cuenum, params.length, s_sample);
+				later_pos = calc_stop_cue(params.start, params.length, s_sample);
 			else
 				later_pos =
 					calc_stop_point(params.length, rs, s_sample, earlier_pos, params.settings.record_sample_rate);
-			printf_("%d (%d) to %d\n", earlier_pos, start_cuenum, later_pos);
+			// printf_("%d (%d) to %d\n", earlier_pos, start_cuenum, later_pos);
 		} else {
 			earlier_pos = calc_start_point(params.start, s_sample);
 			later_pos = calc_stop_point(params.length, rs, s_sample, earlier_pos, params.settings.record_sample_rate);
@@ -257,7 +257,7 @@ public:
 			sample_file_startpos = earlier_pos;
 			sample_file_endpos = later_pos;
 		}
-		printf_(">>%d to %d\n", sample_file_startpos, sample_file_endpos);
+		// printf_(">>%d to %d\n", sample_file_startpos, sample_file_endpos);
 
 		// See if the starting position is already cached
 		if ((cache[samplenum].high > cache[samplenum].low) && (cache[samplenum].low <= sample_file_startpos) &&

@@ -72,7 +72,7 @@ struct CircularBuffer {
 				rd_buff[i] = 0;
 			else {
 				wait_memory_ready();
-				rd_buff[i] = *reinterpret_cast<int16_t *>(out);
+				rd_buff[i] = *((int16_t *)(out));
 			}
 
 			offset_out_address(2, decrement);
@@ -87,7 +87,7 @@ struct CircularBuffer {
 
 		for (i = 0; i < num_bytes; i++) {
 			wait_memory_ready();
-			rd_buff[i] = *reinterpret_cast<uint8_t *>(out);
+			rd_buff[i] = *((uint8_t *)(out));
 			offset_out_address(1, decrement);
 		}
 		return 0; // does not check for overflow
@@ -97,6 +97,7 @@ struct CircularBuffer {
 	// num_words should be the number of 32-bit words to read from wr_buff (bytes>>2)
 	uint32_t memory_write_16as16(uint32_t *wr_buff, uint32_t num_words, bool decrement) {
 		uint32_t i;
+		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
 
 		// detect head-crossing:
@@ -105,8 +106,7 @@ struct CircularBuffer {
 
 		for (i = 0; i < num_words; i++) {
 			wait_memory_ready();
-			// *((uint32_t *)in) = wr_buff[i];
-			*reinterpret_cast<uint32_t *>(out) = wr_buff[i];
+			*((uint32_t *)in) = wr_buff[i];
 			offset_in_address(4, decrement);
 		}
 
@@ -126,6 +126,7 @@ struct CircularBuffer {
 	// Convert 24-bit words from wr_buff into 16-bit words, and write to the in ptr
 	uint32_t memory_write_24as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
+		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
 
 		start_polarity = (in < out) ? 0 : 1;
@@ -134,7 +135,7 @@ struct CircularBuffer {
 		for (i = 0; i < num_bytes; i += 3) // must be a multiple of 3!
 		{
 			wait_memory_ready();
-			*reinterpret_cast<int16_t *>(in) = (int16_t)(wr_buff[i + 2] << 8 | wr_buff[i + 1]);
+			*((int16_t *)in) = (int16_t)(wr_buff[i + 2] << 8 | wr_buff[i + 1]);
 			offset_in_address(2, decrement);
 		}
 
@@ -150,6 +151,7 @@ struct CircularBuffer {
 	// Convert 24-bit words padded as 32-bits from wr_buff into 16-bit words, and write to the in ptr
 	uint32_t memory_write_24in32as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
+		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
 
 		start_polarity = (in < out) ? 0 : 1;
@@ -157,7 +159,7 @@ struct CircularBuffer {
 
 		for (i = 0; i < num_bytes; i += 4) {
 			wait_memory_ready();
-			*reinterpret_cast<int16_t *>(in) = (int16_t)(wr_buff[i + 2] << 8 | wr_buff[i + 1]);
+			*((int16_t *)in) = (int16_t)(wr_buff[i + 2] << 8 | wr_buff[i + 1]);
 			offset_in_address(2, decrement);
 		}
 
@@ -173,6 +175,7 @@ struct CircularBuffer {
 	// Grab 32-bit words and write them into b as 16-bit values
 	uint32_t memory_write_32ias16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
+		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
 
 		start_polarity = (in < out) ? 0 : 1;
@@ -180,7 +183,7 @@ struct CircularBuffer {
 
 		for (i = 0; i < num_bytes; i += 4) {
 			wait_memory_ready();
-			*reinterpret_cast<int16_t *>(in) = (int16_t)(wr_buff[i + 3] << 8 | wr_buff[i + 2]);
+			*((int16_t *)in) = (int16_t)(wr_buff[i + 3] << 8 | wr_buff[i + 2]);
 			offset_in_address(2, decrement);
 		}
 
@@ -196,6 +199,7 @@ struct CircularBuffer {
 	// Grab 32-bit floats and write them into b as 16-bit values
 	uint32_t memory_write_32fas16(float *wr_buff, uint32_t num_floats, bool decrement) {
 		uint32_t i;
+		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
 
 		start_polarity = (in < out) ? 0 : 1;
@@ -204,11 +208,11 @@ struct CircularBuffer {
 		for (i = 0; i < num_floats; i++) {
 			wait_memory_ready();
 			if (wr_buff[i] >= 1.f)
-				*reinterpret_cast<int16_t *>(in) = 32767;
+				*((int16_t *)in) = 32767;
 			else if (wr_buff[i] <= -1.F)
-				*reinterpret_cast<int16_t *>(in) = -32768;
+				*((int16_t *)in) = -32768;
 			else
-				*reinterpret_cast<int16_t *>(in) = (int16_t)(wr_buff[i] * 32767.f);
+				*((int16_t *)in) = (int16_t)(wr_buff[i] * 32767.f);
 
 			offset_in_address(2, decrement);
 		}
@@ -225,6 +229,7 @@ struct CircularBuffer {
 	// Grab 8-bit ints from wr_buff and write them into b as 16-bit ints
 	uint32_t memory_write_8as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;
+		uint8_t heads_crossed = 0;
 		uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
 
 		// setup to detect head-crossing:
@@ -233,7 +238,7 @@ struct CircularBuffer {
 
 		for (i = 0; i < num_bytes; i++) {
 			wait_memory_ready();
-			*reinterpret_cast<int16_t *>(in) = ((int16_t)(wr_buff[i]) - 128) * 256;
+			*((int16_t *)in) = ((int16_t)(wr_buff[i]) - 128) * 256;
 			offset_in_address(2, decrement);
 		}
 
@@ -254,7 +259,7 @@ struct CircularBuffer {
 
 		for (i = 0; i < num_samples; i++) {
 			wait_memory_ready();
-			*reinterpret_cast<int16_t *>(in) = wr_buff[i];
+			*((int16_t *)in) = wr_buff[i];
 			offset_in_address(2, decrement);
 
 			if (in == out) // don't consider the heads being crossed if they begin at the same place

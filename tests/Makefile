@@ -17,6 +17,8 @@ CXXFLAGS = 	-Wall \
 			-Wextra \
 		 	-std=c++2b \
 			-I. \
+			-Istubs \
+			-Itests/stubs \
 			-I.. \
 			-Isrc \
 			-Ilib/cpputil \

@@ -36,8 +36,10 @@ public:
 	// These are used in audio, but probably could move elsewhere
 	// file position where we began playback.
 	uint32_t sample_file_startpos;
+	int anchor_cuenum = -1;
 	// file position where we will end playback. endpos > startpos when REV==0, endpos < startpos when REV==1
 	uint32_t sample_file_endpos;
+	int sample_file_end_cuenum = -1;
 	// current file position being read. Must match the actual open file's position. This is always inc/decrementing
 	// from startpos towards endpos
 	uint32_t sample_file_curpos[NumSamplesPerBank];
@@ -236,19 +238,24 @@ public:
 		// Determine starting and ending addresses
 		uint32_t earlier_pos;
 		uint32_t later_pos;
+		bool did_set_earlier_pos = false;
 
 		if (s_sample->num_cues > 0) {
-			earlier_pos = calc_start_cue(params.start, s_sample);
-			if (params.length > 0.5f)
-				later_pos = calc_stop_cue(params.start, params.length, s_sample);
-			else
-				later_pos =
-					calc_stop_point(params.length, rs, s_sample, earlier_pos, params.settings.record_sample_rate);
-			// printf_("%d (%d) to %d\n", earlier_pos, start_cuenum, later_pos);
-		} else {
-			earlier_pos = calc_start_point(params.start, s_sample);
-			later_pos = calc_stop_point(params.length, rs, s_sample, earlier_pos, params.settings.record_sample_rate);
+			anchor_cuenum = calc_start_cuenum(params.start, s_sample);
+
+			if (anchor_cuenum >= 0) {
+				earlier_pos = s_sample->cue[anchor_cuenum];
+				did_set_earlier_pos = true;
+			}
 		}
+
+		if (!did_set_earlier_pos) {
+			anchor_cuenum = -1;
+			earlier_pos = calc_start_point(params.start, s_sample);
+		}
+
+		later_pos = calc_stop_point(
+			params.length, rs, s_sample, earlier_pos, anchor_cuenum, params.settings.record_sample_rate);
 
 		if (params.reverse) {
 			sample_file_endpos = earlier_pos;

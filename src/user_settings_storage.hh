@@ -332,14 +332,15 @@ struct UserSettingsStorage {
 			}
 
 			if (cur_setting_found == RecordSampleRate) {
-				if (str_startswith_nocase(read_buffer, "48"))
-					settings.record_sample_rate = 48000;
-				else if (str_startswith_nocase(read_buffer, "88"))
-					settings.record_sample_rate = 88200;
-				else if (str_startswith_nocase(read_buffer, "96"))
-					settings.record_sample_rate = 96000;
-				else
-					settings.record_sample_rate = 44100;
+				// FIXME: only supports 48k right now
+				//  if (str_startswith_nocase(read_buffer, "48"))
+				settings.record_sample_rate = 48000;
+				// else if (str_startswith_nocase(read_buffer, "88"))
+				// 	settings.record_sample_rate = 88200;
+				// else if (str_startswith_nocase(read_buffer, "96"))
+				// 	settings.record_sample_rate = 96000;
+				// else
+				// 	settings.record_sample_rate = 44100;
 
 				cur_setting_found = NoSetting; // back to looking for headers
 			}

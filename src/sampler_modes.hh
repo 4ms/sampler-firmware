@@ -236,25 +236,13 @@ public:
 		rs = params.pitch * ((float)s_sample->sampleRate / params.settings.record_sample_rate);
 
 		// Determine starting and ending addresses
-		uint32_t earlier_pos;
-		uint32_t later_pos;
-		bool did_set_earlier_pos = false;
-
 		if (s_sample->num_cues > 0) {
 			anchor_cuenum = calc_start_cuenum(params.start, s_sample);
-
-			if (anchor_cuenum >= 0) {
-				earlier_pos = s_sample->cue[anchor_cuenum];
-				did_set_earlier_pos = true;
-			}
-		}
-
-		if (!did_set_earlier_pos) {
+		} else
 			anchor_cuenum = -1;
-			earlier_pos = calc_start_point(params.start, s_sample);
-		}
 
-		later_pos = calc_stop_point(
+		uint32_t earlier_pos = calc_start_point(params.start, s_sample);
+		uint32_t later_pos = calc_stop_point(
 			params.length, rs, s_sample, earlier_pos, anchor_cuenum, params.settings.record_sample_rate);
 
 		if (params.reverse) {
@@ -264,7 +252,6 @@ public:
 			sample_file_startpos = earlier_pos;
 			sample_file_endpos = later_pos;
 		}
-		// printf_(">>%d to %d\n", sample_file_startpos, sample_file_endpos);
 
 		// See if the starting position is already cached
 		if ((cache[samplenum].high > cache[samplenum].low) && (cache[samplenum].low <= sample_file_startpos) &&

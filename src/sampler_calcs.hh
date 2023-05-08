@@ -128,9 +128,9 @@ inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 	if (sample->num_cues > 0) {
 		int cuenum = std::clamp<int>(start_param * sample->num_cues, 0, sample->num_cues - 1);
 
-		uint32_t cue = sample->cue[cuenum];
+		uint32_t cue = cue_pos(cuenum, sample);
 		if (cue >= sample->inst_start && cue <= sample->inst_end)
-			return cue * sample->blockAlign;
+			return cue;
 	}
 
 	if (start_param > 0.998f)

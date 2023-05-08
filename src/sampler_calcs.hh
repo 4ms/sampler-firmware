@@ -98,20 +98,16 @@ inline int calc_start_cuenum(float start_param, const Sample *const sample) {
 // First snap point is the next cue marker after the start_cuenum.
 // Returns the sample end if number of cue segments to play exceeds number of cues.
 // or if cue point is out of range, or if starting cue is too close to the sample end
-inline uint32_t calc_stop_cue(int start_cuenum, float scaled_length, const Sample *const sample) {
-	uint32_t min_endpt = cue_pos(start_cuenum, sample) + READ_BLOCK_SIZE * 2;
-	if (min_endpt > sample->inst_end)
-		return sample->inst_end;
-
+inline int calc_stop_cuenum(int start_cuenum, float scaled_length, const Sample *const sample) {
 	int cues_to_play = scaled_length * (float)sample->num_cues + 1;
 	int cuenum = start_cuenum + cues_to_play;
 	if (cuenum >= sample->num_cues)
-		return sample->inst_end;
+		return -1;
 
 	if (cuenum < 1)
 		cuenum = 1;
 
-	return std::clamp(cue_pos(cuenum, sample), min_endpt, sample->inst_end);
+	return cuenum;
 }
 
 // calc_start_point()
@@ -147,7 +143,7 @@ inline uint32_t calc_start_point(float start_param, Sample *const sample) {
 // calc_stop_point()
 // Returns an offset from the startpos, based on the length  and resampling rate
 //
-static uint32_t calc_stop_point(
+inline uint32_t calc_stop_point(
 	float length_param, float resample_param, Sample *sample, uint32_t startpos, int anchor_cuenum, float sample_rate) {
 	uint32_t fwd_stop_point;
 	uint32_t num_samples_to_play;
@@ -158,9 +154,16 @@ static uint32_t calc_stop_point(
 
 	// Snap to a Cue if length > 50% and the start point (anchor) is a cue
 	if (length_param > 0.5f && sample->num_cues > 0 && anchor_cuenum >= 0) {
+		// If anchor cue is close to end, then play to the end
+		uint32_t min_endpt = cue_pos(anchor_cuenum, sample) + READ_BLOCK_SIZE * 2;
+		if (min_endpt > sample->inst_end)
+			return sample->inst_end;
+
 		float scaled_length = length_param * 2.f - 1.f; // 0.5..1 => 0..1
-		uint32_t stop_pos = calc_stop_cue(anchor_cuenum, scaled_length, sample);
-		return stop_pos;
+		int stop_cuenum = calc_stop_cuenum(anchor_cuenum, scaled_length, sample);
+		if (stop_cuenum == -1)
+			return sample->inst_end;
+		return std::clamp(cue_pos(stop_cuenum, sample), min_endpt, sample->inst_end);
 	}
 
 	seconds = (float)(sample->sampleRate * sample->blockAlign);

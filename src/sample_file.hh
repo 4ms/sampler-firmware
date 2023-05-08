@@ -30,12 +30,11 @@
 #include "elements.hh"
 #include "ff.h"
 #include "sample_type.hh"
+#include "sdcard.hh"
 #include <array>
 
 namespace SamplerKit
 {
-
-struct Sdcard;
 
 using Bank = std::array<Sample, NumSamplesPerBank>;
 using SampleList = std::array<Bank, MaxNumBanks>;

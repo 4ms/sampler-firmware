@@ -31,6 +31,7 @@
 #include "elements.hh"
 #include "ff.h"
 #include "log.hh"
+#include "str_util.h"
 
 namespace SamplerKit
 {

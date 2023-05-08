@@ -76,4 +76,10 @@ TEST_CASE("calc_stop_cuenum") {
 	CHECK(calc_stop_point(0.51, rs, &s, start_pos, start_cue, sr) == s.cue[2] * s.blockAlign);
 	CHECK(calc_stop_point(0.63, rs, &s, start_pos, start_cue, sr) == s.cue[3] * s.blockAlign);
 	CHECK(calc_stop_point(0.76, rs, &s, start_pos, start_cue, sr) == s.inst_end);
+
+	SUBCASE("stop point is a minimum of two READ_BLOCKS from start point") {
+		s.cue[2] = 35'000;
+		auto expected = s.cue[1] * s.blockAlign + READ_BLOCK_SIZE * 2;
+		CHECK(calc_stop_point(0.51, rs, &s, start_pos, start_cue, sr) == expected);
+	}
 }

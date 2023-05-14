@@ -92,6 +92,17 @@ struct ButtonActionHandler {
 			}
 		}
 
+		// Long hold Play + Bank to toggle stereo mode
+		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > half_sec) {
+			if (!ignore_play_release && controls.play_button.how_long_held_pressed() > half_sec) {
+				if (!controls.bank_button.is_pressed()) {
+					flags.set(Flag::ToggleStereoMode);
+					ignore_bank_release = true;
+					ignore_rev_release = true;
+				}
+			}
+		}
+
 		// Long hold Play + Bank + Rev to save index
 		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > two_sec) {
 			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {

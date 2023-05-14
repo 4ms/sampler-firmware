@@ -38,6 +38,8 @@ enum class Flag : uint64_t {
 	CVCalibrationSuccessAnimate,
 	CVCalibrationFailAnimate,
 
+	ToggleStereoMode,
+
 	EnterLEDCalibrateMode,
 
 	StartFadeUp,   // env_level => 0

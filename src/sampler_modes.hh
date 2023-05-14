@@ -143,6 +143,10 @@ public:
 				toggle_playing();
 		}
 
+		if (flags.take(Flag::ToggleStereoMode)) {
+			params.settings.stereo_mode = !params.settings.stereo_mode;
+		}
+
 		if (flags.take(Flag::EnterPlayMode))
 			params.op_mode = OperationMode::Playback;
 

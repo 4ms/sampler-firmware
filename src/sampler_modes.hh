@@ -143,6 +143,7 @@ public:
 
 		if (flags.take(Flag::ToggleStereoMode)) {
 			params.settings.stereo_mode = !params.settings.stereo_mode;
+			flags.set(Flag::ToggleStereoModeAnimate);
 		}
 
 		if (flags.take(Flag::EnterPlayMode))

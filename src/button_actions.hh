@@ -108,7 +108,7 @@ struct ButtonActionHandler {
 			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {
 				if (!ignore_play_release && controls.play_button.how_long_held_pressed() > two_sec) {
 					flags.set(Flag::WriteIndexToSD);
-					// flags.set(Flag::WriteSettingsToSD);
+					flags.set(Flag::WriteSettingsToSD);
 					ignore_bank_release = true;
 					ignore_play_release = true;
 					ignore_rev_release = true;

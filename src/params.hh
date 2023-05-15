@@ -136,9 +136,14 @@ private:
 		auto &pot = pot_state[LengthPot];
 		float potval;
 		if (pot.moved_while_rev_down) {
+			// Rev + Length = envelope fade time
 			potval = pot.latched_val;
-			// TODO: STS: Edit+Length = fade time
-			// fade_time = pot.cur_val / 4095.f;
+			settings.fade_time_ms = pot.cur_val / 102.4f; // 0..40ms
+			settings.update_fade_rates();
+
+			// disable envelopes when setting is close to zero
+			settings.perc_env = settings.perc_env ? (pot.cur_val > 10) : (pot.cur_val > 20);
+			settings.fadeupdown_env = settings.perc_env;
 		} else
 			potval = pot.cur_val;
 

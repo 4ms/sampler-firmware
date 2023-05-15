@@ -61,6 +61,10 @@ struct UserSettings {
 	void update_timing_calcs() {
 		play_trig_delay = TimingCalcs::calc_trig_delay(trig_delay);
 		play_trig_latch_pitch_time = TimingCalcs::calc_pitch_latch_time(trig_delay);
+		update_fade_rates();
+	}
+
+	void update_fade_rates() {
 		// FIXME: Check what BlockSize should be
 		// STS uses HT16_CHAN_BUFF_LEN which is 16 (FramesPerBlock)
 		fade_up_rate =

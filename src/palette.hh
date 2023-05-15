@@ -12,10 +12,10 @@ struct SamplerColors {
 	static constexpr Color pale_pink = Color(255, 200, 200);
 	static constexpr Color tangerine = Color(255, 200, 0);
 	static constexpr Color orange = Color(255, 127, 0);
-	static constexpr Color yellow = Color(255, 255, 0);
-	static constexpr Color green = Color(0, 180, 0);
+	static constexpr Color yellow = Color(160, 160, 0);
+	static constexpr Color green = Color(0, 130, 0);
 	static constexpr Color cyan = Color(0, 160, 200);
-	static constexpr Color blue = Color(0, 0, 255);
+	static constexpr Color blue = Color(0, 40, 255);
 	static constexpr Color purple = Color(255, 0, 255);
 	static constexpr Color magenta = Color(200, 0, 100);
 

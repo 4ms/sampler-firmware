@@ -24,6 +24,7 @@ struct Leds {
 		bool reverse;
 		bool looping;
 		uint32_t bank;
+		bool stereo_mode;
 	};
 
 	Color last_play_color = Colors::off;
@@ -37,6 +38,7 @@ struct Leds {
 		const bool &reverse = state.reverse;
 		const bool &looping = state.looping;
 		const uint32_t &bank = state.bank;
+		const bool &stereo_mode = state.stereo_mode;
 
 		Color rev_color;
 		Color play_color;
@@ -46,7 +48,8 @@ struct Leds {
 			rev_color = reverse ? Colors::blue : Colors::off;
 
 			if (play_state != PlayStates::SILENT && play_state != PlayStates::PREBUFFERING) {
-				play_color = looping ? SamplerColors::cyan : SamplerColors::green;
+				play_color = stereo_mode ? (looping ? SamplerColors::cyan : SamplerColors::yellow) :
+										   (looping ? SamplerColors::blue : SamplerColors::green);
 			} else
 				play_color = Colors::off;
 		}
@@ -112,6 +115,17 @@ struct Leds {
 			controls.rev_led.fade_once_ms(Colors::red, 1000);
 			controls.bank_led.fade_once_ms(Colors::red, 1000);
 			controls.play_led.fade_once_ms(Colors::red, 1000);
+		}
+
+		if (flags.take(Flag::ToggleStereoModeAnimate)) {
+			if (stereo_mode) {
+				// mono->stereo
+				controls.rev_led.fade_once_ms(Colors::cyan, 500);
+				controls.bank_led.fade_once_ms(Colors::black, 500);
+			} else {
+				// stereo -> mono
+				controls.play_led.fade_once_ms(Colors::white, 500);
+			}
 		}
 
 		// Sample Slot Change

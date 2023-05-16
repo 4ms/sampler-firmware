@@ -77,6 +77,8 @@ private:
 	SampleIndex index;
 	Flags &flags;
 
+	bool index_needs_writeback = false;
+
 	void load_empty_slots();
 };
 } // namespace SamplerKit

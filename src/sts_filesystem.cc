@@ -61,8 +61,6 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 
 	FRESULT res;
 
-	bool must_write_index = false;
-
 	if (!force_reload) // sampleindex file was ok
 	{
 		pr_log("Valid sample index found\n");
@@ -87,13 +85,11 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 		pr_log("Looking for samples to fill empty slots\n");
 		load_empty_slots();
 
-		// TODO: set this true only if we found new folders, missing files, or filled empty slots
-		must_write_index = true;
 	}
 
 	else // sampleindex file was not ok, or we requested to force a full reload from disk
 	{
-		must_write_index = true;
+		index_needs_writeback = true;
 		pr_log("No valid sample index found, or reload was requested\n");
 
 		// Ignore index and create new banks from disk:
@@ -114,15 +110,22 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 		banks.check_enabled_banks();
 	}
 
-	if (must_write_index)
-		return write_index_and_html();
-	else
-		return FR_OK;
+	if (index_needs_writeback) {
+		if (auto res = write_index_and_html(); res != FR_OK)
+			return res;
+		index_needs_writeback = false;
+	}
+
+	flags.set(Flag::StartupDone);
+	pr_log("Done!\n");
+
+	return FR_OK;
 }
 
 void SampleIndexLoader::handle_events() {
-	if (flags.take(Flag::WriteIndexToSD)) {
+	if (flags.read(Flag::WriteIndexToSD)) {
 		write_index_and_html();
+		flags.clear(Flag::WriteIndexToSD);
 	}
 }
 
@@ -160,9 +163,6 @@ uint8_t SampleIndexLoader::write_index_and_html() {
 		return res;
 	}
 
-	flags.set(Flag::StartupDone);
-	pr_log("Done!\n");
-
 	return FR_OK;
 }
 
@@ -196,8 +196,7 @@ void SampleIndexLoader::load_empty_slots(void) {
 		for (samplenum = 0; samplenum < NumSamplesPerBank; samplenum++) {
 			if (!samples[bank][samplenum].filename[0]) // For each empty slot:
 			{
-				sd.find_next_ext_in_dir_alpha(
-					0, 0, 0, Sdcard::Sdcard::FIND_ALPHA_INIT_FOLDER); // Initialize alphabetical folder search
+				sd.find_next_ext_in_dir_alpha(0, 0, 0, Sdcard::Sdcard::FIND_ALPHA_INIT_FOLDER);
 				samples[bank][samplenum].file_status = FileStatus::NotFound;
 
 				while (samples[bank][samplenum].file_status == FileStatus::NotFound)
@@ -223,6 +222,10 @@ void SampleIndexLoader::load_empty_slots(void) {
 						{
 							str_cpy(samples[bank][samplenum].filename, fullpath); // Set the filename (full path)
 							samples[bank][samplenum].file_status = FileStatus::Found;
+							index_needs_writeback = true;
+							pr_dbg("Found file to fill empty slot %d in bank %d, index will be re-written\n",
+								   samplenum,
+								   bank);
 						}
 					}
 					f_close(&temp_file);
@@ -235,7 +238,7 @@ void SampleIndexLoader::load_empty_slots(void) {
 
 // Go through all banks and samples,
 // If file_found==0, then look for a file to fill the slot:
-// For example, let samples[][].filename == "path/to/file.wav":
+// For example, let samples[][].filename == "path/file.wav":
 //  - Scan all .wav files in path alphabetically (path/*.wav), in two passes:
 //    --First pass: Look for a .wav file that isn't assigned anywhere
 //    --Second pass: Look for a .wav file that isn't assigned in this bank (but may be assigned in some other bank)
@@ -250,7 +253,6 @@ void SampleIndexLoader::load_missing_files(void) {
 
 	FIL temp_file;
 	FRESULT res = FR_OK;
-	// uint8_t		path_len;
 	uint8_t first_pass = 1;
 
 	for (bank = 0; bank < MaxNumBanks; bank++) // Scan samples[][] for non-blank filename with file_found==0
@@ -258,9 +260,8 @@ void SampleIndexLoader::load_missing_files(void) {
 
 		for (samplenum = 0; samplenum < NumSamplesPerBank; samplenum++) {
 			if (samples[bank][samplenum].filename[0] && samples[bank][samplenum].file_status == FileStatus::NotFound) {
-				if (str_split(samples[bank][samplenum].filename, '/', path, filename) ==
-					0) // split up filename into path and filename
-				{
+				// split filename into path and filename
+				if (str_split(samples[bank][samplenum].filename, '/', path, filename) == 0) {
 					// no slashes exist in filename, so path is the root dir
 					path[0] = '\0'; // root dir
 					str_cpy(filename, samples[bank][samplenum].filename);
@@ -270,13 +271,7 @@ void SampleIndexLoader::load_missing_files(void) {
 				str_cpy(path_noslash, path);
 				trim_slash(path_noslash);
 
-				// path_len = str_len(path);
-				// str_cpy(path_noslash, path);
-				// if (path[path_len-1] == '/')
-				// 	path_noslash[path_len-1]='\0';
-
-				sd.find_next_ext_in_dir_alpha(
-					0, 0, 0, Sdcard::Sdcard::FIND_ALPHA_INIT_FOLDER); // Initialize alphabetical folder search
+				sd.find_next_ext_in_dir_alpha(0, 0, 0, Sdcard::Sdcard::FIND_ALPHA_INIT_FOLDER);
 
 				while (samples[bank][samplenum].file_status == FileStatus::NotFound) // for each file not found:
 				{
@@ -314,6 +309,10 @@ void SampleIndexLoader::load_missing_files(void) {
 						if (res == FR_OK) {
 							str_cpy(samples[bank][samplenum].filename, fullpath); // Set the filename (full path)
 							samples[bank][samplenum].file_status = FileStatus::Found;
+							index_needs_writeback = true;
+							pr_log("Filled slot with missing file (slot %d in bank %d), index will be re-written\n",
+								   samplenum,
+								   bank);
 							banks.enable_bank(bank);
 						}
 					}
@@ -476,6 +475,8 @@ void SampleIndexLoader::load_new_folders(void) {
 					banks.copy_bank(samples[bank], test_bank);
 					banks.enable_bank(bank);
 					bank_loaded = 1;
+					index_needs_writeback = true;
+					pr_dbg("Index will be re-written\n");
 					break; // exit the for loop
 				}
 			}
@@ -486,7 +487,9 @@ void SampleIndexLoader::load_new_folders(void) {
 				banks.copy_bank(samples[bank], test_bank);
 				banks.enable_bank(bank);
 				bank_loaded = 1;
+				index_needs_writeback = true;
 				pr_dbg("Not a recognized color name, loading into %d\n", bank);
+				pr_dbg("Index will be re-written\n");
 			}
 		} else {
 			pr_dbg("Failed to load folder as a bank\n");

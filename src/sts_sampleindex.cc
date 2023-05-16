@@ -729,10 +729,8 @@ FRESULT SampleIndex::load_sampleindex_file(SampleIndex::IndexSelection use_backu
 										full_path); // use whatever file_name was opened
 								samples[cur_bank][cur_sample].file_status = FileStatus::Found;
 								sample_was_loaded = true; // At least a sample was loaded
-								head_load =
-									load_sample_header(&samples[cur_bank][cur_sample],
-													   &temp_wav_file); // load sample information from .wav header
-								f_close(&temp_wav_file);				// close wav file
+								head_load = load_sample_header(&samples[cur_bank][cur_sample], &temp_wav_file);
+								f_close(&temp_wav_file);
 							} else {
 								f_close(&temp_wav_file);
 								load_data = 0;

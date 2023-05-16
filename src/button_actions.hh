@@ -12,6 +12,7 @@ namespace SamplerKit
 struct ButtonActionHandler {
 	Flags &flags;
 	Controls &controls;
+	UserSettings &settings;
 	std::array<PotState, NumPots> &pot_state;
 
 	bool ignore_bank_release = false;
@@ -23,10 +24,14 @@ struct ButtonActionHandler {
 	static constexpr uint32_t one_sec = Brain::ParamUpdateHz;
 	static constexpr uint32_t two_sec = Brain::ParamUpdateHz * 2.f;
 
-	ButtonActionHandler(Flags &flags, Controls &controls, std::array<PotState, NumPots> &pot_state)
+	ButtonActionHandler(Flags &flags,
+						Controls &controls,
+						std::array<PotState, NumPots> &pot_state,
+						UserSettings &settings)
 		: flags{flags}
 		, controls{controls}
-		, pot_state{pot_state} {}
+		, pot_state{pot_state}
+		, settings{settings} {}
 
 	// TODO: put all button ops in process() and check in each button combo for op_mode
 	void process(OperationMode op_mode, bool looping) {
@@ -146,6 +151,11 @@ struct ButtonActionHandler {
 			}
 
 			ignore_rev_release = false;
+		} else {
+			for (auto &pot : pot_state) {
+				if (pot.moved_while_rev_down)
+					ignore_rev_release = true;
+			}
 		}
 	}
 

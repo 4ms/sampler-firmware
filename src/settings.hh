@@ -67,8 +67,7 @@ struct UserSettings {
 	void update_fade_rates() {
 		// FIXME: Check what BlockSize should be
 		// STS uses HT16_CHAN_BUFF_LEN which is 16 (FramesPerBlock)
-		fade_up_rate =
-			TimingCalcs::calc_fade_updown_rate(record_sample_rate, AudioStreamConf::BlockSize / 2., fade_time_ms);
+		fade_up_rate = TimingCalcs::calc_fade_updown_rate(record_sample_rate, AudioStreamConf::BlockSize, fade_time_ms);
 		fade_down_rate = fade_up_rate;
 	}
 };

@@ -40,7 +40,7 @@ struct Params {
 	CVCalibrator cv_cal{flags};
 
 	Leds leds{flags, controls};
-	ButtonActionHandler button_handler{flags, controls, pot_state};
+	ButtonActionHandler button_handler{flags, controls, pot_state, settings};
 
 	uint32_t bank = 0;
 	uint32_t sample = 0;
@@ -135,17 +135,22 @@ private:
 	void update_length() {
 		auto &pot = pot_state[LengthPot];
 		float potval;
+
 		if (pot.moved_while_rev_down) {
-			// Rev + Length = envelope fade time
 			potval = pot.latched_val;
+
+			// Rev + Length = envelope fade time
 			settings.fade_time_ms = pot.cur_val / 102.4f; // 0..40ms
 			settings.update_fade_rates();
 
 			// disable envelopes when setting is close to zero
-			settings.perc_env = settings.perc_env ? (pot.cur_val > 10) : (pot.cur_val > 20);
+			settings.perc_env = settings.perc_env ? (pot.cur_val > 30) : (pot.cur_val > 40);
 			settings.fadeupdown_env = settings.perc_env;
-		} else
-			potval = pot.cur_val;
+		} else {
+			if (pot.is_catching_up && std::abs(pot.latched_val - pot.cur_val) < 6)
+				pot.is_catching_up = false;
+			potval = pot.is_catching_up ? pot.latched_val : pot.cur_val;
+		}
 
 		length = (potval + cv_state[LengthCV].cur_val) / 4096.f;
 		if (length < 0.005f)
@@ -201,7 +206,7 @@ private:
 
 			int16_t diff = std::abs(pot.cur_val - pot.prev_val);
 			if (diff > Brain::MinPotChange) {
-				pot.track_moving_ctr = 250; // 250 for 6kHz = 42ms
+				pot.track_moving_ctr = 50; // 250 for 6kHz = 42ms
 			}
 
 			if (pot.track_moving_ctr) {

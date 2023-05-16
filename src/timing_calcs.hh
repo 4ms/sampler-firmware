@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 
 namespace SamplerKit
@@ -35,11 +36,8 @@ inline uint32_t calc_pitch_latch_time(uint8_t trig_delay_setting) {
 	// return (0);
 }
 
-inline float calc_fade_updown_rate(float sample_rate, float ht16_chan_buff_len, uint8_t time_ms) {
-	// map 0..255 => 1/HT16_CHAN_BUFF_LEN .. 1/(0.05 * 44100.f) = one buffer to 50ms
-	float range = 0.05f * sample_rate - ht16_chan_buff_len;
-	float offset = ht16_chan_buff_len;
-	return 1.0f / ((((float)time_ms) / 255.0f) * range + offset);
+inline float calc_fade_updown_rate(float sample_rate, float ht16_chan_buff_len, float time_ms) {
+	return 1.f / std::max(ht16_chan_buff_len, sample_rate * (time_ms / 1000.f));
 }
 
 } // namespace TimingCalcs

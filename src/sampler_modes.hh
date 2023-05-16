@@ -241,14 +241,17 @@ public:
 		rs = params.pitch * ((float)s_sample->sampleRate / params.settings.record_sample_rate);
 
 		// Determine starting and ending addresses
-		if (s_sample->num_cues > 0) {
+		if (params.settings.use_cues && s_sample->num_cues > 0) {
 			anchor_cuenum = calc_start_cuenum(params.start, s_sample);
 		} else
 			anchor_cuenum = -1;
 
-		uint32_t earlier_pos = calc_start_point(params.start, s_sample);
+		uint32_t earlier_pos = calc_start_point(params.start, s_sample, params.settings.use_cues);
 		uint32_t later_pos = calc_stop_point(
 			params.length, rs, s_sample, earlier_pos, anchor_cuenum, params.settings.record_sample_rate);
+
+		int stop_cuenum = calc_stop_cuenum(anchor_cuenum, params.length * 2.f - 1.f, s_sample);
+		printf_("Cue: %d (%d) - %d (%d)\n", anchor_cuenum, earlier_pos, stop_cuenum, later_pos);
 
 		if (params.reverse) {
 			sample_file_endpos = earlier_pos;

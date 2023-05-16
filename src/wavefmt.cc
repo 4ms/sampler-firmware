@@ -91,7 +91,7 @@ void create_waveheader(
 	f->bitsPerSample = bitsPerSample;
 }
 
-void create_chunk(uint32_t chunkId, uint32_t chunkSize, WaveChunk *wc) {
+void create_chunk(uint32_t chunkId, uint32_t chunkSize, WaveChunkHeader *wc) {
 	wc->chunkId = chunkId;
 	wc->chunkSize = chunkSize;
 }

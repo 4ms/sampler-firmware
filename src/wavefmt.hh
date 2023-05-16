@@ -45,8 +45,7 @@ struct WaveHeader {
 	uint32_t WAVEId;
 };
 
-struct WaveChunk {
-	// Data Subchunk
+struct WaveChunkHeader {
 	uint32_t chunkId;
 	uint32_t chunkSize;
 };
@@ -66,28 +65,30 @@ struct WaveFmtChunk {
 struct WaveHeaderAndChunk {
 	WaveHeader wh;
 	WaveFmtChunk fc;
-	WaveChunk wc;
+	WaveChunkHeader wc;
 };
 
 struct CueMarker {
 	uint32_t index;
 	uint32_t position;
-	uint32_t data_slug;	  // always ccDATA
+	uint32_t data_slug;	  // always 'data' (use) or 'sint' (ignore)
 	uint32_t chunk_start; // 00000000
 	uint32_t block_start; // 00000000
 	uint32_t sample_start;
 };
+static_assert(sizeof(CueMarker) == 24);
 
 struct CueChunk {
 	uint32_t num_cues;
 	CueMarker cues[];
 };
+static_assert(sizeof(CueChunk) == 4);
 
 uint8_t is_valid_wav_header(WaveHeader sample_header);
 uint8_t is_valid_format_chunk(WaveFmtChunk fmt_chunk);
 
 void create_waveheader(
 	WaveHeader *w, WaveFmtChunk *f, uint8_t bitsPerSample, uint8_t numChannels, uint32_t sample_rate);
-void create_chunk(uint32_t chunkId, uint32_t chunkSize, WaveChunk *wc);
+void create_chunk(uint32_t chunkId, uint32_t chunkSize, WaveChunkHeader *wc);
 
 } // namespace SamplerKit

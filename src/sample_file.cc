@@ -84,6 +84,20 @@ FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd) {
 	return res;
 }
 
+static uint32_t read(FIL *file, void *data, uint32_t bytes_to_read, unsigned int *bytes_read) {
+	FRESULT res = f_read(file, data, bytes_to_read, bytes_read);
+
+	if (res != FR_OK) {
+		f_close(file);
+		return HEADER_READ_FAIL;
+	}
+	if (bytes_to_read < *bytes_read) {
+		f_close(file);
+		return FILE_WAVEFORMATERR;
+	}
+	return 0;
+}
+
 //
 // Load the sample header from the provided file
 //
@@ -93,57 +107,33 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 	FRESULT res;
 	UINT br;
 	uint32_t rd;
-	WaveChunk chunk;
+	WaveChunkHeader chunk_hdr;
 	uint32_t next_chunk_start;
 
 	rd = sizeof(WaveHeader);
-	res = f_read(sample_file, &sample_header, rd, &br);
+	if (auto err = read(sample_file, &sample_header, rd, &br); err)
+		return err;
 
-	// TODO: return this error?
-	uint32_t g_error = 0;
-
-	if (res != FR_OK) {
-		g_error |= HEADER_READ_FAIL;
-		return g_error;
-	} // file not opened
-	else if (br < rd)
-	{
-		g_error |= FILE_WAVEFORMATERR;
+	if (!is_valid_wav_header(sample_header)) {
 		f_close(sample_file);
-		return g_error;
-	} // file ended unexpectedly when reading first header
-	else if (!is_valid_wav_header(sample_header))
-	{
-		g_error |= FILE_WAVEFORMATERR;
-		f_close(sample_file);
-		return g_error;
-	} // first header error (not a valid wav file)
+		return FILE_WAVEFORMATERR;
+	}
 
 	// Look for a WaveFmtChunk (which starts off as a chunk)
-	chunk.chunkId = 0;
-	rd = sizeof(WaveChunk);
+	chunk_hdr.chunkId = 0;
+	rd = sizeof(WaveChunkHeader);
 
-	while (chunk.chunkId != ccFMT) {
-		res = f_read(sample_file, &chunk, rd, &br);
-
-		if (res != FR_OK) {
-			g_error |= HEADER_READ_FAIL;
-			f_close(sample_file);
-			return g_error;
-		}
-		if (br < rd) {
-			g_error |= FILE_WAVEFORMATERR;
-			f_close(sample_file);
-			return g_error;
-		}
+	while (chunk_hdr.chunkId != ccFMT) {
+		if (auto err = read(sample_file, &chunk_hdr, rd, &br); err)
+			return err;
 
 		// Fix an odd-sized chunk, it should always be even
-		if (chunk.chunkSize & 0b1)
-			chunk.chunkSize++;
+		if (chunk_hdr.chunkSize & 0b1)
+			chunk_hdr.chunkSize++;
 
-		next_chunk_start = f_tell(sample_file) + chunk.chunkSize;
+		next_chunk_start = f_tell(sample_file) + chunk_hdr.chunkSize;
 		// fast-forward to the next chunk
-		if (chunk.chunkId != ccFMT)
+		if (chunk_hdr.chunkId != ccFMT)
 			f_lseek(sample_file, next_chunk_start);
 	}
 
@@ -153,104 +143,96 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 
 	// Re-read the whole chunk (or at least the fields we need) since it's a WaveFmtChunk
 	rd = sizeof(WaveFmtChunk);
-	res = f_read(sample_file, &fmt_chunk, rd, &br);
+	if (auto err = read(sample_file, &fmt_chunk, rd, &br); err)
+		return err;
 
-	if (res != FR_OK) {
-		g_error |= HEADER_READ_FAIL;
-		return g_error;
-	} // file not read
-	else if (br < rd)
-	{
-		g_error |= FILE_WAVEFORMATERR;
+	if (!is_valid_format_chunk(fmt_chunk)) {
 		f_close(sample_file);
-		return g_error;
-	} // file ended unexpectedly when reading format header
-	else if (!is_valid_format_chunk(fmt_chunk))
-	{
-		g_error |= FILE_WAVEFORMATERR;
-		f_close(sample_file);
-		return g_error;
-	} // format header error (not a valid wav file)
-	// We found the 'fmt ' chunk, now skip to the next chunk
-	// Note: this is necessary in case the 'fmt ' chunk is not exactly sizeof(WaveFmtChunk) bytes, even
-	// though that's how many we care about
-	f_lseek(sample_file, next_chunk_start);
-
-	// Look for the DATA chunk
-	chunk.chunkId = 0;
-	rd = sizeof(WaveChunk);
-
-	while (chunk.chunkId != ccDATA) {
-		res = f_read(sample_file, &chunk, rd, &br);
-
-		if (res != FR_OK) {
-			g_error |= HEADER_READ_FAIL;
-			f_close(sample_file);
-			return FR_INT_ERR;
-		}
-		if (br < rd) {
-			g_error |= FILE_WAVEFORMATERR;
-			f_close(sample_file);
-			return FR_INT_ERR;
-		}
-
-		// Fix an odd-sized chunk, it should always be even
-		if (chunk.chunkSize & 0b1)
-			chunk.chunkSize++;
-
-		// keeping scanning until we find the data chunk
-		if (chunk.chunkId != ccDATA) {
-			f_lseek(sample_file, f_tell(sample_file) + chunk.chunkSize);
-			continue;
-		}
-
-		// check valid data chunk size
-		if (chunk.chunkSize == 0) {
-			f_close(sample_file);
-			return FR_INT_ERR;
-		}
-
-		// Check the file is really as long as the data chunkSize says it is
-		if (f_size(sample_file) < (f_tell(sample_file) + chunk.chunkSize)) {
-			chunk.chunkSize = f_size(sample_file) - f_tell(sample_file);
-		}
-
-		s_sample->sampleSize = chunk.chunkSize;
-		s_sample->sampleByteSize = fmt_chunk.bitsPerSample >> 3;
-		s_sample->sampleRate = fmt_chunk.sampleRate;
-		s_sample->numChannels = fmt_chunk.numChannels;
-		s_sample->blockAlign = fmt_chunk.numChannels * fmt_chunk.bitsPerSample >> 3;
-		s_sample->startOfData = f_tell(sample_file);
-
-		if (fmt_chunk.audioFormat == 0xFFFE)
-			s_sample->PCM = 3;
-		else
-			s_sample->PCM = fmt_chunk.audioFormat;
-
-		s_sample->file_status = FileStatus::Found;
-		s_sample->inst_end = s_sample->sampleSize;
-		s_sample->inst_size = s_sample->sampleSize;
-		s_sample->inst_start = 0;
-		s_sample->inst_gain = 1.0;
-
-		// TODO: populate from cues chunk
-		// Discad cue at 0 if it exists (sample knob at 0 always plays from beginning)
-		// Sort cues in order, low to high
-		// Units is in sample (frame) number
-		s_sample->num_cues = 0;
-		if (s_sample->sampleSize == 3045772) // Wobbly Sample
-		{
-			s_sample->num_cues = 4;
-			s_sample->cue[0] = 0;
-			s_sample->cue[1] = 95600;
-			s_sample->cue[2] = 286800;
-			s_sample->cue[3] = 571083;
-		}
-		break;
+		return FILE_WAVEFORMATERR;
 	}
 
-	// TODO: populate cues from labels txt file
-	// if s_sample->num_cues == 0
+	// Populate Sample entry with info from fmt chunk
+	s_sample->sampleByteSize = fmt_chunk.bitsPerSample >> 3;
+	s_sample->sampleRate = fmt_chunk.sampleRate;
+	s_sample->numChannels = fmt_chunk.numChannels;
+	s_sample->blockAlign = fmt_chunk.numChannels * fmt_chunk.bitsPerSample >> 3;
+	s_sample->PCM = (fmt_chunk.audioFormat == 0xFFFE) ? 3 : fmt_chunk.audioFormat;
+
+	// Skip to the next chunk
+	f_lseek(sample_file, next_chunk_start);
+
+	// Look for the data and cue chunks
+	chunk_hdr.chunkId = 0;
+	rd = sizeof(WaveChunkHeader);
+
+	// repeat until we found data and cue, or end of file
+	bool found_data_chunk = false;
+	bool found_cue_chunk = false;
+	while (!found_data_chunk || !found_cue_chunk) {
+		if (auto err = read(sample_file, &chunk_hdr, rd, &br); err)
+			return err;
+
+		// Fix an odd-sized chunk, it should always be even
+		if (chunk_hdr.chunkSize & 0b1)
+			chunk_hdr.chunkSize++;
+
+		if (chunk_hdr.chunkId == ccDATA) {
+			// check valid data chunk size
+			if (chunk_hdr.chunkSize == 0) {
+				f_close(sample_file);
+				return FR_INT_ERR;
+			}
+
+			// Check the file is really as long as the data chunkSize says it is
+			if (f_size(sample_file) < (f_tell(sample_file) + chunk_hdr.chunkSize)) {
+				chunk_hdr.chunkSize = f_size(sample_file) - f_tell(sample_file);
+			}
+
+			s_sample->sampleSize = chunk_hdr.chunkSize;
+			s_sample->startOfData = f_tell(sample_file);
+			s_sample->file_status = FileStatus::Found;
+			s_sample->inst_end = s_sample->sampleSize;
+			s_sample->inst_size = s_sample->sampleSize;
+			s_sample->inst_start = 0;
+			s_sample->inst_gain = 1.0;
+
+			found_data_chunk = true;
+
+		} else if (chunk_hdr.chunkId == ccCUE) {
+			// TODO: populate from cues chunk
+			// Discad cue at 0 if it exists (sample knob at 0 always plays from beginning)
+			// Sort cues in order, low to high
+			// Units is in sample (frame) number
+			// s_sample->num_cues = 0;
+			// if (s_sample->sampleSize == 3045772) // Wobbly Sample
+			// {
+			// 	s_sample->num_cues = 4;
+			// 	s_sample->cue[0] = 0;
+			// 	s_sample->cue[1] = 95600;
+			// 	s_sample->cue[2] = 286800;
+			// 	s_sample->cue[3] = 571083;
+			// }
+			found_cue_chunk = true;
+
+		} else {
+			// stop if this is the last chunk
+			next_chunk_start = f_tell(sample_file) + chunk_hdr.chunkSize;
+			if ((next_chunk_start + sizeof(WaveChunkHeader)) >= f_size(sample_file))
+				break;
+
+			// keeping scanning chunks
+			f_lseek(sample_file, next_chunk_start);
+		}
+	}
+
+	if (!found_data_chunk)
+		return FILE_WAVEFORMATERR;
+
+	if (!found_cue_chunk) {
+		s_sample->num_cues = 0;
+		// TODO: Search for labels txt file and populate cues from it
+	}
+
 	return 0;
 }
 

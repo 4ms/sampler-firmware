@@ -10,15 +10,17 @@ TEST_SOURCES += $(wildcard $(TEST_DIR)/*_tests.cc)
 TEST_SOURCES += $(wildcard $(TEST_DIR)/*_tests.cpp)
 TEST_SOURCES += $(wildcard $(TEST_DIR)/test_*.cc)
 TEST_SOURCES += $(wildcard $(TEST_DIR)/test_*.cpp)
+TEST_SOURCES += src/sample_header.cc
+TEST_SOURCES += src/wavefmt.cc
 
 BUILDDIR = $(TEST_DIR)/build
 
 CXXFLAGS = 	-Wall \
 			-Wextra \
 		 	-std=c++2b \
-			-I. \
 			-Istubs \
 			-Itests/stubs \
+			-I. \
 			-I.. \
 			-Isrc \
 			-Ilib/cpputil \

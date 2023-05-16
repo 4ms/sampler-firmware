@@ -40,8 +40,9 @@ struct UserSettingsStorage {
 	}
 
 	void handle_events() {
-		if (flags.take(Flag::WriteSettingsToSD)) {
+		if (flags.read(Flag::WriteSettingsToSD)) {
 			save_user_settings();
+			flags.clear(Flag::WriteSettingsToSD);
 		}
 	}
 

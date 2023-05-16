@@ -36,6 +36,7 @@ namespace SamplerKit
 #define ccRIFF 0x46464952
 #define ccFMT 0x20746D66
 #define ccDATA 0x61746164
+#define ccCUE 0x20657563
 
 struct WaveHeader {
 	// Riff Wave Header
@@ -66,6 +67,20 @@ struct WaveHeaderAndChunk {
 	WaveHeader wh;
 	WaveFmtChunk fc;
 	WaveChunk wc;
+};
+
+struct CueMarker {
+	uint32_t index;
+	uint32_t position;
+	uint32_t data_slug;	  // always ccDATA
+	uint32_t chunk_start; // 00000000
+	uint32_t block_start; // 00000000
+	uint32_t sample_start;
+};
+
+struct CueChunk {
+	uint32_t num_cues;
+	CueMarker cues[];
 };
 
 uint8_t is_valid_wav_header(WaveHeader sample_header);

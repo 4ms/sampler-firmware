@@ -121,6 +121,7 @@ function(create_target target)
     ${root}/src/calibration_storage.cc
     ${root}/src/wavefmt.cc
     ${root}/src/sample_file.cc
+    ${root}/src/sample_header.cc
     ${root}/src/str_util.c
     ${root}/src/sts_filesystem.cc
     ${root}/src/sts_sampleindex.cc

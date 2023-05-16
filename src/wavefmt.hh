@@ -80,7 +80,6 @@ static_assert(sizeof(CueMarker) == 24);
 
 struct CueChunk {
 	uint32_t num_cues;
-	CueMarker cues[];
 };
 static_assert(sizeof(CueChunk) == 4);
 

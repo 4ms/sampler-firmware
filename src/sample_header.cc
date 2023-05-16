@@ -1,6 +1,7 @@
 #include "sample_header.hh"
 #include "errors.hh"
 #include "wavefmt.hh"
+#include <cstdio>
 
 namespace SamplerKit
 {
@@ -14,6 +15,7 @@ static uint32_t read(FIL *file, void *data, uint32_t bytes_to_read, unsigned int
 	}
 	if (bytes_to_read < *bytes_read) {
 		f_close(file);
+		// printf_("Read %d bytes, requested %d\n", *bytes_read, bytes_to_read);
 		return FILE_WAVEFORMATERR;
 	}
 	return 0;
@@ -44,8 +46,10 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 	rd = sizeof(WaveChunkHeader);
 
 	while (chunk_hdr.chunkId != ccFMT) {
-		if (auto err = read(sample_file, &chunk_hdr, rd, &br); err)
+		if (auto err = read(sample_file, &chunk_hdr, rd, &br); err) {
+			// printf_("fmt chunk read err\n");
 			return err;
+		}
 
 		// Fix an odd-sized chunk, it should always be even
 		if (chunk_hdr.chunkSize & 0b1)
@@ -59,7 +63,7 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 
 	// Go back to beginning of chunk --probably could do this more elegantly by removing fmtID and fmtSize from
 	// WaveFmtChunk and just reading the next bit of data
-	f_lseek(sample_file, f_tell(sample_file) - br);
+	f_lseek(sample_file, f_tell(sample_file) - sizeof(WaveChunkHeader));
 
 	// Re-read the whole chunk (or at least the fields we need) since it's a WaveFmtChunk
 	rd = sizeof(WaveFmtChunk);
@@ -67,6 +71,7 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 		return err;
 
 	if (!is_valid_format_chunk(fmt_chunk)) {
+		// printf_("Invalid format chunk: %x %x %x\n", fmt_chunk.byteRate, fmt_chunk.audioFormat, fmt_chunk.sampleRate);
 		f_close(sample_file);
 		return FILE_WAVEFORMATERR;
 	}
@@ -92,9 +97,13 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 		if (auto err = read(sample_file, &chunk_hdr, rd, &br); err)
 			return err;
 
+		next_chunk_start = f_tell(sample_file) + chunk_hdr.chunkSize;
+
 		// Fix an odd-sized chunk, it should always be even
-		if (chunk_hdr.chunkSize & 0b1)
+		if (chunk_hdr.chunkSize & 0b1) {
+			// printf("Invalid chunkSize (%d), adding 1\n", chunk_hdr.chunkSize);
 			chunk_hdr.chunkSize++;
+		}
 
 		if (chunk_hdr.chunkId == ccDATA) {
 			// check valid data chunk size
@@ -121,34 +130,41 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 		} else if (chunk_hdr.chunkId == ccCUE) {
 			// Re-read the whole chunk (or at least the fields we need) since it's a WaveFmtChunk
 			rd = chunk_hdr.chunkSize;
+			if (rd == 0)
+				continue;
+
 			CueChunk cue_chunk;
-			if (auto err = read(sample_file, &cue_chunk, rd, &br); err)
+			if (auto err = read(sample_file, &cue_chunk, sizeof(CueChunk), &br); err)
 				continue; // ignore cue chunk in case of error
 
 			s_sample->num_cues = cue_chunk.num_cues;
+
 			unsigned s_i = 0;
 			for (unsigned c_i = 0; c_i < cue_chunk.num_cues; c_i++) {
-				auto start = cue_chunk.cues[c_i].sample_start;
+				CueMarker cue;
+				if (auto err = read(sample_file, &cue, sizeof(CueMarker), &br); err)
+					continue; // ignore cue chunk in case of error
+				auto start = cue.sample_start;
 				// Use non-zero cues that are increasing
 				// TODO: take all non-zero cues and then sort
 				if (start > 0) {
-					if (s_i == 0 || start > s_sample->cue[s_i - 1])
+					if (s_i == 0 || start > s_sample->cue[s_i - 1]) {
 						s_sample->cue[s_i++] = start;
+					}
+					// else printf("Skipped\n");
 				}
 			}
-			// Units is in sample (frame) number
+			// FIXME: Units is in sample (frame) number
 
 			found_cue_chunk = true;
-
-		} else {
-			// stop if this is the last chunk
-			next_chunk_start = f_tell(sample_file) + chunk_hdr.chunkSize;
-			if ((next_chunk_start + sizeof(WaveChunkHeader)) >= f_size(sample_file))
-				break;
-
-			// keeping scanning chunks
-			f_lseek(sample_file, next_chunk_start);
 		}
+
+		// stop if this is the last chunk
+		if ((next_chunk_start + sizeof(WaveChunkHeader)) >= f_size(sample_file))
+			break;
+
+		// keeping scanning chunks
+		f_lseek(sample_file, next_chunk_start);
 	}
 
 	if (!found_data_chunk)

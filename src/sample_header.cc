@@ -3,6 +3,10 @@
 #include "wavefmt.hh"
 #include <cstdio>
 
+#if TESTPROJECT
+#define printf_ printf
+#endif
+
 namespace SamplerKit
 {
 
@@ -101,7 +105,7 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 
 		// Fix an odd-sized chunk, it should always be even
 		if (chunk_hdr.chunkSize & 0b1) {
-			// printf("Invalid chunkSize (%d), adding 1\n", chunk_hdr.chunkSize);
+			// printf_("Invalid chunkSize (%d), adding 1\n", chunk_hdr.chunkSize);
 			chunk_hdr.chunkSize++;
 		}
 
@@ -128,6 +132,8 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 			found_data_chunk = true;
 
 		} else if (chunk_hdr.chunkId == ccCUE) {
+			// TODO: skip searching for cues if disabled in settings
+
 			// Re-read the whole chunk (or at least the fields we need) since it's a WaveFmtChunk
 			rd = chunk_hdr.chunkSize;
 			if (rd == 0)
@@ -145,13 +151,14 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 				if (auto err = read(sample_file, &cue, sizeof(CueMarker), &br); err)
 					continue; // ignore cue chunk in case of error
 				auto start = cue.sample_start;
+				// printf_("Cue %d @%d\n", c_i, start);
 				// Use non-zero cues that are increasing
 				// TODO: take all non-zero cues and then sort
 				if (start > 0) {
 					if (s_i == 0 || start > s_sample->cue[s_i - 1]) {
 						s_sample->cue[s_i++] = start;
 					}
-					// else printf("Skipped\n");
+					// else printf_("Skipped\n");
 				}
 			}
 			// FIXME: Units is in sample (frame) number

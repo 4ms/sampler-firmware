@@ -51,7 +51,7 @@ struct WaveChunkHeader {
 };
 
 struct WaveFmtChunk {
-	// Format Subchunk
+	// Format Subchunk: includes WaveChunkHeader
 	uint32_t fmtId;
 	uint32_t fmtSize;
 	uint16_t audioFormat;

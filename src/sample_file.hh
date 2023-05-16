@@ -42,7 +42,6 @@ using SampleList = std::array<Bank, MaxNumBanks>;
 constexpr auto SampleSize = sizeof(Sample);
 constexpr auto SampleListSize = sizeof(SampleList);
 
-uint32_t load_sample_header(Sample *s_sample, FIL *sample_file);
 FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd);
 FRESULT create_dir(Sdcard &sd, DIR *dir, const char *dir_name);
 FRESULT new_filename(uint8_t bank_idx, uint8_t sample_num, char *path, Sdcard &sd, Bank &bank);

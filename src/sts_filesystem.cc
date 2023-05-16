@@ -41,7 +41,7 @@
 #include "ff.h"
 #include "log.hh"
 #include "params.hh"
-#include "sample_file.hh"
+#include "sample_header.hh"
 #include "str_util.h"
 #include "sts_sampleindex.hh"
 #include "wavefmt.hh"

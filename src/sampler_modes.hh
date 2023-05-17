@@ -33,13 +33,13 @@ class SamplerModes {
 	uint32_t last_play_start_tmr;
 
 public:
-	// These are used in audio, but probably could move elsewhere
 	// file position where we began playback.
 	uint32_t sample_file_startpos;
 	int anchor_cuenum = -1;
+
 	// file position where we will end playback. endpos > startpos when REV==0, endpos < startpos when REV==1
 	uint32_t sample_file_endpos;
-	int sample_file_end_cuenum = -1;
+
 	// current file position being read. Must match the actual open file's position. This is always inc/decrementing
 	// from startpos towards endpos
 	uint32_t sample_file_curpos[NumSamplesPerBank];
@@ -48,6 +48,7 @@ public:
 	// TODO: These are shared between SampleLoader and SamplerModes, re-factor these into a struct?
 	FIL fil[NumSamplesPerBank];
 	Cache cache[NumSamplesPerBank];
+
 	// Whether file is totally cached (from inst_start to inst_end)
 	bool is_buffered_to_file_end[NumSamplesPerBank];
 	uint32_t play_buff_bufferedamt[NumSamplesPerBank];
@@ -71,7 +72,6 @@ public:
 		, g_error{g_error} {
 
 		Memory::clear();
-		// TODO: init_recbuff();
 		const auto slot_size = (Brain::MemorySizeBytes / NumSamplesPerBank) & 0xFFFFF000; // align
 		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
 			play_buff[i].min = Brain::MemoryStartAddr + (i * slot_size);
@@ -283,7 +283,7 @@ public:
 
 			// Seek to the file position where we will start reading
 			sample_file_curpos[samplenum] = sample_file_startpos;
-			res = SET_FILE_POS(banknum, samplenum);
+			res = set_file_pos(banknum, samplenum);
 
 			// If seeking fails, perhaps we need to reload the file
 			if (res != FR_OK) {
@@ -303,7 +303,7 @@ public:
 					return;
 				}
 
-				res = SET_FILE_POS(banknum, samplenum);
+				res = set_file_pos(banknum, samplenum);
 				if (res != FR_OK) {
 					g_error |= FILE_SEEK_FAIL;
 				}
@@ -403,7 +403,7 @@ public:
 		}
 	}
 
-	FRESULT SET_FILE_POS(uint8_t b, uint8_t s) {
+	FRESULT set_file_pos(uint8_t b, uint8_t s) {
 		FRESULT r = f_lseek(&fil[s], samples[b][s].startOfData + sample_file_curpos[s]);
 		if (fil[s].fptr != (samples[b][s].startOfData + sample_file_curpos[s]))
 			g_error |= LSEEK_FPTR_MISMATCH;
@@ -431,7 +431,7 @@ public:
 		// This gets us ready to start reading from the new position
 		if (fil[samplenum].obj.id > 0) {
 			FRESULT res;
-			res = SET_FILE_POS(banknum, samplenum);
+			res = set_file_pos(banknum, samplenum);
 			if (res != FR_OK)
 				g_error |= FILE_SEEK_FAIL;
 		}

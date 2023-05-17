@@ -28,6 +28,7 @@ struct UserSettingsStorage {
 		TrigDelay,
 		FadeUpDownTime,
 		AutoIncRecSlot,
+		UseCues,
 	};
 
 	UserSettingsStorage(Sdcard &sd, Flags &flags)
@@ -39,8 +40,9 @@ struct UserSettingsStorage {
 	}
 
 	void handle_events() {
-		if (flags.take(Flag::WriteSettingsToSD)) {
+		if (flags.read(Flag::WriteSettingsToSD)) {
 			save_user_settings();
+			flags.clear(Flag::WriteSettingsToSD);
 		}
 	}
 
@@ -55,6 +57,7 @@ struct UserSettingsStorage {
 		settings.trig_delay = 8;
 		settings.fade_time_ms = 24;
 		settings.auto_inc_slot_num_after_rec_trig = false;
+		settings.use_cues = false;
 	}
 
 	FRESULT save_user_settings() {
@@ -102,6 +105,7 @@ struct UserSettingsStorage {
 				 "## [FADE TIME] can be a number between 0 and 255 which sets the fade in/out time in milliseconds. "
 				 "(0 is actually 0.36ms, and 255 is 255ms. Default is 24)\n");
 		f_printf(&settings_file, "## [AUTO INCREMENT REC SLOT ON TRIG] can be \"Yes\" or \"No\" (default)\n");
+		f_printf(&settings_file, "## [USE CUES] can be \"Yes\" or \"No\" (default)\n");
 		f_printf(&settings_file, "##\n");
 		f_printf(&settings_file, "## Deleting this file will restore default settings\n");
 		f_printf(&settings_file, "##\n\n");
@@ -203,6 +207,10 @@ struct UserSettingsStorage {
 		// Write Auto Inc Rec Slot setting
 		f_printf(&settings_file, "[AUTO INCREMENT REC SLOT ON TRIG]\n");
 		f_printf(&settings_file, "%s\n\n", settings.auto_inc_slot_num_after_rec_trig ? "Yes" : "No");
+
+		// Write Cues setting
+		f_printf(&settings_file, "[USE CUES]\n");
+		f_printf(&settings_file, "%s\n\n", settings.use_cues ? "Yes" : "No");
 
 		res = f_close(&settings_file);
 
@@ -306,6 +314,11 @@ struct UserSettingsStorage {
 
 				if (str_startswith_nocase(read_buffer, "[AUTO INCREMENT REC SLOT ON TRIG")) {
 					cur_setting_found = AutoIncRecSlot;
+					continue;
+				}
+
+				if (str_startswith_nocase(read_buffer, "[USE CUES")) {
+					cur_setting_found = UseCues;
 					continue;
 				}
 			}
@@ -430,6 +443,12 @@ struct UserSettingsStorage {
 
 			if (cur_setting_found == AutoIncRecSlot) {
 				settings.auto_inc_slot_num_after_rec_trig = (str_startswith_nocase(read_buffer, "Yes")) ? 1 : 0;
+
+				cur_setting_found = NoSetting; // back to looking for headers
+			}
+
+			if (cur_setting_found == UseCues) {
+				settings.use_cues = (str_startswith_nocase(read_buffer, "Yes")) ? 1 : 0;
 
 				cur_setting_found = NoSetting; // back to looking for headers
 			}

@@ -31,6 +31,8 @@ struct Leds {
 	Color last_rev_color = Colors::off;
 	Color last_bank_color = Colors::off;
 
+	bool is_writing_index = false;
+
 	void update(LedCriteria state) {
 		const OperationMode &op_mode = state.op_mode;
 		const PlayStates &play_state = state.play_state;
@@ -126,6 +128,18 @@ struct Leds {
 				// stereo -> mono
 				controls.play_led.fade_once_ms(Colors::white, 500);
 			}
+		}
+
+		if (!is_writing_index && (flags.read(Flag::WriteSettingsToSD) || flags.read(Flag::WriteIndexToSD))) {
+			is_writing_index = true;
+			controls.bank_led.breathe(Colors::red, 100);
+			controls.play_led.breathe(Colors::red, 100);
+			controls.rev_led.breathe(Colors::red, 100);
+		} else if (is_writing_index) {
+			is_writing_index = false;
+			controls.bank_led.reset_breathe();
+			controls.play_led.reset_breathe();
+			controls.rev_led.reset_breathe();
 		}
 
 		// Sample Slot Change

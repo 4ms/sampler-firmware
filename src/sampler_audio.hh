@@ -199,28 +199,24 @@ public:
 
 		// Update the start/endpos based on the length parameter
 		// Update the play_time (used to calculate led flicker and END OUT pulse width
-		// ToDo: we should do this in update_params
+		// ToDo: we should do this in update_params, so we can check if length or pitch changed
+		float sr = params.settings.record_sample_rate;
+		uint32_t anchor_pos = params.reverse ? sampler_modes.sample_file_endpos : sampler_modes.sample_file_startpos;
+		uint32_t ending_pos = calc_stop_point(length, rs, s_sample, anchor_pos, sampler_modes.anchor_cuenum, sr);
+		if (params.reverse)
+			sampler_modes.sample_file_startpos = ending_pos;
+		else
+			sampler_modes.sample_file_endpos = ending_pos;
 
-		float play_time;
-		if (params.reverse) {
-			sampler_modes.sample_file_startpos = calc_stop_point(
-				length, rs, s_sample, sampler_modes.sample_file_endpos, (float)params.settings.record_sample_rate);
-			play_time = (sampler_modes.sample_file_startpos - sampler_modes.sample_file_endpos) /
-						(s_sample->blockAlign * s_sample->sampleRate * params.pitch);
-		} else {
-			sampler_modes.sample_file_endpos = calc_stop_point(
-				length, rs, s_sample, sampler_modes.sample_file_startpos, (float)params.settings.record_sample_rate);
-			play_time = (sampler_modes.sample_file_endpos - sampler_modes.sample_file_startpos) /
-						(s_sample->blockAlign * s_sample->sampleRate * params.pitch);
-		}
-
-		const float fast_perc_fade_rate = calc_fast_perc_fade_rate(length, (float)params.settings.record_sample_rate);
+		const float fast_perc_fade_rate = calc_fast_perc_fade_rate(length, sr);
 
 		// retrig fadedown rate is the faster of perc fade and global non-perc fadedown rate (larger rate == faster
 		// fade)
 		const float fast_retrig_fade_rate = (fast_perc_fade_rate < params.settings.fade_down_rate) ?
 												params.settings.fade_down_rate :
 												fast_perc_fade_rate;
+
+		float play_time = (ending_pos - anchor_pos) / (s_sample->blockAlign * s_sample->sampleRate * params.pitch);
 
 		switch (params.play_state) {
 			case (PlayStates::RETRIG_FADEDOWN):

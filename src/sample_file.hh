@@ -27,52 +27,21 @@
  */
 
 #pragma once
+#include "elements.hh"
 #include "ff.h"
+#include "sample_type.hh"
 #include "sdcard.hh"
+#include <array>
 
 namespace SamplerKit
 {
-enum class FileStatus { NotFound = 0, Found = 1, NewFile = 2 };
-
-struct Sample {
-	char filename[FF_MAX_LFN];
-	uint32_t sampleSize;
-	uint32_t startOfData;
-	uint8_t sampleByteSize;
-	uint32_t sampleRate;
-	uint8_t numChannels;
-	uint8_t blockAlign;
-
-	uint32_t inst_start;
-	uint32_t inst_end;
-	uint32_t inst_size;
-	float inst_gain;
-
-	uint16_t PCM;
-	FileStatus file_status;
-
-	Sample() { clear(); }
-	void clear() {
-		filename[0] = 0;
-		sampleSize = 0;
-		sampleByteSize = 0;
-		sampleRate = 0;
-		numChannels = 0;
-		blockAlign = 0;
-		startOfData = 0;
-		PCM = 0;
-		file_status = FileStatus::NotFound;
-		inst_start = 0;
-		inst_end = 0;
-		inst_size = 0;
-		inst_gain = 1.0;
-	}
-};
 
 using Bank = std::array<Sample, NumSamplesPerBank>;
 using SampleList = std::array<Bank, MaxNumBanks>;
 
-uint32_t load_sample_header(Sample *s_sample, FIL *sample_file);
+constexpr auto SampleSize = sizeof(Sample);
+constexpr auto SampleListSize = sizeof(SampleList);
+
 FRESULT reload_sample_file(FIL *fil, Sample *s_sample, Sdcard &sd);
 FRESULT create_dir(Sdcard &sd, DIR *dir, const char *dir_name);
 FRESULT new_filename(uint8_t bank_idx, uint8_t sample_num, char *path, Sdcard &sd, Bank &bank);

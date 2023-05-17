@@ -33,11 +33,13 @@ class SamplerModes {
 	uint32_t last_play_start_tmr;
 
 public:
-	// These are used in audio, but probably could move elsewhere
 	// file position where we began playback.
 	uint32_t sample_file_startpos;
+	int anchor_cuenum = -1;
+
 	// file position where we will end playback. endpos > startpos when REV==0, endpos < startpos when REV==1
 	uint32_t sample_file_endpos;
+
 	// current file position being read. Must match the actual open file's position. This is always inc/decrementing
 	// from startpos towards endpos
 	uint32_t sample_file_curpos[NumSamplesPerBank];
@@ -46,6 +48,7 @@ public:
 	// TODO: These are shared between SampleLoader and SamplerModes, re-factor these into a struct?
 	FIL fil[NumSamplesPerBank];
 	Cache cache[NumSamplesPerBank];
+
 	// Whether file is totally cached (from inst_start to inst_end)
 	bool is_buffered_to_file_end[NumSamplesPerBank];
 	uint32_t play_buff_bufferedamt[NumSamplesPerBank];
@@ -69,7 +72,6 @@ public:
 		, g_error{g_error} {
 
 		Memory::clear();
-		// TODO: init_recbuff();
 		const auto slot_size = (Brain::MemorySizeBytes / NumSamplesPerBank) & 0xFFFFF000; // align
 		for (unsigned i = 0; i < NumSamplesPerBank; i++) {
 			play_buff[i].min = Brain::MemoryStartAddr + (i * slot_size);
@@ -239,14 +241,25 @@ public:
 		rs = params.pitch * ((float)s_sample->sampleRate / params.settings.record_sample_rate);
 
 		// Determine starting and ending addresses
+		if (params.settings.use_cues && s_sample->num_cues > 0) {
+			anchor_cuenum = calc_start_cuenum(params.start, s_sample);
+		} else
+			anchor_cuenum = -1;
+
+		uint32_t earlier_pos = calc_start_point(params.start, s_sample, anchor_cuenum, params.settings.use_cues);
+
+		// TODO: this should be updated continuously in params.update()
+		// whenenver length, pitch, start, or sample slot/bank changes
+		// => params.file_startpos, params.file_endpos
+		uint32_t later_pos = calc_stop_point(
+			params.length, rs, s_sample, earlier_pos, anchor_cuenum, params.settings.record_sample_rate);
+
 		if (params.reverse) {
-			sample_file_endpos = calc_start_point(params.start, s_sample);
-			sample_file_startpos =
-				calc_stop_point(params.length, rs, s_sample, sample_file_endpos, params.settings.record_sample_rate);
+			sample_file_endpos = earlier_pos;
+			sample_file_startpos = later_pos;
 		} else {
-			sample_file_startpos = calc_start_point(params.start, s_sample);
-			sample_file_endpos =
-				calc_stop_point(params.length, rs, s_sample, sample_file_startpos, params.settings.record_sample_rate);
+			sample_file_startpos = earlier_pos;
+			sample_file_endpos = later_pos;
 		}
 
 		// See if the starting position is already cached
@@ -271,7 +284,7 @@ public:
 
 			// Seek to the file position where we will start reading
 			sample_file_curpos[samplenum] = sample_file_startpos;
-			res = SET_FILE_POS(banknum, samplenum);
+			res = set_file_pos(banknum, samplenum);
 
 			// If seeking fails, perhaps we need to reload the file
 			if (res != FR_OK) {
@@ -291,7 +304,7 @@ public:
 					return;
 				}
 
-				res = SET_FILE_POS(banknum, samplenum);
+				res = set_file_pos(banknum, samplenum);
 				if (res != FR_OK) {
 					g_error |= FILE_SEEK_FAIL;
 				}
@@ -391,7 +404,7 @@ public:
 		}
 	}
 
-	FRESULT SET_FILE_POS(uint8_t b, uint8_t s) {
+	FRESULT set_file_pos(uint8_t b, uint8_t s) {
 		FRESULT r = f_lseek(&fil[s], samples[b][s].startOfData + sample_file_curpos[s]);
 		if (fil[s].fptr != (samples[b][s].startOfData + sample_file_curpos[s]))
 			g_error |= LSEEK_FPTR_MISMATCH;
@@ -419,7 +432,7 @@ public:
 		// This gets us ready to start reading from the new position
 		if (fil[samplenum].obj.id > 0) {
 			FRESULT res;
-			res = SET_FILE_POS(banknum, samplenum);
+			res = set_file_pos(banknum, samplenum);
 			if (res != FR_OK)
 				g_error |= FILE_SEEK_FAIL;
 		}

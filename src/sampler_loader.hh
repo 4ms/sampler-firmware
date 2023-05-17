@@ -213,7 +213,7 @@ public:
 
 							// Jump to the beginning
 							s.sample_file_curpos[samplenum] = s_sample->inst_start;
-							res = s.SET_FILE_POS(banknum, samplenum);
+							res = s.set_file_pos(banknum, samplenum);
 							if (res != FR_OK)
 								g_error |= FILE_SEEK_FAIL;
 

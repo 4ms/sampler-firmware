@@ -2,7 +2,8 @@
 #include "audio_stream_conf.hh"
 #include "circular_buffer.hh"
 #include "elements.hh"
-#include "sample_file.hh"
+#include "sample_type.hh"
+#include <algorithm>
 
 namespace SamplerKit
 {
@@ -68,44 +69,6 @@ inline uint32_t calc_resampled_buffer_size(const Sample &sample, float resample_
 	return ((uint32_t)((FramesPerBlock * sample.numChannels * 2) * resample_rate));
 }
 
-// calc_dist_to_end()
-// How many samples left to go before we hit the stopping point
-inline int32_t calc_dist_to_end() {
-
-	// Find out where the audio output data is relative to the start of the cache
-	// uint32_t sample_file_playpos = cache[samplenum].map_buffer_to_cache(
-	// 	play_buff[samplenum]->out, samples[banknum][samplenum].sampleByteSize, play_buff[samplenum]);
-
-	// Calculate the distance left to the end that we should be playing
-	// TODO: check if playpos is in bounds of startpos as well
-	// if (!params.reverse)
-	// 	return (sample_file_endpos[chan] > sample_file_playpos) ? (sample_file_endpos[chan] - sample_file_playpos) : 0;
-	// else
-	// 	return (sample_file_playpos > sample_file_endpos[chan]) ? (sample_file_playpos - sample_file_endpos[chan]) : 0;
-	return -1;
-}
-
-// calc_start_point()
-inline uint32_t calc_start_point(float start_param, Sample *const sample) {
-	uint32_t zeropt;
-	uint32_t inst_size;
-
-	zeropt = sample->inst_start;
-	inst_size = sample->inst_end - sample->inst_start;
-
-	// If the sample size is smaller than two blocks, the start point is forced to the start
-	if (inst_size <= (READ_BLOCK_SIZE * 2))
-		return (align_addr(zeropt, sample->blockAlign));
-
-	if (start_param < 0.002f)
-		return (align_addr(zeropt, sample->blockAlign));
-	else if (start_param > 0.998f)
-		return (align_addr((zeropt + inst_size - (READ_BLOCK_SIZE * 2)),
-						   sample->blockAlign)); // just play the last 32 blocks (~64k samples)
-	else
-		return (align_addr((zeropt + ((uint32_t)(start_param * (float)inst_size))), sample->blockAlign));
-}
-
 inline uint32_t ceil(float num) {
 	uint32_t inum = (uint32_t)num;
 	if (num == (float)inum) {
@@ -114,17 +77,97 @@ inline uint32_t ceil(float num) {
 	return inum + 1;
 }
 
+inline uint32_t cue_pos(int cuenum, const Sample *const sample) {
+	return cuenum <= 0 ? 0 : sample->cue[cuenum - 1] * sample->blockAlign;
+}
+
+// Return cue number given the start_param, or -1 if cue is invalid
+inline int calc_start_cuenum(float start_param, const Sample *const sample) {
+	// if (sample->num_cues <= 0)
+	// 	return -1;
+	if (start_param < 30.f / 4096.f)
+		return 0;
+	int cuenum = std::clamp<int>(start_param * sample->num_cues + 1, 1, sample->num_cues);
+	uint32_t cue = cue_pos(cuenum, sample);
+	if (cue >= sample->inst_start && cue <= sample->inst_end)
+		return cuenum;
+	else
+		return -1;
+}
+
+// Given: length (0 to 1)
+// and a starting cuenum (must be valid, is not checked here)
+// return the file address of where to stop,
+// snapping to cues if possible.
+// Minimum is to play is two READ blocks
+// First snap point is the next cue marker after the start_cuenum.
+// Returns the sample end if number of cue segments to play exceeds number of cues.
+// or if cue point is out of range, or if starting cue is too close to the sample end
+inline int calc_stop_cuenum(int start_cuenum, float scaled_length, const Sample *const sample) {
+	int cues_to_play = scaled_length * (float)sample->num_cues + 1;
+	int cuenum = start_cuenum + cues_to_play;
+
+	if (cuenum > sample->num_cues)
+		return -1;
+	if (cuenum < 1)
+		return -1; // was 1, why?
+
+	return cuenum;
+}
+
+// calc_start_point()
+inline uint32_t calc_start_point(float start_param, Sample *const sample, int anchor_cuenum, bool use_cues) {
+	uint32_t zeropt;
+	uint32_t inst_size;
+
+	zeropt = sample->inst_start;
+	inst_size = sample->inst_end - sample->inst_start;
+
+	// If the sample size is smaller than two blocks, the start point is forced to the beginning
+	if (inst_size <= (READ_BLOCK_SIZE * 2))
+		return align_addr(zeropt, sample->blockAlign);
+
+	if (start_param < 0.002f)
+		return align_addr(zeropt, sample->blockAlign);
+
+	if (use_cues && anchor_cuenum >= 0) {
+		uint32_t cue = cue_pos(anchor_cuenum, sample);
+		if (cue >= sample->inst_start && cue <= sample->inst_end)
+			return cue;
+	}
+
+	if (start_param > 0.998f)
+		// just play the last 32 blocks (~64k samples)
+		return align_addr((sample->inst_end - (READ_BLOCK_SIZE * 2)), sample->blockAlign);
+
+	return align_addr((zeropt + ((uint32_t)(start_param * (float)inst_size))), sample->blockAlign);
+}
+
 // calc_stop_point()
-// Returns an offset from the startpos, based on the length param (knob and CV) and resampling rate
+// Returns an offset from the startpos, based on the length  and resampling rate
 //
-static uint32_t
-calc_stop_point(float length_param, float resample_param, Sample *sample, uint32_t startpos, float sample_rate) {
+inline uint32_t calc_stop_point(
+	float length_param, float resample_param, Sample *sample, uint32_t startpos, int anchor_cuenum, float sample_rate) {
 	uint32_t fwd_stop_point;
 	uint32_t num_samples_to_play;
 	uint32_t max_play_length;
 	float seconds;
 	float t_f;
 	uint32_t t_int;
+
+	// Snap to a Cue if length > 50% and the start point (anchor) is a cue
+	if (length_param > 0.5f && sample->num_cues > 0 && anchor_cuenum >= 0) {
+		// If anchor cue is close to end, then play to the end
+		uint32_t min_endpt = cue_pos(anchor_cuenum, sample) + READ_BLOCK_SIZE * 2;
+		if (min_endpt > sample->inst_end)
+			return sample->inst_end;
+
+		float scaled_length = length_param * 2.f - 1.f; // 0.5..1 => 0..1
+		int stop_cuenum = calc_stop_cuenum(anchor_cuenum, scaled_length, sample);
+		if (stop_cuenum == -1)
+			return sample->inst_end;
+		return std::clamp(cue_pos(stop_cuenum, sample), min_endpt, sample->inst_end);
+	}
 
 	seconds = (float)(sample->sampleRate * sample->blockAlign);
 	max_play_length = sample->inst_end - sample->inst_start;

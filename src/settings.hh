@@ -45,6 +45,8 @@ struct UserSettings {
 	bool rec_24bits = false;
 	uint32_t record_sample_rate = 48000;
 
+	bool use_cues = false;
+
 	// These are changed in system mode and stored... in flash?
 	GateType rev_jack = GateType::Trig;
 	GateType endout_jack = GateType::Trig;

@@ -246,12 +246,13 @@ public:
 		} else
 			anchor_cuenum = -1;
 
-		uint32_t earlier_pos = calc_start_point(params.start, s_sample, params.settings.use_cues);
+		uint32_t earlier_pos = calc_start_point(params.start, s_sample, anchor_cuenum, params.settings.use_cues);
+
+		// TODO: this should be updated continuously in params.update()
+		// whenenver length, pitch, start, or sample slot/bank changes
+		// => params.file_startpos, params.file_endpos
 		uint32_t later_pos = calc_stop_point(
 			params.length, rs, s_sample, earlier_pos, anchor_cuenum, params.settings.record_sample_rate);
-
-		int stop_cuenum = calc_stop_cuenum(anchor_cuenum, params.length * 2.f - 1.f, s_sample);
-		printf_("Cue: %d (%d) - %d (%d)\n", anchor_cuenum, earlier_pos, stop_cuenum, later_pos);
 
 		if (params.reverse) {
 			sample_file_endpos = earlier_pos;

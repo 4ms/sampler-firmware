@@ -107,7 +107,7 @@ inline int calc_stop_cuenum(int start_cuenum, float scaled_length, const Sample 
 	int cues_to_play = scaled_length * (float)sample->num_cues + 1;
 	int cuenum = start_cuenum + cues_to_play;
 
-	if (cuenum >= sample->num_cues)
+	if (cuenum > sample->num_cues)
 		return -1;
 	if (cuenum < 1)
 		return -1; // was 1, why?
@@ -116,7 +116,7 @@ inline int calc_stop_cuenum(int start_cuenum, float scaled_length, const Sample 
 }
 
 // calc_start_point()
-inline uint32_t calc_start_point(float start_param, Sample *const sample, bool use_cues) {
+inline uint32_t calc_start_point(float start_param, Sample *const sample, int anchor_cuenum, bool use_cues) {
 	uint32_t zeropt;
 	uint32_t inst_size;
 
@@ -130,10 +130,8 @@ inline uint32_t calc_start_point(float start_param, Sample *const sample, bool u
 	if (start_param < 0.002f)
 		return align_addr(zeropt, sample->blockAlign);
 
-	if (use_cues && sample->num_cues > 0) {
-		int cuenum = std::clamp<int>(start_param * sample->num_cues, 0, sample->num_cues - 1);
-
-		uint32_t cue = cue_pos(cuenum, sample);
+	if (use_cues && anchor_cuenum >= 0) {
+		uint32_t cue = cue_pos(anchor_cuenum, sample);
 		if (cue >= sample->inst_start && cue <= sample->inst_end)
 			return cue;
 	}

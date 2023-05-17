@@ -78,11 +78,16 @@ inline uint32_t ceil(float num) {
 }
 
 inline uint32_t cue_pos(int cuenum, const Sample *const sample) {
-	return sample->cue[cuenum] * sample->blockAlign;
+	return cuenum <= 0 ? 0 : sample->cue[cuenum - 1] * sample->blockAlign;
 }
 
+// Return cue number given the start_param, or -1 if cue is invalid
 inline int calc_start_cuenum(float start_param, const Sample *const sample) {
-	int cuenum = std::clamp<int>(start_param * sample->num_cues, 0, sample->num_cues - 1);
+	// if (sample->num_cues <= 0)
+	// 	return -1;
+	if (start_param < 30.f / 4096.f)
+		return 0;
+	int cuenum = std::clamp<int>(start_param * sample->num_cues + 1, 1, sample->num_cues);
 	uint32_t cue = cue_pos(cuenum, sample);
 	if (cue >= sample->inst_start && cue <= sample->inst_end)
 		return cuenum;

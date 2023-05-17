@@ -63,10 +63,11 @@ TEST_CASE("calc_stop_cuenum") {
 
 	CHECK(calc_stop_cuenum(0, 0.26, &s) == 2);
 	CHECK(calc_stop_cuenum(0, 0.52, &s) == 3);
+	CHECK(calc_stop_cuenum(0, 0.76, &s) == 4);
 
-	SUBCASE("stop cue past end reutrns -1") {
-		CHECK(calc_stop_cuenum(0, 0.76, &s) == -1);
-		CHECK(calc_stop_cuenum(2, 0.25, &s) == -1);
+	SUBCASE("stop cue past end returns -1") {
+		CHECK(calc_stop_cuenum(1, 0.99, &s) == -1);
+		CHECK(calc_stop_cuenum(2, 0.52, &s) == -1);
 	}
 
 	float rs = 1.0;
@@ -76,7 +77,8 @@ TEST_CASE("calc_stop_cuenum") {
 	auto start_cue = 1; // s.cue[0]
 	CHECK(calc_stop_point(0.51, rs, &s, start_pos, start_cue, sr) == s.cue[1] * s.blockAlign);
 	CHECK(calc_stop_point(0.63, rs, &s, start_pos, start_cue, sr) == s.cue[2] * s.blockAlign);
-	CHECK(calc_stop_point(0.76, rs, &s, start_pos, start_cue, sr) == s.inst_end);
+	CHECK(calc_stop_point(0.76, rs, &s, start_pos, start_cue, sr) == s.cue[3] * s.blockAlign);
+	CHECK(calc_stop_point(0.99, rs, &s, start_pos, start_cue, sr) == s.inst_end);
 
 	SUBCASE("stop point is a minimum of two READ_BLOCKS from start point") {
 		s.cue[1] = 15'000;

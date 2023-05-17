@@ -24,18 +24,19 @@ TEST_CASE("calc_start_cuenum") {
 	s.cue[2] = 35;
 	s.cue[3] = 100;
 
-	CHECK(cue_pos(0, &s) == 10 * s.blockAlign);
-	CHECK(cue_pos(1, &s) == 30 * s.blockAlign);
-	CHECK(cue_pos(2, &s) == 35 * s.blockAlign);
-	CHECK(cue_pos(3, &s) == 100 * s.blockAlign);
+	CHECK(cue_pos(0, &s) == 0 * s.blockAlign);
+	CHECK(cue_pos(1, &s) == 10 * s.blockAlign);
+	CHECK(cue_pos(2, &s) == 30 * s.blockAlign);
+	CHECK(cue_pos(3, &s) == 35 * s.blockAlign);
+	CHECK(cue_pos(4, &s) == 100 * s.blockAlign);
 
 	CHECK(calc_start_cuenum(0.0f, &s) == 0);
-	CHECK(calc_start_cuenum(0.1f, &s) == 0);
-	CHECK(calc_start_cuenum(0.25f, &s) == 1);
-	CHECK(calc_start_cuenum(0.5f, &s) == 2);
-	CHECK(calc_start_cuenum(0.75f, &s) == 3);
-	CHECK(calc_start_cuenum(0.99f, &s) == 3);
-	CHECK(calc_start_cuenum(1.0f, &s) == 3);
+	CHECK(calc_start_cuenum(0.1f, &s) == 1);
+	CHECK(calc_start_cuenum(0.25f, &s) == 2);
+	CHECK(calc_start_cuenum(0.5f, &s) == 3);
+	CHECK(calc_start_cuenum(0.75f, &s) == 4);
+	CHECK(calc_start_cuenum(0.99f, &s) == 4);
+	CHECK(calc_start_cuenum(1.0f, &s) == 4);
 
 	SUBCASE("invalid cue returns -1") {
 		s.cue[2] = 151; // inst_end / blockAlign + 1
@@ -72,14 +73,14 @@ TEST_CASE("calc_stop_cuenum") {
 	float sr = 48000.0;
 	uint32_t start_pos = 0;
 
-	auto start_cue = 1;
-	CHECK(calc_stop_point(0.51, rs, &s, start_pos, start_cue, sr) == s.cue[2] * s.blockAlign);
-	CHECK(calc_stop_point(0.63, rs, &s, start_pos, start_cue, sr) == s.cue[3] * s.blockAlign);
+	auto start_cue = 1; // s.cue[0]
+	CHECK(calc_stop_point(0.51, rs, &s, start_pos, start_cue, sr) == s.cue[1] * s.blockAlign);
+	CHECK(calc_stop_point(0.63, rs, &s, start_pos, start_cue, sr) == s.cue[2] * s.blockAlign);
 	CHECK(calc_stop_point(0.76, rs, &s, start_pos, start_cue, sr) == s.inst_end);
 
 	SUBCASE("stop point is a minimum of two READ_BLOCKS from start point") {
-		s.cue[2] = 35'000;
-		auto expected = s.cue[1] * s.blockAlign + READ_BLOCK_SIZE * 2;
+		s.cue[1] = 15'000;
+		auto expected = s.cue[0] * s.blockAlign + READ_BLOCK_SIZE * 2;
 		CHECK(calc_stop_point(0.51, rs, &s, start_pos, start_cue, sr) == expected);
 	}
 }

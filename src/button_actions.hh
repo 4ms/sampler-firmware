@@ -212,6 +212,10 @@ struct ButtonActionHandler {
 			ignore_rev_release = false;
 		}
 
+		if (controls.rev_button.is_just_pressed()) {
+			flags.set(Flag::CVCalibrateAllJacks);
+		}
+
 		if (controls.play_button.is_just_released()) {
 			flags.set(Flag::StepCVCalibration);
 			ignore_play_release = false;

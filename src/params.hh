@@ -338,6 +338,7 @@ private:
 			cv_cal.reset();
 			op_mode = OperationMode::CVCalibrate;
 			flags.set(Flag::CVCalibrationStep1Animate);
+			flags.clear(Flag::CVCalibrateAllJacks);
 		}
 
 		if (op_mode == OperationMode::CVCalibrate)
@@ -349,6 +350,12 @@ private:
 		}
 
 		if (flags.take(Flag::CVCalibrationSuccess)) {
+			static_assert(PitchCV == 0);
+			for (unsigned i = PitchCV + 1; i < NumCVs; i++) {
+				if (cv_state[i].cur_val < 100)
+					calibration.cv_calibration_offset[i] = -cv_state[i].cur_val;
+			}
+
 			calibration.cv_calibration_offset[PitchCV] = 2048.f - cv_cal.offset();
 			calibration.tracking_comp = -cv_cal.slope() / 409.6f;
 			op_mode = OperationMode::Playback;

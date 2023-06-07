@@ -43,7 +43,6 @@ void run(Controls &controls, CalibrationStorage &cal_storage) {
 	//////////////////////////////
 	print_test_name("SD Card Test");
 	TestSDCard sdtest;
-	// sdtest.run_test();
 	sdtest.run_fatfs_test();
 
 	all_lights_off();

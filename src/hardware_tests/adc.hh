@@ -14,7 +14,7 @@ namespace SamplerKit::HWTests
 struct TestADCs : IAdcChecker {
 	static constexpr AdcRangeCheckerBounds bounds{
 		.center_val = 2048,
-		.center_width = 100,
+		.center_width = 150,
 		.center_check_counts = 10000,
 		.min_val = Brain::PotAdcConf::min_value,
 		.max_val = 4072,

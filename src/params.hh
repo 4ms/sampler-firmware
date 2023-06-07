@@ -338,6 +338,7 @@ private:
 			cv_cal.reset();
 			op_mode = OperationMode::CVCalibrate;
 			flags.set(Flag::CVCalibrationStep1Animate);
+
 			flags.clear(Flag::CVCalibrateAllJacks);
 		}
 
@@ -349,13 +350,22 @@ private:
 			flags.set(Flag::CVCalibrationFailAnimate);
 		}
 
-		if (flags.take(Flag::CVCalibrationSuccess)) {
+		if (flags.take(Flag::CVCalibrateAllJacks)) {
 			static_assert(PitchCV == 0);
 			for (unsigned i = PitchCV + 1; i < NumCVs; i++) {
 				if (cv_state[i].cur_val < 100)
 					calibration.cv_calibration_offset[i] = -cv_state[i].cur_val;
 			}
+			flags.set(Flag::CVCalibrateAllJacksAnimate);
+			cal_storage.save_flash_params();
+			pr_log("Calibrated unpatched CV jacks: Start: %d, Length: %d, Sample: %d, Bank: %d\n",
+				   calibration.cv_calibration_offset[StartCV],
+				   calibration.cv_calibration_offset[LengthCV],
+				   calibration.cv_calibration_offset[SampleCV],
+				   calibration.cv_calibration_offset[BankCV]);
+		}
 
+		if (flags.take(Flag::CVCalibrationSuccess)) {
 			calibration.cv_calibration_offset[PitchCV] = 2048.f - cv_cal.offset();
 			calibration.tracking_comp = -cv_cal.slope() / 409.6f;
 			op_mode = OperationMode::Playback;

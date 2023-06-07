@@ -197,32 +197,24 @@ struct ButtonActionHandler {
 	}
 
 	void process_cvcal_mode() {
-		// Long hold Bank + Rev to exit CV Calibration
-		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > two_sec) {
-			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {
-				if (!controls.play_button.is_pressed()) {
-					flags.set(Flag::EnterPlayMode);
-					ignore_bank_release = true;
-					ignore_rev_release = true;
-				}
-			}
-		}
-
+		// Bank + Rev to calibrate unpatched reading of non-Pitch CV jacks
 		if (controls.rev_button.is_just_released()) {
+			if (!ignore_rev_release && controls.bank_button.is_pressed()) {
+				flags.set(Flag::CVCalibrateAllJacks);
+			}
 			ignore_rev_release = false;
 		}
 
-		if (controls.rev_button.is_just_pressed()) {
-			flags.set(Flag::CVCalibrateAllJacks);
+		if (controls.bank_button.is_just_released()) {
+			if (!ignore_bank_release && controls.rev_button.is_pressed()) {
+				flags.set(Flag::CVCalibrateAllJacks);
+			}
+			ignore_bank_release = false;
 		}
 
 		if (controls.play_button.is_just_released()) {
 			flags.set(Flag::StepCVCalibration);
 			ignore_play_release = false;
-		}
-
-		if (controls.bank_button.is_just_released()) {
-			ignore_bank_release = false;
 		}
 	}
 

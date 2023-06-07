@@ -30,6 +30,7 @@ enum class Flag : uint64_t {
 
 	EnterCVCalibrateMode,
 	StepCVCalibration, // Buttons -> CV Cal
+	CVCalibrateAllJacks,
 	CVCalibrationSuccess,
 	CVCalibrationFail,
 
@@ -37,7 +38,7 @@ enum class Flag : uint64_t {
 	CVCalibrationStep2Animate,
 	CVCalibrationSuccessAnimate,
 	CVCalibrationFailAnimate,
-	CVCalibrateAllJacks,
+	CVCalibrateAllJacksAnimate,
 
 	ToggleStereoMode,
 	ToggleStereoModeAnimate,

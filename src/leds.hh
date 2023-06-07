@@ -108,12 +108,21 @@ struct Leds {
 			controls.bank_led.reset_breathe();
 		}
 
+		if (flags.take(Flag::CVCalibrateAllJacksAnimate)) {
+			controls.rev_led.fade_once_ms(Colors::green, 500);
+			controls.bank_led.fade_once_ms(Colors::green, 500);
+		}
+
 		if (flags.take(Flag::CVCalibrationSuccessAnimate)) {
+			controls.rev_led.reset_breathe();
+			controls.bank_led.reset_breathe();
 			controls.rev_led.fade_once_ms(Colors::green, 1000);
 			controls.bank_led.fade_once_ms(Colors::green, 1000);
 			controls.play_led.fade_once_ms(Colors::green, 1000);
 		}
 		if (flags.take(Flag::CVCalibrationFailAnimate)) {
+			controls.rev_led.reset_breathe();
+			controls.bank_led.reset_breathe();
 			controls.rev_led.fade_once_ms(Colors::red, 1000);
 			controls.bank_led.fade_once_ms(Colors::red, 1000);
 			controls.play_led.fade_once_ms(Colors::red, 1000);

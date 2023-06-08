@@ -56,8 +56,10 @@ struct ButtonActionHandler {
 
 	void process_play_mode(bool looping) {
 		if (controls.play_button.is_just_pressed()) {
-			if (!looping)
-				flags.set(Flag::PlayBut);
+			if (!controls.rev_button.is_pressed() && !controls.bank_button.is_pressed()) {
+				if (!looping)
+					flags.set(Flag::PlayBut);
+			}
 		}
 
 		if (controls.play_button.is_just_released()) {
@@ -165,7 +167,7 @@ struct ButtonActionHandler {
 		}
 
 		if (controls.play_button.is_just_released()) {
-			if (!ignore_play_release)
+			if (!ignore_play_release && !controls.rev_button.is_pressed() && !controls.bank_button.is_pressed())
 				flags.set(Flag::RecBut);
 			ignore_play_release = false;
 		}

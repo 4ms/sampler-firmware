@@ -41,8 +41,8 @@ public:
 
 		if (params.op_mode == OperationMode::Record) {
 			for (auto [in, out] : zip(inblock, outblock)) {
-				out.chan[0] = in.chan[0];
-				out.chan[1] = in.chan[1];
+				out.chan[0] = in.chan[0] * Brain::AudioGain;
+				out.chan[1] = in.chan[1] * Brain::AudioGain;
 			}
 			return;
 		}
@@ -58,10 +58,8 @@ public:
 				// Chan 1 L + Chan 2 L clipped at signed 16-bits
 				int32_t invL = -L;
 				int32_t invR = -R;
-				out.chan[0] = __SSAT(invL, 24);
-				out.chan[1] = __SSAT(invR, 24);
-				// out.chan[0] = SSAT24(L + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
-				// out.chan[1] = SSAT24(R + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
+				out.chan[1] = __SSAT(invL, 24);
+				out.chan[0] = __SSAT(invR, 24);
 			}
 			return;
 		}
@@ -72,10 +70,8 @@ public:
 			for (auto [out, L, R] : zip(outblock, outL, outR)) {
 				// Average is already done in play_audio_from_buffer(), and put into outL
 				int32_t invL = -L;
-				out.chan[0] = __SSAT(invL, 24);
-				out.chan[1] = __SSAT(L, 24);
-				// out.chan[0] = SSAT24(t + params.system_calibrations.codec_dac_calibration_dcoffset[0]);
-				// out.chan[1] = SSAT24(t + params.system_calibrations.codec_dac_calibration_dcoffset[1]);
+				out.chan[1] = __SSAT(invL, 24);
+				out.chan[0] = __SSAT(L, 24);
 			}
 		}
 	}
@@ -87,8 +83,6 @@ public:
 			for (auto [L, R] : zip(outL, outR)) {
 				L = 0;
 				R = 0;
-				// R = params.controls.read_cv(PitchCV) << 11;
-				// L = params.controls.read_cv(SampleCV) << 11;
 			}
 			return;
 		}

@@ -51,8 +51,8 @@ enum class Flag : uint64_t {
 	EndOutShort,
 	EndOutLong,
 
-	BankNextEnabled,
-	BankPrevEnabled,
+	BankNext,
+	BankPrev,
 
 	StartupParsing,
 	StartupLoadingIndex,

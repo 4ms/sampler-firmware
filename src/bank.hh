@@ -51,6 +51,7 @@ struct BankManager {
 	uint8_t next_enabled_bank_0xFF(uint8_t bank);
 	uint8_t next_disabled_bank(uint8_t bank);
 
+	uint8_t prev_bank(uint8_t bank);
 	uint8_t prev_enabled_bank(uint8_t bank);
 	uint8_t prev_enabled_bank_0xFF(uint8_t bank);
 	uint8_t prev_disabled_bank(uint8_t bank);

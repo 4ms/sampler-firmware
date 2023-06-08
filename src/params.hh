@@ -281,10 +281,18 @@ private:
 	}
 
 	void update_bank_changes() {
-		if (flags.take(Flag::BankNextEnabled))
-			bank_button_sel = banks.next_enabled_bank(bank_button_sel);
-		if (flags.take(Flag::BankPrevEnabled))
-			bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
+		if (flags.take(Flag::BankNext)) {
+			if (op_mode == OperationMode::Playback)
+				bank_button_sel = banks.next_enabled_bank(bank_button_sel);
+			else
+				bank_button_sel = banks.next_bank(bank_button_sel);
+		}
+		if (flags.take(Flag::BankPrev)) {
+			if (op_mode == OperationMode::Playback)
+				bank_button_sel = banks.prev_enabled_bank(bank_button_sel);
+			else
+				bank_button_sel = banks.prev_bank(bank_button_sel);
+		}
 	}
 
 	void update_bank_cv() {
@@ -309,6 +317,12 @@ private:
 
 		if (t_bank >= 60)
 			t_bank = t_bank % 60;
+
+		// Allow disabled banks in Record mode
+		if (op_mode == OperationMode::Record) {
+			bank = t_bank;
+			return;
+		}
 
 		if (banks.is_bank_enabled(t_bank)) {
 			bank = t_bank;

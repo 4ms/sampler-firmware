@@ -212,6 +212,10 @@ uint8_t BankManager::next_bank(uint8_t bank) {
 	return bank;
 }
 
+uint8_t BankManager::prev_bank(uint8_t bank) {
+	return (bank == 0) ? MaxNumBanks - 1 : bank - 1;
+}
+
 // Give a bank number, return the next enabled bank
 // If bank==0xFF, return the first enabled bank
 //
@@ -341,8 +345,12 @@ bool BankManager::is_bank_enabled(uint8_t bank) {
 	return bank_status[bank] ? 1 : 0;
 }
 
-void BankManager::enable_bank(uint8_t bank) { bank_status[bank] = 1; }
-void BankManager::disable_bank(uint8_t bank) { bank_status[bank] = 0; }
+void BankManager::enable_bank(uint8_t bank) {
+	bank_status[bank] = 1;
+}
+void BankManager::disable_bank(uint8_t bank) {
+	bank_status[bank] = 0;
+}
 
 /// Initialization
 

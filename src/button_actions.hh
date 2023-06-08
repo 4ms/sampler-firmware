@@ -125,10 +125,10 @@ struct ButtonActionHandler {
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
 				if (controls.rev_button.is_pressed()) {
-					flags.set(Flag::BankPrevEnabled);
+					flags.set(Flag::BankPrev);
 					ignore_rev_release = true;
 				} else {
-					flags.set(Flag::BankNextEnabled);
+					flags.set(Flag::BankNext);
 				}
 			}
 
@@ -182,10 +182,10 @@ struct ButtonActionHandler {
 		if (controls.bank_button.is_just_released()) {
 			if (!ignore_bank_release) {
 				if (controls.rev_button.is_pressed()) {
-					flags.set(Flag::BankPrevEnabled);
+					flags.set(Flag::BankPrev);
 					ignore_rev_release = true;
 				} else {
-					flags.set(Flag::BankNextEnabled);
+					flags.set(Flag::BankNext);
 				}
 			}
 			ignore_bank_release = false;

@@ -86,6 +86,8 @@ void Recorder::record_audio_to_buffer(const AudioStreamConf::AudioInBlock &src) 
 		// Copy a buffer's worth of samples from codec (src) into rec_buff
 		for (auto [i, in] : enumerate(src)) {
 			for (unsigned chan = 0; chan < 2; chan++) {
+				// Fix for hardware having L/R channels reversed on the inputs:
+				chan = 1 - chan;
 				if (params.settings.rec_24bits) {
 					uint16_t topword = (uint16_t)(in.chan[chan] & 0x00FFFF);
 					uint16_t bottombyte = (uint16_t)((in.chan[chan] & 0xFF0000)) >> 16;

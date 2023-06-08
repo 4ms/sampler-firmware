@@ -46,7 +46,8 @@ void main() {
 	// Load sample index file (map files to sample slots and banks)
 	SampleIndexLoader index_loader{sd, samples, banks, flags};
 	{
-		Timekeeper startup_animation{Brain::param_update_task_conf, [&params] { params.startup_animation(); }};
+		Timekeeper startup_animation{{.TIMx = TIM6, .period_ns = 1'000'000'000 / 6000, .priority1 = 2, .priority2 = 3},
+									 [&params] { params.startup_animation(); }};
 		startup_animation.start();
 		index_loader.load_all_banks();
 		startup_animation.stop();

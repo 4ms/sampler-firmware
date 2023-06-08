@@ -19,10 +19,11 @@ struct ButtonActionHandler {
 	bool ignore_rev_release = false;
 	bool ignore_play_release = false;
 
-	static constexpr uint32_t short_press = Brain::ParamUpdateHz * 0.3f;
-	static constexpr uint32_t half_sec = Brain::ParamUpdateHz * 0.5f;
-	static constexpr uint32_t one_sec = Brain::ParamUpdateHz;
-	static constexpr uint32_t two_sec = Brain::ParamUpdateHz * 2.f;
+	static constexpr uint32_t short_press = AudioStreamConf::FrameRate * 0.6f;
+	static constexpr uint32_t half_sec = AudioStreamConf::FrameRate * 0.5f;
+	static constexpr uint32_t one_sec = AudioStreamConf::FrameRate;
+	static constexpr uint32_t two_sec = AudioStreamConf::FrameRate * 2.f;
+	static constexpr uint32_t three_sec = AudioStreamConf::FrameRate * 3.f;
 
 	ButtonActionHandler(Flags &flags,
 						Controls &controls,
@@ -68,8 +69,8 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Play and Rev to toggle Rec/Play mode
-		if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > one_sec) {
-			if (!ignore_play_release && controls.play_button.how_long_held_pressed() > one_sec) {
+		if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {
+			if (!ignore_play_release && controls.play_button.how_long_held_pressed() > two_sec) {
 				if (!controls.bank_button.is_pressed()) {
 					flags.set(Flag::EnterRecordMode);
 					ignore_play_release = true;
@@ -87,8 +88,8 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Bank + Rev for CV Calibration
-		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > half_sec) {
-			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > half_sec) {
+		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > one_sec) {
+			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > one_sec) {
 				if (!controls.play_button.is_pressed()) {
 					flags.set(Flag::EnterCVCalibrateMode);
 					ignore_bank_release = true;
@@ -109,9 +110,9 @@ struct ButtonActionHandler {
 		}
 
 		// Long hold Play + Bank + Rev to save index
-		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > two_sec) {
-			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > two_sec) {
-				if (!ignore_play_release && controls.play_button.how_long_held_pressed() > two_sec) {
+		if (!ignore_bank_release && controls.bank_button.how_long_held_pressed() > three_sec) {
+			if (!ignore_rev_release && controls.rev_button.how_long_held_pressed() > three_sec) {
+				if (!ignore_play_release && controls.play_button.how_long_held_pressed() > three_sec) {
 					flags.set(Flag::WriteIndexToSD);
 					flags.set(Flag::WriteSettingsToSD);
 					ignore_bank_release = true;

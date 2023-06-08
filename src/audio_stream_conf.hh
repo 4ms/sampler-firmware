@@ -24,4 +24,6 @@ struct AudioStreamConf {
 
 	static constexpr inline auto AudioBufferSizeBytes = sizeof(AudioInBuffer);
 	static constexpr inline auto AudioBlockSizeBytes = sizeof(AudioInBlock);
+
+	static constexpr uint32_t FrameRate = AudioStreamConf::SampleRate / AudioStreamConf::BlockSize;
 };

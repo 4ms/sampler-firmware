@@ -34,7 +34,7 @@ enum { FirmwareMinorVersion = 1 };
 
 enum { MaxNumBanks = 60 };
 enum { NumSamplesPerBank = 10 };
-enum { LEDUpdateRateHz = 187 };
+enum { LEDUpdateRateHz = 93 };
 
 // 44.1k/16b/stereo@ pitch=1.0: the time from the first block read to the first sample of audio outputted:
 //(This is addition to the delay from the Trigger jack to the first block being read, around 16ms)

@@ -1,4 +1,5 @@
 #pragma once
+#include "audio_stream_conf.hh"
 #include "brain_conf.hh"
 #include "conf/board_conf.hh"
 #include "debug.hh"
@@ -80,9 +81,8 @@ public:
 		play_jack.update();
 		rev_jack.update();
 
-		constexpr uint32_t led_throttle = Brain::ParamUpdateHz / LEDUpdateRateHz;
+		constexpr uint32_t led_throttle = AudioStreamConf::FrameRate / LEDUpdateRateHz;
 		static uint32_t led_throttle_ctr = 0;
-		// 187Hz
 		if (led_throttle_ctr++ > led_throttle) {
 			led_throttle_ctr = 0;
 			play_led.update_animation();

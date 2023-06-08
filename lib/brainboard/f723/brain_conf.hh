@@ -11,8 +11,8 @@ namespace Brain
 constexpr bool DebugDisableAdcIRQ = false;
 
 // ADC Peripheral Conf:
-constexpr inline int16_t MinPotChange = DebugDisableAdcIRQ ? 30 : 10;
-constexpr inline int16_t MinCVChange = 10;
+constexpr inline int16_t MinPotChange = DebugDisableAdcIRQ ? 30 : 3;
+constexpr inline int16_t MinCVChange = 3;
 constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_28Cycles;
 
 struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
@@ -34,7 +34,7 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 		static constexpr uint32_t subpri = 0;
 	};
 
-	static constexpr uint16_t min_value = 20;
+	static constexpr uint16_t min_value = 25;
 };
 
 struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
@@ -56,7 +56,7 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
 		static constexpr uint32_t subpri = 0;
 	};
 
-	static constexpr uint16_t uni_min_value = 40;
+	static constexpr uint16_t uni_min_value = 65;
 	static constexpr uint16_t bi_min_value = 20;
 };
 
@@ -79,14 +79,8 @@ struct LRClkPinChangeConf : mdrivlib::DefaultPinChangeConf {
 	static constexpr uint32_t priority2 = 0;
 };
 
-constexpr inline uint32_t ParamUpdateHz = 6000;
-
-const mdrivlib::TimekeeperConfig param_update_task_conf = {
-	.TIMx = TIM6,
-	.period_ns = 1'000'000'000 / ParamUpdateHz,
-	.priority1 = 2,
-	.priority2 = 3,
-};
+// Audio
+constexpr inline float AudioGain = 1.216f; // gain to apply to acheive 0dB out:in
 
 // SDCard
 constexpr inline bool SdmmcWide = false;

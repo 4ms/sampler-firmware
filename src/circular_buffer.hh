@@ -148,30 +148,6 @@ struct CircularBuffer {
 			return 0; // pointers did not cross
 	}
 
-	// Convert 24-bit words padded as 32-bits from wr_buff into 16-bit words, and write to the in ptr
-	// uint32_t memory_write_24in32as16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
-	// 	uint32_t i;
-	// 	uint8_t heads_crossed = 0;
-	// 	uint8_t start_polarity, end_polarity, start_wrap, end_wrap;
-
-	// 	start_polarity = (in < out) ? 0 : 1;
-	// 	start_wrap = wrapping;
-
-	// 	for (i = 0; i < num_bytes; i += 4) {
-	// 		wait_memory_ready();
-	// 		*((int16_t *)in) = (int16_t)(wr_buff[i + 2] << 8 | wr_buff[i + 1]);
-	// 		offset_in_address(2, decrement);
-	// 	}
-
-	// 	end_polarity = (in < out) ? 0 : 1;
-	// 	end_wrap = wrapping; // 0 or 1
-
-	// 	if ((end_wrap + start_wrap + start_polarity + end_polarity) & 0b01)
-	// 		return 1; // warning: in pointer and out pointer crossed
-	// 	else
-	// 		return 0; // pointers did not cross
-	// }
-
 	// Grab 32-bit words and write them into b as 16-bit values
 	uint32_t memory_write_32ias16(uint8_t *wr_buff, uint32_t num_bytes, bool decrement) {
 		uint32_t i;

@@ -88,7 +88,7 @@ struct Params {
 		update_pot_states();
 		update_cv_states();
 
-		update_bank_changes();
+		update_bank_button();
 
 		update_length();
 		update_startpos();
@@ -280,7 +280,7 @@ private:
 		}
 	}
 
-	void update_bank_changes() {
+	void update_bank_button() {
 		if (flags.take(Flag::BankNext)) {
 			if (op_mode == OperationMode::Playback)
 				bank_button_sel = banks.next_enabled_bank(bank_button_sel);

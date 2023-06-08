@@ -41,8 +41,12 @@ public:
 
 		if (params.op_mode == OperationMode::Record) {
 			for (auto [in, out] : zip(inblock, outblock)) {
-				out.chan[0] = in.chan[0] * Brain::AudioGain;
-				out.chan[1] = in.chan[1] * Brain::AudioGain;
+				auto c0 = in.sign_extend(in.chan[0]);
+				auto c1 = in.sign_extend(in.chan[1]);
+				c0 *= Brain::AudioGain * 0.913f;
+				c1 *= Brain::AudioGain * 0.913f;
+				out.chan[0] = __SSAT(c0, 24);
+				out.chan[1] = __SSAT(c1, 24);
 			}
 			return;
 		}

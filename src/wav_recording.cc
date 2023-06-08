@@ -85,12 +85,18 @@ void Recorder::record_audio_to_buffer(const AudioStreamConf::AudioInBlock &src) 
 
 		// Copy a buffer's worth of samples from codec (src) into rec_buff
 		for (auto [i, in] : enumerate(src)) {
-			for (unsigned c = 0; c < 2; c++) {
-				// Fix for hardware having L/R channels reversed on the inputs:
-				auto chan = 1 - c;
+			for (unsigned chan = 0; chan < 2; chan++) {
+
+				// 1 - chan: Fix for hardware having L/R channels reversed on the inputs
+				auto sample = in.chan[1 - chan];
+
+				int32_t scaled = in.sign_extend(sample);
+				scaled *= Brain::AudioGain * 0.90f;
+				scaled = __SSAT(scaled, 24);
+
 				if (params.settings.rec_24bits) {
-					uint16_t topword = (uint16_t)(in.chan[chan] & 0x00FFFF);
-					uint16_t bottombyte = (uint16_t)((in.chan[chan] & 0xFF0000)) >> 16;
+					uint16_t topword = (uint16_t)(scaled & 0x00FFFF);
+					uint16_t bottombyte = (uint16_t)((scaled & 0xFF0000)) >> 16;
 
 					*(int16_t *)rec_buff.in = bottombyte;
 					rec_buff.offset_in_address(1, 0);
@@ -101,7 +107,7 @@ void Recorder::record_audio_to_buffer(const AudioStreamConf::AudioInBlock &src) 
 					rec_buff.wait_memory_ready();
 
 				} else {
-					*(int16_t *)rec_buff.in = in.chan[chan] >> 8;
+					*(int16_t *)rec_buff.in = scaled >> 8;
 					rec_buff.offset_in_address(2, 0);
 					rec_buff.wait_memory_ready();
 				}

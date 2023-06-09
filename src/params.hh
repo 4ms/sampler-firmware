@@ -52,6 +52,8 @@ struct Params {
 	float length = 1.f;
 	float volume = 1.f;
 
+	uint32_t hover_bank = 0;
+
 	// These are what's playing, even if the controls have selected something else
 	uint8_t sample_num_now_playing = 0;
 	uint8_t sample_bank_now_playing = 0;
@@ -79,6 +81,7 @@ struct Params {
 		controls.rev_led.set_color_calibration(calibration.rev_rgb_adj);
 		controls.start();
 	}
+
 	void update() {
 		controls.update();
 
@@ -100,7 +103,8 @@ struct Params {
 
 		update_cv_cal();
 
-		leds.update({op_mode, play_state, rec_state, reverse, looping, bank, settings.stereo_mode});
+		update_hover_bank();
+		leds.update({op_mode, play_state, rec_state, reverse, looping, hover_bank, settings.stereo_mode});
 	}
 
 	void startup_animation() {
@@ -227,9 +231,7 @@ private:
 					if (!pot.moved_while_bank_down)
 						pot.latched_val = pot.cur_val;
 					pot.moved_while_bank_down = true;
-					// Allow Sample + Bank since the combo does nothing
-					if (i != SamplePot)
-						button_handler.ignore_bank_release = true;
+					button_handler.ignore_bank_release = true;
 				}
 			}
 		}
@@ -293,6 +295,27 @@ private:
 			else
 				bank_button_sel = banks.prev_bank(bank_button_sel);
 		}
+	}
+
+	// Holding Bank while turning Sample "hovers" over a bank
+	// which is selected when Bank is released
+	void update_hover_bank() {
+		if (pot_state[LengthPot].moved_while_bank_down) {
+			uint32_t blinks = pot_state[SamplePot].prev_val / 820; // 0..5
+			uint32_t color = hover_bank % 10;
+			hover_bank = color + (blinks * 10);
+		} else if (pot_state[SamplePot].moved_while_bank_down) {
+			uint32_t blinks = hover_bank / 10;
+			uint32_t color = pot_state[SamplePot].prev_val / 410; // 0..9
+			hover_bank = color + (blinks * 10);
+
+		} else if (controls.bank_button.is_just_released()) {
+			if (!banks.is_bank_enabled(hover_bank))
+				hover_bank = banks.prev_enabled_bank(hover_bank);
+
+			bank = hover_bank;
+		} else
+			hover_bank = bank;
 	}
 
 	void update_bank_cv() {

@@ -83,7 +83,7 @@ FRESULT SampleIndex::write_sampleindex_file() {
 	char b_color[11];
 	char bank_path[FF_MAX_LFN + 1];
 	char filename_ptr[FF_MAX_LFN + 1];
-	char path[FF_MAX_LFN + 1], bootbakpath[FF_MAX_LFN + 1];
+	char path[FF_MAX_LFN + 1];
 
 	// CREATE INDEX FILE
 	// previous index files are replaced

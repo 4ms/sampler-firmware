@@ -372,7 +372,7 @@ public:
 
 			// Calculate the distance left to the end that we should be playing
 			// TODO: check if playpos is in bounds of startpos as well
-			int32_t dist_to_end;
+			uint32_t dist_to_end;
 			if (!params.reverse)
 				dist_to_end =
 					(sample_file_endpos > sample_file_playpos) ? (sample_file_endpos - sample_file_playpos) : 0;

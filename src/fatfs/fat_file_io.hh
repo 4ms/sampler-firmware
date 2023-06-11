@@ -184,8 +184,6 @@ public:
 	}
 
 	bool delete_file(std::string_view filename) {
-		FIL fil;
-
 		f_chdrive(_fatvol);
 		auto res = f_unlink(filename.data());
 		if (res != FR_OK)

@@ -259,8 +259,8 @@ FRESULT Recorder::write_wav_info_chunk(FIL *wavfil, unsigned int *total_written)
 	str_cat(firmware, firmware, temp_a);
 
 	struct Chunk {
-		uint32_t len;
-		uint32_t padlen;
+		uint32_t len = 0;
+		uint32_t padlen = 0;
 	};
 
 	struct Chunk list_ck, comment_ck, firmware_ck;

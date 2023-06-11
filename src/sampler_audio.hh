@@ -151,9 +151,8 @@ public:
 	// Note: this increments amplitude before applying to the first sample
 	static float fade(ChanBuff &outL, ChanBuff &outR, float gain, float starting_amp, float rate) {
 		float amp = starting_amp;
-		uint32_t completed = 0;
 
-		for (int i = 0; i < outL.size(); i++) {
+		for (unsigned i = 0; i < outL.size(); i++) {
 			amp += rate;
 			if (amp >= 1.0f)
 				amp = 1.0f;
@@ -168,7 +167,7 @@ public:
 	}
 
 	static void apply_gain(ChanBuff &outL, ChanBuff &outR, float gain) {
-		for (int i = 0; i < outL.size(); i++) {
+		for (unsigned i = 0; i < outL.size(); i++) {
 			outL[i] = (float)outL[i] * gain;
 			outR[i] = (float)outR[i] * gain;
 			outL[i] = __SSAT(outL[i], 24);
@@ -177,9 +176,6 @@ public:
 	}
 
 	void apply_envelopes(ChanBuff &outL, ChanBuff &outR) {
-		int i;
-		float env;
-
 		if (flags.take(Flag::StartFadeUp))
 			env_level = 0.f;
 		if (flags.take(Flag::StartFadeDown))
@@ -327,7 +323,7 @@ public:
 				break;
 
 			case (PlayStates::PAD_SILENCE):
-				for (i = 0; i < AudioStreamConf::BlockSize; i++) {
+				for (int i = 0; i < AudioStreamConf::BlockSize; i++) {
 					outL[i] = 0;
 					outR[i] = 0;
 				}

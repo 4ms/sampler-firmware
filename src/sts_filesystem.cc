@@ -59,8 +59,6 @@ uint8_t SampleIndexLoader::load_all_banks(bool force_reload) {
 		force_reload = (index.load_sampleindex_file(SampleIndex::USE_INDEX_FILE, MaxNumBanks) != FR_OK);
 	}
 
-	FRESULT res;
-
 	if (!force_reload) // sampleindex file was ok
 	{
 		pr_log("Valid sample index found\n");
@@ -252,7 +250,6 @@ void SampleIndexLoader::load_missing_files(void) {
 	char fullpath[FF_MAX_LFN + 1];
 
 	FIL temp_file;
-	FRESULT res = FR_OK;
 	uint8_t first_pass = 1;
 
 	for (bank = 0; bank < MaxNumBanks; bank++) // Scan samples[][] for non-blank filename with file_found==0

@@ -31,8 +31,8 @@ struct ButtonActionHandler {
 						UserSettings &settings)
 		: flags{flags}
 		, controls{controls}
-		, pot_state{pot_state}
-		, settings{settings} {}
+		, settings{settings}
+		, pot_state{pot_state} {}
 
 	// TODO: put all button ops in process() and check in each button combo for op_mode
 	void process(OperationMode op_mode, bool looping) {

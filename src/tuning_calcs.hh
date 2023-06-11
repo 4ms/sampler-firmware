@@ -60,7 +60,7 @@ inline float quantized_semitone_voct(uint32_t adcval) {
 	float octave_mult = 32.0;
 	for (int oct = 5; oct >= -5; oct--) {
 		root_adc = 2048 - (OCTAVE_ADC_WIDTH * oct);
-		if (adcval <= root_adc)
+		if ((int32_t)adcval <= root_adc)
 			break;
 		octave_mult = octave_mult / 2;
 	}
@@ -68,7 +68,7 @@ inline float quantized_semitone_voct(uint32_t adcval) {
 	int32_t root_adc_midpt = root_adc - (SEMITONE_ADC_WIDTH / 2.f);
 	float semitone_mult = 1.0;
 	for (int semitone = 0; semitone < 12; semitone++) {
-		if (adcval > (root_adc_midpt - (int32_t)(SEMITONE_ADC_WIDTH * (float)semitone)))
+		if ((int32_t)adcval > (root_adc_midpt - (int32_t)(SEMITONE_ADC_WIDTH * (float)semitone)))
 			break; // exit for loop
 		semitone_mult *= TWELFTH_ROOT_TWO;
 	}

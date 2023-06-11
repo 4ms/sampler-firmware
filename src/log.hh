@@ -11,7 +11,8 @@ static void pr_dbg(Ts... args) {
 	printf_(args...);
 }
 #else
-static void pr_dbg(...) {}
+[[maybe_unused]] static void pr_dbg(...) {
+}
 #endif
 
 #ifdef PRINT_LOG
@@ -20,7 +21,8 @@ static void pr_log(Ts... args) {
 	printf_(args...);
 }
 #else
-static void pr_log(...) {}
+static void pr_log(...) {
+}
 #endif
 
 } // namespace SamplerKit

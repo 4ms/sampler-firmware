@@ -104,11 +104,7 @@ void BankManager::bump_down_banks(uint8_t bank) {
 //
 uint8_t BankManager::get_bank_path(uint8_t bank, char *path) {
 	uint8_t samplenum;
-	char tmp_path[FF_MAX_LFN + 1];
 	char tmp_filename[FF_MAX_LFN + 1];
-	//	char path_candidates[NumSamplesPerBank][_MAX_LFN+1];
-	//	uint8_t candidate_occurances[NumSamplesPerBank];
-	//	uint8_t candidate_i = 0, path_is_new;
 
 	for (samplenum = 0; samplenum < NumSamplesPerBank; samplenum++) {
 		if (samples[bank][samplenum].filename[0]) {

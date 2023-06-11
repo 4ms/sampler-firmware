@@ -303,12 +303,11 @@ private:
 	void update_hover_bank() {
 		if (auto &pot = pot_state[LengthPot]; pot.moved_while_bank_down) {
 			is_hovering = true;
-			uint32_t blinks = pot.prev_val / 820; // 0..5
+			uint32_t blinks = pot.prev_val / 683; // 0..5
 			uint32_t color = hover_bank % 10;
 			uint32_t test_bank = color + (blinks * 10);
 			if (op_mode == OperationMode::Record || banks.is_bank_enabled(test_bank))
 				hover_bank = test_bank;
-			pot.moved_while_bank_down = false;
 		}
 
 		if (auto &pot = pot_state[SamplePot]; pot.moved_while_bank_down) {
@@ -318,7 +317,6 @@ private:
 			uint32_t test_bank = color + (blinks * 10);
 			if (op_mode == OperationMode::Record || banks.is_bank_enabled(test_bank))
 				hover_bank = test_bank;
-			pot.moved_while_bank_down = false;
 		}
 
 		if (flags.take(Flag::BankReleased)) {

@@ -141,9 +141,9 @@ struct Leds {
 
 		if (!is_writing_index && (flags.read(Flag::WriteSettingsToSD) || flags.read(Flag::WriteIndexToSD))) {
 			is_writing_index = true;
-			controls.bank_led.breathe(Colors::red, 100);
-			controls.play_led.breathe(Colors::red, 100);
-			controls.rev_led.breathe(Colors::red, 100);
+			controls.bank_led.fade_once_ms(Colors::white, 200);
+			controls.play_led.fade_once_ms(Colors::white, 200);
+			controls.rev_led.fade_once_ms(Colors::white, 200);
 		} else if (is_writing_index) {
 			is_writing_index = false;
 			controls.bank_led.reset_breathe();

@@ -82,8 +82,6 @@ function(create_target target)
               -mfloat-abi=hard
               -nostartfiles
               -nostdlib
-              -Wdouble-promotion
-              -Werror=return-type
               $<$<COMPILE_LANGUAGE:CXX>:
               -std=c++23
               -ffold-simple-inlines

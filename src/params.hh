@@ -306,7 +306,7 @@ private:
 			uint32_t blinks = pot.prev_val / 820; // 0..5
 			uint32_t color = hover_bank % 10;
 			uint32_t test_bank = color + (blinks * 10);
-			if (banks.is_bank_enabled(test_bank))
+			if (op_mode == OperationMode::Record || banks.is_bank_enabled(test_bank))
 				hover_bank = test_bank;
 			pot.moved_while_bank_down = false;
 		}
@@ -316,14 +316,14 @@ private:
 			uint32_t blinks = hover_bank / 10;
 			uint32_t color = pot.prev_val / 410; // 0..9
 			uint32_t test_bank = color + (blinks * 10);
-			if (banks.is_bank_enabled(test_bank))
+			if (op_mode == OperationMode::Record || banks.is_bank_enabled(test_bank))
 				hover_bank = test_bank;
 			pot.moved_while_bank_down = false;
 		}
 
 		if (flags.take(Flag::BankReleased)) {
 			is_hovering = false;
-			if (!banks.is_bank_enabled(hover_bank))
+			if (op_mode == OperationMode::Playback && !banks.is_bank_enabled(hover_bank))
 				hover_bank = banks.prev_enabled_bank(hover_bank);
 
 			bank_button_sel = hover_bank;

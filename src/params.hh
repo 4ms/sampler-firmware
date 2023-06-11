@@ -52,7 +52,9 @@ struct Params {
 	float length = 1.f;
 	float volume = 1.f;
 
-	uint32_t hover_bank = 0;
+	float bank_cv_sel = 0.f;
+
+	uint32_t display_bank = 0;
 	bool is_hovering = false;
 
 	// These are what's playing, even if the controls have selected something else
@@ -98,14 +100,16 @@ struct Params {
 		update_startpos();
 		update_sample();
 		update_pitch();
+
 		update_bank_cv();
+		update_hover_bank();
+		combine_bank_sels();
 
 		button_handler.process(op_mode, looping);
 
 		update_cv_cal();
 
-		update_hover_bank();
-		leds.update({op_mode, play_state, rec_state, reverse, looping, hover_bank, settings.stereo_mode});
+		leds.update({op_mode, play_state, rec_state, reverse, looping, display_bank, settings.stereo_mode});
 	}
 
 	void startup_animation() {
@@ -193,8 +197,6 @@ private:
 		float potval;
 		if (pot.moved_while_bank_down) {
 			potval = pot.latched_val;
-			// STS: TODO: Bank + Sample changes bank
-			//  bank_hover = detent_num(pot.cur_val); ...etc
 		} else
 			potval = pot.cur_val;
 
@@ -211,7 +213,7 @@ private:
 
 			int16_t diff = std::abs(pot.cur_val - pot.prev_val);
 			if (diff > Brain::MinPotChange) {
-				pot.track_moving_ctr = 50; // 250 for 6kHz = 42ms
+				pot.track_moving_ctr = 50;
 			}
 
 			if (pot.track_moving_ctr) {
@@ -304,50 +306,57 @@ private:
 		if (auto &pot = pot_state[LengthPot]; pot.moved_while_bank_down) {
 			is_hovering = true;
 			uint32_t blinks = pot.prev_val / 683; // 0..5
-			uint32_t color = hover_bank % 10;
+			uint32_t color = display_bank % 10;
 			uint32_t test_bank = color + (blinks * 10);
 			if (op_mode == OperationMode::Record || banks.is_bank_enabled(test_bank))
-				hover_bank = test_bank;
+				display_bank = test_bank;
 		}
 
 		if (auto &pot = pot_state[SamplePot]; pot.moved_while_bank_down) {
 			is_hovering = true;
-			uint32_t blinks = hover_bank / 10;
+			uint32_t blinks = display_bank / 10;
 			uint32_t color = pot.prev_val / 410; // 0..9
 			uint32_t test_bank = color + (blinks * 10);
 			if (op_mode == OperationMode::Record || banks.is_bank_enabled(test_bank))
-				hover_bank = test_bank;
+				display_bank = test_bank;
 		}
 
 		if (flags.take(Flag::BankReleased)) {
-			is_hovering = false;
-			if (op_mode == OperationMode::Playback && !banks.is_bank_enabled(hover_bank))
-				hover_bank = banks.prev_enabled_bank(hover_bank);
+			if (is_hovering) {
+				is_hovering = false;
 
-			bank_button_sel = hover_bank;
+				int t_bank = display_bank - (int)(bank_cv_sel + 0.5f);
+				if (t_bank < 0)
+					t_bank += 60;
+				if (t_bank >= 60)
+					t_bank -= 60;
+
+				bank_button_sel = t_bank;
+			}
 		}
 
 		if (!is_hovering) {
-			hover_bank = bank_button_sel;
+			display_bank = bank;
 		}
 	}
 
 	void update_bank_cv() {
-		// Final bank is closest enabled bank to (button_bank_i + bank_cv_i)
-		float bank_cv = (float)cv_state[BankCV].cur_val / 4096.f * 60.f; // 0..4096 => 0..60
-
-		// Short-circuit if no or low CV:
-		if (bank_cv < 0.5f)
-			bank = bank_button_sel;
+		float new_bank_cv_sel =
+			(float)cv_state[BankCV].prev_val / (4096.f - calibration.cv_calibration_offset[BankCV] * 4) * 60.f;
 
 		// TODO: actual anti-hysteresis
 		static float last_bank_cv = 0.f;
-		if (std::abs(last_bank_cv - bank_cv) < 0.25f)
+		if (std::abs(last_bank_cv - new_bank_cv_sel) < 0.15f)
 			return;
-		last_bank_cv = bank_cv;
 
-		int32_t t_bank = (uint32_t)(bank_cv + 0.5f) + bank_button_sel;
+		last_bank_cv = new_bank_cv_sel;
+		bank_cv_sel = new_bank_cv_sel;
+	}
+
+	void combine_bank_sels() {
 		static int32_t last_t_bank = 0xFFFFFFFF;
+
+		int32_t t_bank = (uint32_t)(bank_cv_sel + 0.5f) + bank_button_sel;
 		if (last_t_bank == t_bank)
 			return;
 		last_t_bank = t_bank;

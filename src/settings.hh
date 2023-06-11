@@ -25,10 +25,8 @@ enum class RecStates {
 	CLOSING_FILE_TO_REC_AGAIN,
 };
 
-enum class GateType { Gate, Trig };
 enum class AutoStopMode { Off = 0, Always = 1, Looping = 2 };
 
-// Was global_modes[...] and global_params.
 struct UserSettings {
 	// These are stored on SD Card
 	// And changed with button-combos or in system mode
@@ -46,12 +44,6 @@ struct UserSettings {
 	uint32_t record_sample_rate = 48000;
 
 	bool use_cues = false;
-
-	// These are changed in system mode and stored... in flash?
-	GateType rev_jack = GateType::Trig;
-	GateType endout_jack = GateType::Trig;
-	GateType start_jack = GateType::Trig;
-	GateType main_clock = GateType::Gate;
 
 	// calculated values (formerly in global_params)
 	// Might move them to Sampler class?

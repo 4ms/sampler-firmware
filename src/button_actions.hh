@@ -126,6 +126,8 @@ struct ButtonActionHandler {
 
 		// Bank -> change bank
 		if (controls.bank_button.is_just_released()) {
+			flags.set(Flag::BankReleased);
+
 			if (!ignore_bank_release) {
 				if (controls.rev_button.is_pressed()) {
 					flags.set(Flag::BankPrev);
@@ -183,6 +185,8 @@ struct ButtonActionHandler {
 		}
 
 		if (controls.bank_button.is_just_released()) {
+			flags.set(Flag::BankReleased);
+
 			if (!ignore_bank_release) {
 				if (controls.rev_button.is_pressed()) {
 					flags.set(Flag::BankPrev);
@@ -220,8 +224,6 @@ struct ButtonActionHandler {
 			ignore_play_release = false;
 		}
 	}
-
-private:
 };
 
 } // namespace SamplerKit

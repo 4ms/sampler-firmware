@@ -53,6 +53,7 @@ struct Params {
 	float volume = 1.f;
 
 	uint32_t hover_bank = 0;
+	bool is_hovering = false;
 
 	// These are what's playing, even if the controls have selected something else
 	uint8_t sample_num_now_playing = 0;
@@ -300,22 +301,37 @@ private:
 	// Holding Bank while turning Sample "hovers" over a bank
 	// which is selected when Bank is released
 	void update_hover_bank() {
-		if (pot_state[LengthPot].moved_while_bank_down) {
-			uint32_t blinks = pot_state[SamplePot].prev_val / 820; // 0..5
+		if (auto &pot = pot_state[LengthPot]; pot.moved_while_bank_down) {
+			is_hovering = true;
+			uint32_t blinks = pot.prev_val / 820; // 0..5
 			uint32_t color = hover_bank % 10;
-			hover_bank = color + (blinks * 10);
-		} else if (pot_state[SamplePot].moved_while_bank_down) {
-			uint32_t blinks = hover_bank / 10;
-			uint32_t color = pot_state[SamplePot].prev_val / 410; // 0..9
-			hover_bank = color + (blinks * 10);
+			uint32_t test_bank = color + (blinks * 10);
+			if (banks.is_bank_enabled(test_bank))
+				hover_bank = test_bank;
+			pot.moved_while_bank_down = false;
+		}
 
-		} else if (controls.bank_button.is_just_released()) {
+		if (auto &pot = pot_state[SamplePot]; pot.moved_while_bank_down) {
+			is_hovering = true;
+			uint32_t blinks = hover_bank / 10;
+			uint32_t color = pot.prev_val / 410; // 0..9
+			uint32_t test_bank = color + (blinks * 10);
+			if (banks.is_bank_enabled(test_bank))
+				hover_bank = test_bank;
+			pot.moved_while_bank_down = false;
+		}
+
+		if (flags.take(Flag::BankReleased)) {
+			is_hovering = false;
 			if (!banks.is_bank_enabled(hover_bank))
 				hover_bank = banks.prev_enabled_bank(hover_bank);
 
-			bank = hover_bank;
-		} else
-			hover_bank = bank;
+			bank_button_sel = hover_bank;
+		}
+
+		if (!is_hovering) {
+			hover_bank = bank_button_sel;
+		}
 	}
 
 	void update_bank_cv() {
@@ -347,6 +363,7 @@ private:
 			return;
 		}
 
+		// Ensure we select an enabled bank
 		if (banks.is_bank_enabled(t_bank)) {
 			bank = t_bank;
 			return;

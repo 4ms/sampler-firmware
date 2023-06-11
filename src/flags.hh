@@ -53,6 +53,7 @@ enum class Flag : uint64_t {
 
 	BankNext,
 	BankPrev,
+	BankReleased,
 
 	StartupParsing,
 	StartupLoadingIndex,

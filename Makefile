@@ -1,27 +1,16 @@
 BUILDDIR := build
 
-rebuild: | $(BUILDDIR)
-	cmake --build $(BUILDDIR) --config RelWithDebInfo
-	python3 uimg_header.py build/mp153/RelWithDebInfo/mp153.bin build/mp153/RelWithDebInfo/mp153.uimg
-
-debug:
-	cmake --build $(BUILDDIR) --config Debug
-
-release:
-	cmake --build $(BUILDDIR) --config RelWithDebInfo
+all: | $(BUILDDIR)
+	cmake --build $(BUILDDIR) 
 
 $(BUILDDIR):
-	cmake -B $(BUILDDIR) -G"Ninja Multi-Config" 
+	cmake -B $(BUILDDIR) -GNinja
 
 clean:
 	rm -rf $(BUILDDIR)
 
-flash:
-	python3 uimg_header.py build/mp153/RelWithDebInfo/mp153.bin build/mp153/RelWithDebInfo/mp153.uimg
-	$(info ------------------------------------------------------------------------)
-	$(info Reboot the board with the jumper installed before executing this command)
-	$(info ------------------------------------------------------------------------)
-	dfu-util -a 0 -s 0x70080000 -D build/mp153/RelWithDebInfo/mp153.uimg
-
 wav:
 	cmake --build build --target 723.wav
+
+combo:
+	cmake --build build --target 723-combo

@@ -66,3 +66,15 @@ set(TARGET_BOOTLOADER_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH
 
 set_bootloader_hal_sources(BOOTLOADER_HAL_SOURCES stm32f7)
 create_bootloader_target(${target})
+
+# Target: XXX-flash: Flashes bootloader and app to chip. Requires JFlashExe to be executable and in your $PATH
+
+# TODO: add script/723.flash
+add_custom_target(
+  ${target}-flash
+  DEPENDS ${target}-combo
+  COMMAND echo
+          "JFlashExe -openprj${PROJECT_SOURCE_DIR}/script/${target}.jflash -open${TARGET_BASE}-combo.hex -auto -exit"
+  COMMAND JFlashExe -openprj${PROJECT_SOURCE_DIR}/script/${target}.jflash -open${TARGET_BASE}-combo.hex -auto -exit
+  USES_TERMINAL
+)

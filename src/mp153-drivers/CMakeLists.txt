@@ -45,3 +45,21 @@ set(TARGET_SOURCES
 
 set_hal_sources(HAL_SOURCES stm32mp1)
 create_target(${target})
+
+add_custom_target(
+  mp153-uimg ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}.elf
+  COMMAND ${CMAKE_SOURCE_DIR}/scripts/uimg_header.py ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
+          ${CMAKE_CURRENT_BINARY_DIR}/${target}.uimg
+)
+
+add_custom_target(
+  flash-mp153
+  DEPENDS mp153-uimg
+  COMMAND echo "----------------------------------------------------------------------------"
+  COMMAND echo "|                  Flashing MP153 board via DFU USB                        |"
+  COMMAND echo "| Reboot the board with the jumper installed before executing this command |"
+  COMMAND echo "----------------------------------------------------------------------------"
+  COMMAND dfu-util -a 0 -s 0x70080000 -D ${CMAKE_CURRENT_BINARY_DIR}/${target}.uimg
+  VERBATIM USES_TERMINAL
+)

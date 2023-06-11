@@ -14,3 +14,6 @@ wav:
 
 combo:
 	cmake --build build --target 723-combo
+
+warnings: clean
+	cmake --preset gcc-warn -B $(BUILDDIR)

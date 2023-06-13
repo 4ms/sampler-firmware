@@ -56,7 +56,7 @@ public:
 		}
 	}
 
-	uint32_t tmp_buff_u32[READ_BLOCK_SIZE >> 2];
+	uint32_t file_read_buffer[(READ_BLOCK_SIZE >> 2) + 2];
 
 	void read_storage_to_buffer(void) {
 		uint8_t chan = 0;
@@ -155,6 +155,7 @@ public:
 
 				else
 				{
+
 					//
 					// Forward reading:
 					//
@@ -164,18 +165,20 @@ public:
 						if (rd > READ_BLOCK_SIZE)
 							rd = READ_BLOCK_SIZE;
 
-						// uint32_t tmp_buff_u32;
-						res = f_read(&s.fil[samplenum], (uint8_t *)tmp_buff_u32, rd, &br);
+						res = f_read(&s.fil[samplenum], file_read_buffer, rd, &br);
+
 						if (res != FR_OK) {
 							g_error |= FILE_READ_FAIL_1 << chan;
 							s.is_buffered_to_file_end[samplenum] = 1; // FixMe: Do we really want to set this in case of
 																	  // disk error? We don't when reversing.
+							printf_("Err Read\n");
 						}
 
 						if (br < rd) {
 							g_error |= FILE_UNEXPECTEDEOF; // unexpected end of file, but we can continue writing
 														   // out the data we read
 							s.is_buffered_to_file_end[samplenum] = 1;
+							printf_("Err EOF\n");
 						}
 
 						s.sample_file_curpos[samplenum] = f_tell(&s.fil[samplenum]) - s_sample->startOfData;
@@ -207,7 +210,8 @@ public:
 
 						} else {
 							// rd < READ_BLOCK_SIZE: read the first block (which is the last to be read, since we're
-							// reversing) to-do: align rd to 24
+							// reversing)
+							// TODO: align rd to 24?
 
 							// Jump to the beginning
 							s.sample_file_curpos[samplenum] = s_sample->inst_start;
@@ -220,7 +224,7 @@ public:
 
 						// Read one block forward
 						t_fptr = f_tell(&s.fil[samplenum]);
-						res = f_read(&s.fil[samplenum], (uint8_t *)tmp_buff_u32, rd, &br);
+						res = f_read(&s.fil[samplenum], file_read_buffer, rd, &br);
 						if (res != FR_OK)
 							g_error |= FILE_READ_FAIL_1 << chan;
 
@@ -252,23 +256,23 @@ public:
 
 						// 16 bit
 						if (s_sample->sampleByteSize == 2)
-							err = play_buff[samplenum].memory_write_16as16(tmp_buff_u32, rd >> 2, 0);
+							err = play_buff[samplenum].memory_write_16as16((uint32_t *)file_read_buffer, rd >> 2, 0);
 
 						// 24bit (rd must be a multiple of 3)
 						else if (s_sample->sampleByteSize == 3)
-							err = play_buff[samplenum].memory_write_24as16((uint8_t *)tmp_buff_u32, rd, 0);
+							err = play_buff[samplenum].memory_write_24as16((uint8_t *)file_read_buffer, rd, 0);
 
 						// 8bit
 						else if (s_sample->sampleByteSize == 1)
-							err = play_buff[samplenum].memory_write_8as16((uint8_t *)tmp_buff_u32, rd, 0);
+							err = play_buff[samplenum].memory_write_8as16((uint8_t *)file_read_buffer, rd, 0);
 
 						// 32-bit float (rd must be a multiple of 4)
 						else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 3)
-							err = play_buff[samplenum].memory_write_32fas16((float *)tmp_buff_u32, rd >> 2, 0);
+							err = play_buff[samplenum].memory_write_32fas16((float *)file_read_buffer, rd >> 2, 0);
 
 						// 32-bit int rd must be a multiple of 4
 						else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 1)
-							err = play_buff[samplenum].memory_write_32ias16((uint8_t *)tmp_buff_u32, rd, 0);
+							err = play_buff[samplenum].memory_write_32ias16((uint8_t *)file_read_buffer, rd, 0);
 
 						// Update the cache addresses
 						if (params.reverse) {

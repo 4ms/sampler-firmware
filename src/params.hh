@@ -213,23 +213,24 @@ private:
 				pot.track_moving_ctr--;
 
 				if (controls.rev_button.is_pressed()) {
-					if (!pot.moved_while_rev_down) {
+					if (!pot.moved_while_rev_down && !pot.is_catching_up)
 						pot.latched_val = pot.prev_val;
-					}
+
 					pot.moved_while_rev_down = true;
 					if (i == StartPot)
 						button_handler.ignore_rev_release = true;
-				} else {
-					if (pot.is_catching_up && std::abs(pot.latched_val - pot.cur_val) < 6)
-						pot.is_catching_up = false;
 				}
 
 				if (controls.bank_button.is_pressed()) {
-					if (!pot.moved_while_bank_down)
+					if (!pot.moved_while_bank_down && !pot.is_catching_up)
 						pot.latched_val = pot.prev_val;
+
 					pot.moved_while_bank_down = true;
 					button_handler.ignore_bank_release = true;
 				}
+
+				if (pot.is_catching_up && std::abs(pot.latched_val - pot.cur_val) < (Brain::MinPotChange * 2))
+					pot.is_catching_up = false;
 
 				pot.delta = diff;
 				pot.prev_val = pot.cur_val;

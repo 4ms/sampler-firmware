@@ -95,15 +95,20 @@ void Recorder::record_audio_to_buffer(const AudioStreamConf::AudioInBlock &src) 
 				scaled = __SSAT(scaled, 24);
 
 				if (params.settings.rec_24bits) {
-					uint16_t topword = (uint16_t)(scaled & 0x00FFFF);
-					uint16_t bottombyte = (uint16_t)((scaled & 0xFF0000)) >> 16;
+					uint8_t bottombyte = scaled & 0x0000FF;
+					uint8_t midbyte = (scaled & 0x00FF00) >> 8;
+					uint8_t topbyte = (scaled & 0xFF0000) >> 16;
 
-					*(int16_t *)rec_buff.in = bottombyte;
+					*(uint8_t *)rec_buff.in = bottombyte;
 					rec_buff.offset_in_address(1, 0);
 					rec_buff.wait_memory_ready();
 
-					*(int16_t *)rec_buff.in = topword;
-					rec_buff.offset_in_address(2, 0);
+					*(uint8_t *)rec_buff.in = midbyte;
+					rec_buff.offset_in_address(1, 0);
+					rec_buff.wait_memory_ready();
+
+					*(uint8_t *)rec_buff.in = topbyte;
+					rec_buff.offset_in_address(1, 0);
 					rec_buff.wait_memory_ready();
 
 				} else {

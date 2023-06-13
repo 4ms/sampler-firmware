@@ -252,13 +252,21 @@ private:
 	}
 
 	void update_trig_jacks() {
-		if (controls.play_jack.is_just_pressed()) {
-			if (play_state == PlayStates::PLAYING)
-				play_state = PlayStates::PLAY_FADEDOWN;
+		if (op_mode == OperationMode::Playback) {
+			if (controls.play_jack.is_just_pressed()) {
+				if (play_state == PlayStates::PLAYING)
+					play_state = PlayStates::PLAY_FADEDOWN;
 
-			voct_latch_value = cv_state[PitchCV].cur_val;
-			play_trig_timestamp = HAL_GetTick();
-			flags.set(Flag::PlayTrigDelaying);
+				voct_latch_value = cv_state[PitchCV].cur_val;
+				play_trig_timestamp = HAL_GetTick();
+				flags.set(Flag::PlayTrigDelaying);
+			}
+		}
+
+		if (op_mode == OperationMode::Record) {
+			if (controls.play_jack.is_just_pressed()) {
+				flags.set(Flag::RecTrig);
+			}
 		}
 
 		if (controls.rev_jack.is_just_pressed()) {

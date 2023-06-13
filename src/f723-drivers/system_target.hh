@@ -26,3 +26,7 @@ struct SystemTarget {
 	}
 };
 } // namespace SamplerKit
+
+inline void recover_from_task_fault() {
+	NVIC_SystemReset();
+}

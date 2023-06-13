@@ -8,3 +8,7 @@ struct SystemTarget {
 	static void init() {}
 };
 } // namespace SamplerKit
+
+inline void recover_from_task_fault() {
+	//???
+}

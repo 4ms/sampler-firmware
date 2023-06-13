@@ -16,7 +16,6 @@ class SampleLoader {
 	Flags &flags;
 	Sdcard &sd;
 	SampleList &samples;
-	BankManager &banks;
 	std::array<CircularBuffer, NumSamplesPerBank> &play_buff;
 	uint32_t &g_error;
 
@@ -36,7 +35,6 @@ public:
 		, flags{flags}
 		, sd{sd}
 		, samples{banks.samples}
-		, banks{banks}
 		, play_buff{splay_buff}
 		, g_error{g_error} {
 		sdcard_update_task.init(

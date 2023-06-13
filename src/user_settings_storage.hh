@@ -397,19 +397,21 @@ struct UserSettingsStorage {
 			}
 
 			if (cur_setting_found == PercEnvelope) {
-				if (str_startswith_nocase(read_buffer, "Yes"))
-					settings.perc_env = 1;
-				else
-					settings.perc_env = 0;
+				// Use FadeUpDownTime to set PercEnvelope
+				// if (str_startswith_nocase(read_buffer, "Yes"))
+				// 	settings.perc_env = 1;
+				// else
+				// 	settings.perc_env = 0;
 
 				cur_setting_found = NoSetting; // back to looking for headers
 			}
 
 			if (cur_setting_found == FadeEnvelope) {
-				if (str_startswith_nocase(read_buffer, "Yes"))
-					settings.fadeupdown_env = 1;
-				else
-					settings.fadeupdown_env = 0;
+				// Use FadeUpDownTime to set FadeEnvelope
+				// if (str_startswith_nocase(read_buffer, "Yes"))
+				// 	settings.fadeupdown_env = 1;
+				// else
+				// 	settings.fadeupdown_env = 0;
 
 				cur_setting_found = NoSetting; // back to looking for headers
 			}
@@ -437,6 +439,9 @@ struct UserSettingsStorage {
 				settings.fade_time_ms = str_xt_int(read_buffer);
 				if (settings.fade_time_ms < 0 || settings.fade_time_ms > 255)
 					settings.fade_time_ms = 24;
+
+				settings.fadeupdown_env = (settings.fade_time_ms > 0);
+				settings.perc_env = (settings.fade_time_ms > 0);
 
 				cur_setting_found = NoSetting; // back to looking for headers
 			}

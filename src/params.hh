@@ -145,9 +145,12 @@ private:
 		auto &pot = pot_state[LengthPot];
 		float potval;
 
-		if (pot.moved_while_rev_down) {
-			potval = pot.latched_val;
+		potval = (pot.moved_while_bank_down || pot.moved_while_rev_down || pot.is_catching_up) ? pot.latched_val :
+																								 pot.cur_val;
 
+		// Bank + Length handled in update_hover_bank()
+
+		if (pot.moved_while_rev_down && !pot.moved_while_bank_down) {
 			// Rev + Length = envelope fade time
 			settings.fade_time_ms = pot.cur_val / 102.4f; // 0..40ms
 			settings.update_fade_rates();
@@ -155,10 +158,6 @@ private:
 			// disable envelopes when setting is close to zero
 			settings.perc_env = settings.perc_env ? (pot.cur_val > 30) : (pot.cur_val > 40);
 			settings.fadeupdown_env = settings.perc_env;
-		} else {
-			if (pot.is_catching_up && std::abs(pot.latched_val - pot.cur_val) < 6)
-				pot.is_catching_up = false;
-			potval = pot.is_catching_up ? pot.latched_val : pot.cur_val;
 		}
 
 		length = (potval + cv_state[LengthCV].cur_val) / 4096.f;
@@ -176,12 +175,8 @@ private:
 		if (pot.moved_while_rev_down) {
 			// Rev + StartPos = Volume
 			pot_start = pot.latched_val;
-			// TODO: use value-crossing to update volume so vol doesnt jump when we start the push+turn
-			// if (std::abs(pot.cur_val / 4095.f - volume) < 0.04f)
 			volume = pot.cur_val / 4095.f;
 		} else {
-			if (pot.is_catching_up && pot.latched_val == pot.cur_val)
-				pot.is_catching_up = false;
 			pot_start = pot.is_catching_up ? pot.latched_val : pot.cur_val;
 		}
 
@@ -194,11 +189,9 @@ private:
 
 	void update_sample() {
 		auto &pot = pot_state[SamplePot];
-		float potval;
-		if (pot.moved_while_bank_down) {
-			potval = pot.latched_val;
-		} else
-			potval = pot.cur_val;
+
+		// Sample pot does not do catch-up mode
+		float potval = (pot.moved_while_bank_down) ? pot.latched_val : pot.cur_val;
 
 		auto new_sample = detent_num_antihys(potval + cv_state[SampleCV].cur_val, sample);
 		if (new_sample != sample) {
@@ -218,24 +211,28 @@ private:
 
 			if (pot.track_moving_ctr) {
 				pot.track_moving_ctr--;
-				pot.prev_val = pot.cur_val;
-				pot.delta = diff;
-				// pot.moved = true;
 
 				if (controls.rev_button.is_pressed()) {
-					if (!pot.moved_while_rev_down)
-						pot.latched_val = pot.cur_val;
+					if (!pot.moved_while_rev_down) {
+						pot.latched_val = pot.prev_val;
+					}
 					pot.moved_while_rev_down = true;
 					if (i == StartPot)
 						button_handler.ignore_rev_release = true;
+				} else {
+					if (pot.is_catching_up && std::abs(pot.latched_val - pot.cur_val) < 6)
+						pot.is_catching_up = false;
 				}
 
 				if (controls.bank_button.is_pressed()) {
 					if (!pot.moved_while_bank_down)
-						pot.latched_val = pot.cur_val;
+						pot.latched_val = pot.prev_val;
 					pot.moved_while_bank_down = true;
 					button_handler.ignore_bank_release = true;
 				}
+
+				pot.delta = diff;
+				pot.prev_val = pot.cur_val;
 			}
 		}
 	}

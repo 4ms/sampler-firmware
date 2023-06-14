@@ -1,12 +1,14 @@
 #pragma once
 #include "conf/sd_conf.hh"
+#include "debug.hh"
 #include "disk_ops.hh"
 #include "drivers/sdcard.hh"
 
 // Hack a busy light into this.
 // FixME: make this part of SdCardConf: a busy indicator?
 #include "conf/board_conf.hh"
-using SdCardBusyLED = SamplerKit::Board::RevR;
+// using SdCardBusyLED = SamplerKit::Board::RevR;
+using SdCardBusyLED = Debug::Disabled;
 
 template<mdrivlib::SDCardConfC ConfT>
 class SDCardOps : public DiskOps {
@@ -20,12 +22,8 @@ public:
 	SDCardOps(SDCardOps &other) = delete;
 	SDCardOps() = default;
 
-	void busy_light_on() {
-		// SdCardBusyLED::high();
-	}
-	void busy_light_off() {
-		// SdCardBusyLED::low();
-	}
+	void busy_light_on() { SdCardBusyLED::high(); }
+	void busy_light_off() { SdCardBusyLED::low(); }
 
 	DSTATUS status() override { return (_status == Status::NotInit) ? (STA_NOINIT | STA_NODISK) : 0; }
 
@@ -111,8 +109,8 @@ public:
 				busy_light_off();
 			} break;
 
-			case CTRL_SYNC: 
-				//Nothing?
+			case CTRL_SYNC:
+				// Nothing?
 				break;
 
 			default:

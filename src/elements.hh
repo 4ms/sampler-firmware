@@ -30,21 +30,11 @@ enum TrigOutElement : uint32_t { EndOutJack };
 
 // Settings:
 enum { FirmwareMajorVersion = 0 };
-enum { FirmwareMinorVersion = 1 };
+enum { FirmwareMinorVersion = 2 };
 
 enum { MaxNumBanks = 60 };
 enum { NumSamplesPerBank = 10 };
 enum { LEDUpdateRateHz = 93 };
-
-// 44.1k/16b/stereo@ pitch=1.0: the time from the first block read to the first sample of audio outputted:
-//(This is addition to the delay from the Trigger jack to the first block being read, around 16ms)
-// BASE_BUFFER_THRESHOLD/READ_BLOCK_SIZE
-// 6144/16384: 13ms
-// 3072/16384: 9ms
-// 1536/16384: 6ms
-// 6144/8192: 13ms
-// 3072/8192: 9ms
-// 1536/8192: 7ms
 
 // constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 6144;
 // constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 3072;

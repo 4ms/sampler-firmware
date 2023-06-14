@@ -58,8 +58,7 @@ public:
 
 	uint32_t file_read_buffer[(READ_BLOCK_SIZE >> 2) + 2];
 
-	void read_storage_to_buffer(void) {
-		uint8_t chan = 0;
+	void read_storage_to_buffer() {
 		uint32_t err;
 
 		FRESULT res;
@@ -70,260 +69,238 @@ public:
 		uint8_t samplenum, banknum;
 		Sample *s_sample;
 		FSIZE_t t_fptr;
-		uint32_t pre_buff_size;
-		uint32_t active_buff_size;
-		float pb_adjustment;
+		float resample_amt;
 
 		check_change_sample();
 		check_change_bank();
 
-		if ((params.play_state != PlayStates::SILENT) && (params.play_state != PlayStates::PLAY_FADEDOWN) &&
-			(params.play_state != PlayStates::RETRIG_FADEDOWN))
-		{
-			samplenum = params.sample_num_now_playing;
-			banknum = params.sample_bank_now_playing;
-			s_sample = &(samples[banknum][samplenum]);
+		if ((params.play_state == PlayStates::SILENT) || (params.play_state == PlayStates::PLAY_FADEDOWN) ||
+			(params.play_state == PlayStates::RETRIG_FADEDOWN))
+			return;
 
-			// FixMe: Calculate play_buff_bufferedamt after play_buff changes, not here, then make bufferedmat private
-			// again
-			s.play_buff_bufferedamt[samplenum] = play_buff[samplenum].distance(params.reverse);
+		samplenum = params.sample_num_now_playing;
+		banknum = params.sample_bank_now_playing;
+		s_sample = &(samples[banknum][samplenum]);
 
-			//
-			// Try to recover from a file read error
-			//
-			if (g_error & (FILE_READ_FAIL_1 << chan)) {
-				res = reload_sample_file(&s.fil[samplenum], s_sample, sd);
-				if (res != FR_OK) {
-					g_error |= FILE_OPEN_FAIL;
-					params.play_state = PlayStates::SILENT;
-					return;
-				}
+		// FixMe: Calculate play_buff_bufferedamt after play_buff changes, not here, then make bufferedmat private
+		// again
+		s.play_buff_bufferedamt[samplenum] = play_buff[samplenum].distance(params.reverse);
 
-				res = sd.create_linkmap(&s.fil[samplenum], samplenum);
-				if (res != FR_OK) {
-					g_error |= FILE_CANNOT_CREATE_CLTBL;
-					f_close(&s.fil[samplenum]);
-					params.play_state = PlayStates::SILENT;
-					return;
-				}
-
-				// clear the error flag
-				g_error &= ~(FILE_READ_FAIL_1 << chan);
-			} else // If no file read error... [?? FixMe: does this logic make sense for clearing
-				   // is_buffered_to_file_end ???]
-			{
-				if ((!params.reverse && (s.sample_file_curpos[samplenum] < s_sample->inst_end)) ||
-					(params.reverse && (s.sample_file_curpos[samplenum] > s_sample->inst_start)))
-					s.is_buffered_to_file_end[samplenum] = 0;
+		//
+		// Try to recover from a file read error
+		//
+		if (g_error & FILE_READ_FAIL_1) {
+			res = reload_sample_file(&s.fil[samplenum], s_sample, sd);
+			if (res != FR_OK) {
+				g_error |= FILE_OPEN_FAIL;
+				params.play_state = PlayStates::SILENT;
+				return;
 			}
 
-			//
-			// Calculate the amount to pre-buffer before we play:
-			//
+			res = sd.create_linkmap(&s.fil[samplenum], samplenum);
+			if (res != FR_OK) {
+				g_error |= FILE_CANNOT_CREATE_CLTBL;
+				f_close(&s.fil[samplenum]);
+				params.play_state = PlayStates::SILENT;
+				return;
+			}
+
+			// clear the error flag
+			g_error &= ~FILE_READ_FAIL_1;
+
+		} else {
+			// FixMe: does this logic make sense for clearing is_buffered_to_file_end?
+			if ((!params.reverse && (s.sample_file_curpos[samplenum] < s_sample->inst_end)) ||
+				(params.reverse && (s.sample_file_curpos[samplenum] > s_sample->inst_start)))
+				s.is_buffered_to_file_end[samplenum] = 0;
+		}
+
+		//
+		// Calculate the amount to pre-buffer before we play:
+		//
 		resample_amt = params.pitch * (float)s_sample->sampleRate / (float)params.settings.record_sample_rate;
 		float max_rs = params.settings.stereo_mode ? MAX_RS / s_sample->numChannels : MAX_RS;
 		if (resample_amt > max_rs)
 			resample_amt = max_rs;
 
-			// Calculate how many bytes we need to pre-load in our buffer
-			//
-			// Note of interest: blockAlign already includes numChannels, so we essentially square it in the calc
-			// below. The reason is that we plow through the bytes in play_buff twice as fast if it's stereo, and
-			// since it takes twice as long to load stereo data from the sd card, we have to preload four times as
-			// much data (2^2) vs (1^1)
-			//
-			pre_buff_size = (uint32_t)((float)(BASE_BUFFER_THRESHOLD * s_sample->blockAlign * s_sample->numChannels) *
-									   pb_adjustment);
-			active_buff_size = pre_buff_size * 4;
+		// Calculate how many bytes we need to pre-load in our buffer
+		uint32_t pre_buff_amt =
+			(float)(BASE_BUFFER_THRESHOLD * s_sample->blockAlign * s_sample->numChannels) * resample_amt;
+		uint32_t playback_buff_amt = std::clamp(pre_buff_amt * 4, uint32_t{0}, (play_buff[samplenum].size * 7) / 10);
+		uint32_t target_buff_amt = params.play_state == PlayStates::PREBUFFERING ? pre_buff_amt : playback_buff_amt;
 
-			if (active_buff_size >
-				((play_buff[samplenum].size * 7) / 10)) // limit amount of buffering ahead to 70% of buffer size
-				active_buff_size = ((play_buff[samplenum].size * 7) / 10);
+		// Check if the we need to load more from SD Card to the buffer
+		if (!s.is_buffered_to_file_end[samplenum] && (s.play_buff_bufferedamt[samplenum] < target_buff_amt)) {
 
-			if (!s.is_buffered_to_file_end[samplenum] && ((params.play_state == PlayStates::PREBUFFERING &&
-														   (s.play_buff_bufferedamt[samplenum] < pre_buff_size)) ||
-														  (params.play_state != PlayStates::PREBUFFERING &&
-														   (s.play_buff_bufferedamt[samplenum] < active_buff_size))))
-			{
-				if (s.sample_file_curpos[samplenum] > s_sample->sampleSize) {
-					// We read too much data somehow
-					// TODO: When does this happen? sample_file_curpos has not changed recently...
-					g_error |= FILE_WAVEFORMATERR;
-					params.play_state = PlayStates::SILENT;
-					s.start_playing();
+			if (s.sample_file_curpos[samplenum] > s_sample->sampleSize) {
+				// We read too much data somehow
+				// TODO: When does this happen? sample_file_curpos has not changed recently...
+				g_error |= FILE_WAVEFORMATERR;
+				params.play_state = PlayStates::SILENT;
+				s.start_playing();
 
-				} else if (s.sample_file_curpos[samplenum] > s_sample->inst_end) {
-					s.is_buffered_to_file_end[samplenum] = 1;
-				}
+			} else if (s.sample_file_curpos[samplenum] > s_sample->inst_end) {
+				// Buffered the end of the file, do not load any more
+				s.is_buffered_to_file_end[samplenum] = 1;
 
-				else
-				{
+			} else {
+				// Forward reading:
+				if (params.reverse == 0) {
+					rd = s_sample->inst_end - s.sample_file_curpos[samplenum];
 
-					//
-					// Forward reading:
-					//
-					if (params.reverse == 0) {
-						rd = s_sample->inst_end - s.sample_file_curpos[samplenum];
+					if (rd > READ_BLOCK_SIZE)
+						rd = READ_BLOCK_SIZE;
 
-						if (rd > READ_BLOCK_SIZE)
-							rd = READ_BLOCK_SIZE;
+					res = f_read(&s.fil[samplenum], file_read_buffer, rd, &br);
 
-						res = f_read(&s.fil[samplenum], file_read_buffer, rd, &br);
+					if (res != FR_OK) {
+						// FixMe: Do we really want to set this in case of disk error? We don't when reversing.
+						g_error |= FILE_READ_FAIL_1;
+						s.is_buffered_to_file_end[samplenum] = 1;
+						printf_("Err Read\n");
+					}
 
-						if (res != FR_OK) {
-							g_error |= FILE_READ_FAIL_1 << chan;
-							s.is_buffered_to_file_end[samplenum] = 1; // FixMe: Do we really want to set this in case of
-																	  // disk error? We don't when reversing.
-							printf_("Err Read\n");
-						}
+					if (br < rd) {
+						// unexpected EOF, but we can continue writing out the data we read
+						g_error |= FILE_UNEXPECTEDEOF;
+						s.is_buffered_to_file_end[samplenum] = 1;
+						printf_("Err EOF\n");
+					}
 
-						if (br < rd) {
-							g_error |= FILE_UNEXPECTEDEOF; // unexpected end of file, but we can continue writing
-														   // out the data we read
-							s.is_buffered_to_file_end[samplenum] = 1;
-							printf_("Err EOF\n");
-						}
+					s.sample_file_curpos[samplenum] = f_tell(&s.fil[samplenum]) - s_sample->startOfData;
+
+					if (s.sample_file_curpos[samplenum] >= s_sample->inst_end) {
+						s.is_buffered_to_file_end[samplenum] = 1;
+					}
+
+				} else {
+					// Reverse reading:
+					rd = s.sample_file_curpos[samplenum] > s_sample->inst_start ?
+							 s.sample_file_curpos[samplenum] - s_sample->inst_start :
+							 0;
+
+					if (rd >= READ_BLOCK_SIZE) {
+						// Jump back a block
+						rd = READ_BLOCK_SIZE;
+
+						t_fptr = f_tell(&s.fil[samplenum]);
+						res = f_lseek(&s.fil[samplenum], t_fptr - READ_BLOCK_SIZE);
+						if (res || (f_tell(&s.fil[samplenum]) != (t_fptr - READ_BLOCK_SIZE)))
+							g_error |= LSEEK_FPTR_MISMATCH;
 
 						s.sample_file_curpos[samplenum] = f_tell(&s.fil[samplenum]) - s_sample->startOfData;
 
-						if (s.sample_file_curpos[samplenum] >= s_sample->inst_end) {
-							s.is_buffered_to_file_end[samplenum] = 1;
-						}
-
 					} else {
-						//
-						// Reverse reading:
-						//
-						if (s.sample_file_curpos[samplenum] > s_sample->inst_start)
-							rd = s.sample_file_curpos[samplenum] - s_sample->inst_start;
-						else
-							rd = 0;
+						// rd < READ_BLOCK_SIZE: read the first block
+						// (which is the last to be read, since we're reversing)
+						// TODO: align rd to 24?
 
-						if (rd >= READ_BLOCK_SIZE) {
-
-							// Jump back a block
-							rd = READ_BLOCK_SIZE;
-
-							t_fptr = f_tell(&s.fil[samplenum]);
-							res = f_lseek(&s.fil[samplenum], t_fptr - READ_BLOCK_SIZE);
-							if (res || (f_tell(&s.fil[samplenum]) != (t_fptr - READ_BLOCK_SIZE)))
-								g_error |= LSEEK_FPTR_MISMATCH;
-
-							s.sample_file_curpos[samplenum] = f_tell(&s.fil[samplenum]) - s_sample->startOfData;
-
-						} else {
-							// rd < READ_BLOCK_SIZE: read the first block (which is the last to be read, since we're
-							// reversing)
-							// TODO: align rd to 24?
-
-							// Jump to the beginning
-							s.sample_file_curpos[samplenum] = s_sample->inst_start;
-							res = s.set_file_pos(banknum, samplenum);
-							if (res != FR_OK)
-								g_error |= FILE_SEEK_FAIL;
-
-							s.is_buffered_to_file_end[samplenum] = 1;
-						}
-
-						// Read one block forward
-						t_fptr = f_tell(&s.fil[samplenum]);
-						res = f_read(&s.fil[samplenum], file_read_buffer, rd, &br);
-						if (res != FR_OK)
-							g_error |= FILE_READ_FAIL_1 << chan;
-
-						if (br < rd)
-							g_error |= FILE_UNEXPECTEDEOF;
-
-						// Jump backwards to where we started reading
-						res = f_lseek(&s.fil[samplenum], t_fptr);
+						// Jump to the beginning
+						s.sample_file_curpos[samplenum] = s_sample->inst_start;
+						res = s.set_file_pos(banknum, samplenum);
 						if (res != FR_OK)
 							g_error |= FILE_SEEK_FAIL;
-						if (f_tell(&s.fil[samplenum]) != t_fptr)
-							g_error |= LSEEK_FPTR_MISMATCH;
+
+						s.is_buffered_to_file_end[samplenum] = 1;
 					}
 
-					// Write temporary buffer to play_buff[]->in
+					// Read one block forward
+					t_fptr = f_tell(&s.fil[samplenum]);
+					res = f_read(&s.fil[samplenum], file_read_buffer, rd, &br);
 					if (res != FR_OK)
-						g_error |= FILE_READ_FAIL_1 << chan;
-					else {
-						// Jump back in play_buff by the amount just read (re-sized from file addresses to buffer
-						// address)
-						if (params.reverse)
-							play_buff[samplenum].offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
+						g_error |= FILE_READ_FAIL_1;
 
-						err = 0;
+					if (br < rd)
+						g_error |= FILE_UNEXPECTEDEOF;
+
+					// Jump backwards to where we started reading
+					res = f_lseek(&s.fil[samplenum], t_fptr);
+					if (res != FR_OK)
+						g_error |= FILE_SEEK_FAIL;
+					if (f_tell(&s.fil[samplenum]) != t_fptr)
+						g_error |= LSEEK_FPTR_MISMATCH;
+				}
+
+				// Write temporary buffer to play_buff[]->in
+				if (res != FR_OK)
+					g_error |= FILE_READ_FAIL_1;
+				else {
+					// Jump back in play_buff by the amount just read (re-sized from file addresses to buffer
+					// address)
+					if (params.reverse)
+						play_buff[samplenum].offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
+
+					err = 0;
+
+					//
+					// Write raw file data (tmp_buff_u32) into buffer (play_buff)
+					//
+
+					// 16 bit
+					if (s_sample->sampleByteSize == 2)
+						err = play_buff[samplenum].memory_write_16as16((uint32_t *)file_read_buffer, rd >> 2, 0);
+
+					// 24bit (rd must be a multiple of 3)
+					else if (s_sample->sampleByteSize == 3)
+						err = play_buff[samplenum].memory_write_24as16((uint8_t *)file_read_buffer, rd, 0);
+
+					// 8bit
+					else if (s_sample->sampleByteSize == 1)
+						err = play_buff[samplenum].memory_write_8as16((uint8_t *)file_read_buffer, rd, 0);
+
+					// 32-bit float (rd must be a multiple of 4)
+					else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 3)
+						err = play_buff[samplenum].memory_write_32fas16((float *)file_read_buffer, rd >> 2, 0);
+
+					// 32-bit int rd must be a multiple of 4
+					else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 1)
+						err = play_buff[samplenum].memory_write_32ias16((uint8_t *)file_read_buffer, rd, 0);
+
+					// Update the cache addresses
+					if (params.reverse) {
+						// Ignore head crossing error if we are reversing and ended up with in==out (that's
+						// normal for the first reading)
+						if (err && (play_buff[samplenum].in == play_buff[samplenum].out))
+							err = 0;
 
 						//
-						// Write raw file data (tmp_buff_u32) into buffer (play_buff)
+						// Jump back again in play_buff by the amount just read (re-sized from file addresses to
+						// buffer address) This ensures play_buff[]->in points to the buffer seam
 						//
+						play_buff[samplenum].offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
 
-						// 16 bit
-						if (s_sample->sampleByteSize == 2)
-							err = play_buff[samplenum].memory_write_16as16((uint32_t *)file_read_buffer, rd >> 2, 0);
+						s.cache[samplenum].low = s.sample_file_curpos[samplenum];
+						s.cache[samplenum].map_pt = play_buff[samplenum].in;
 
-						// 24bit (rd must be a multiple of 3)
-						else if (s_sample->sampleByteSize == 3)
-							err = play_buff[samplenum].memory_write_24as16((uint8_t *)file_read_buffer, rd, 0);
+						if ((s.cache[samplenum].high - s.cache[samplenum].low) > s.cache[samplenum].size)
+							s.cache[samplenum].high = s.cache[samplenum].low + s.cache[samplenum].size;
+					} else {
 
-						// 8bit
-						else if (s_sample->sampleByteSize == 1)
-							err = play_buff[samplenum].memory_write_8as16((uint8_t *)file_read_buffer, rd, 0);
+						s.cache[samplenum].high = s.sample_file_curpos[samplenum];
 
-						// 32-bit float (rd must be a multiple of 4)
-						else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 3)
-							err = play_buff[samplenum].memory_write_32fas16((float *)file_read_buffer, rd >> 2, 0);
-
-						// 32-bit int rd must be a multiple of 4
-						else if (s_sample->sampleByteSize == 4 && s_sample->PCM == 1)
-							err = play_buff[samplenum].memory_write_32ias16((uint8_t *)file_read_buffer, rd, 0);
-
-						// Update the cache addresses
-						if (params.reverse) {
-							// Ignore head crossing error if we are reversing and ended up with in==out (that's
-							// normal for the first reading)
-							if (err && (play_buff[samplenum].in == play_buff[samplenum].out))
-								err = 0;
-
-							//
-							// Jump back again in play_buff by the amount just read (re-sized from file addresses to
-							// buffer address) This ensures play_buff[]->in points to the buffer seam
-							//
-							play_buff[samplenum].offset_in_address((rd * 2) / s_sample->sampleByteSize, 1);
-
-							s.cache[samplenum].low = s.sample_file_curpos[samplenum];
+						if ((s.cache[samplenum].high - s.cache[samplenum].low) > s.cache[samplenum].size) {
 							s.cache[samplenum].map_pt = play_buff[samplenum].in;
-
-							if ((s.cache[samplenum].high - s.cache[samplenum].low) > s.cache[samplenum].size)
-								s.cache[samplenum].high = s.cache[samplenum].low + s.cache[samplenum].size;
-						} else {
-
-							s.cache[samplenum].high = s.sample_file_curpos[samplenum];
-
-							if ((s.cache[samplenum].high - s.cache[samplenum].low) > s.cache[samplenum].size) {
-								s.cache[samplenum].map_pt = play_buff[samplenum].in;
-								s.cache[samplenum].low = s.cache[samplenum].high - s.cache[samplenum].size;
-							}
+							s.cache[samplenum].low = s.cache[samplenum].high - s.cache[samplenum].size;
 						}
-
-						if (err)
-							g_error |= READ_BUFF1_OVERRUN << chan;
 					}
+
+					if (err)
+						g_error |= READ_BUFF1_OVERRUN;
 				}
 			}
+		}
 
-			// Check if we've prebuffered enough to start playing
-			if ((s.is_buffered_to_file_end[samplenum] || s.play_buff_bufferedamt[samplenum] >= pre_buff_size) &&
-				params.play_state == PlayStates::PREBUFFERING)
-			{
-				flags.set(Flag::StartFadeUp);
-				//  env_level = 0.f;
-				if (params.length <= 0.5f)
-					params.play_state = params.reverse ? PlayStates::PLAYING_PERC : PlayStates::PERC_FADEUP;
-				else
-					params.play_state = PlayStates::PLAY_FADEUP;
-			}
-
-		} // params.play_state != SILENT, FADEDOWN
+		// Check if we've prebuffered enough to start playing
+		if ((s.is_buffered_to_file_end[samplenum] || s.play_buff_bufferedamt[samplenum] >= pre_buff_amt) &&
+			params.play_state == PlayStates::PREBUFFERING)
+		{
+			flags.set(Flag::StartFadeUp);
+			//  env_level = 0.f;
+			if (params.length <= 0.5f)
+				params.play_state = params.reverse ? PlayStates::PLAYING_PERC : PlayStates::PERC_FADEUP;
+			else
+				params.play_state = PlayStates::PLAY_FADEUP;
+		}
 	}
 
 	void check_change_bank() {

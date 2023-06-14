@@ -46,9 +46,11 @@ enum { LEDUpdateRateHz = 93 };
 // 3072/8192: 9ms
 // 1536/8192: 7ms
 
-// #define BASE_BUFFER_THRESHOLD (6144)
-constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 3072;
-// #define BASE_BUFFER_THRESHOLD (1536)
+// constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 6144;
+// constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 3072;
+// constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 1536;
+// constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 256 * 3;
+constexpr inline uint32_t BASE_BUFFER_THRESHOLD = 64 * 3;
 
 // READ_BLOCK_SIZE must be a multiple of all possible sample file block sizes
 // 1(8m), 2(16m), 3(24m), 4(32m), 6(24s), 8(32s) ---> 24 is the lowest value

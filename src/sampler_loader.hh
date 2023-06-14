@@ -120,7 +120,10 @@ public:
 			//
 			// Calculate the amount to pre-buffer before we play:
 			//
-			pb_adjustment = params.pitch * (float)s_sample->sampleRate / (float)params.settings.record_sample_rate;
+		resample_amt = params.pitch * (float)s_sample->sampleRate / (float)params.settings.record_sample_rate;
+		float max_rs = params.settings.stereo_mode ? MAX_RS / s_sample->numChannels : MAX_RS;
+		if (resample_amt > max_rs)
+			resample_amt = max_rs;
 
 			// Calculate how many bytes we need to pre-load in our buffer
 			//

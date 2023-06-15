@@ -83,11 +83,8 @@ inline uint32_t cue_pos(int cuenum, const Sample *const sample) {
 
 // Return cue number given the start_param, or -1 if cue is invalid
 inline int calc_start_cuenum(float start_param, const Sample *const sample) {
-	// if (sample->num_cues <= 0)
-	// 	return -1;
-	if (start_param < 30.f / 4096.f)
-		return 0;
-	int cuenum = std::clamp<int>(start_param * sample->num_cues + 1, 1, sample->num_cues);
+	auto num_regions = sample->num_cues + 1; // cues 1,2,3 => regions [start,1][1,2][2,3][3,end]
+	int cuenum = std::clamp<int>(start_param * num_regions, 0, sample->num_cues);
 	uint32_t cue = cue_pos(cuenum, sample);
 	if (cue >= sample->inst_start && cue <= sample->inst_end)
 		return cuenum;
@@ -95,14 +92,7 @@ inline int calc_start_cuenum(float start_param, const Sample *const sample) {
 		return -1;
 }
 
-// Given: length (0 to 1)
-// and a starting cuenum (must be valid, is not checked here)
-// return the file address of where to stop,
-// snapping to cues if possible.
-// Minimum is to play is two READ blocks
-// First snap point is the next cue marker after the start_cuenum.
-// Returns the sample end if number of cue segments to play exceeds number of cues.
-// or if cue point is out of range, or if starting cue is too close to the sample end
+// Return cue number to stop at, given the start_param and length, or -1 if cue is invalid
 inline int calc_stop_cuenum(int start_cuenum, float scaled_length, const Sample *const sample) {
 	int cues_to_play = scaled_length * (float)sample->num_cues + 1;
 	int cuenum = start_cuenum + cues_to_play;
@@ -115,7 +105,6 @@ inline int calc_stop_cuenum(int start_cuenum, float scaled_length, const Sample 
 	return cuenum;
 }
 
-// calc_start_point()
 inline uint32_t calc_start_point(float start_param, Sample *const sample, int anchor_cuenum, bool use_cues) {
 	uint32_t zeropt;
 	uint32_t inst_size;
@@ -143,9 +132,7 @@ inline uint32_t calc_start_point(float start_param, Sample *const sample, int an
 	return align_addr((zeropt + ((uint32_t)(start_param * (float)inst_size))), sample->blockAlign);
 }
 
-// calc_stop_point()
 // Returns an offset from the startpos, based on the length  and resampling rate
-//
 inline uint32_t calc_stop_point(
 	float length_param, float resample_param, Sample *sample, uint32_t startpos, int anchor_cuenum, float sample_rate) {
 	uint32_t fwd_stop_point;

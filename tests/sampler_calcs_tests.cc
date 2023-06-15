@@ -31,15 +31,17 @@ TEST_CASE("calc_start_cuenum") {
 	CHECK(cue_pos(4, &s) == 100 * s.blockAlign);
 
 	CHECK(calc_start_cuenum(0.0f, &s) == 0);
-	CHECK(calc_start_cuenum(0.1f, &s) == 1);
-	CHECK(calc_start_cuenum(0.25f, &s) == 2);
-	CHECK(calc_start_cuenum(0.5f, &s) == 3);
-	CHECK(calc_start_cuenum(0.75f, &s) == 4);
+	CHECK(calc_start_cuenum(0.19f, &s) == 0);
+	CHECK(calc_start_cuenum(0.251f, &s) == 1);
+	CHECK(calc_start_cuenum(0.51f, &s) == 2);
+	CHECK(calc_start_cuenum(0.751f, &s) == 3);
 	CHECK(calc_start_cuenum(0.99f, &s) == 4);
 	CHECK(calc_start_cuenum(1.0f, &s) == 4);
 
 	SUBCASE("invalid cue returns -1") {
-		s.cue[2] = 151; // inst_end / blockAlign + 1
+		// 0.51f  is cue #2, which is cue[1]:
+		// Set cue[1] to be past the end of the sample data
+		s.cue[1] = s.inst_end / s.blockAlign + 1;
 		CHECK(calc_start_cuenum(0.5f, &s) == -1);
 	}
 }

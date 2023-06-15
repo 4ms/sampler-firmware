@@ -151,7 +151,7 @@ uint32_t load_sample_header(Sample *s_sample, FIL *sample_file) {
 				if (auto err = read(sample_file, &cue, sizeof(CueMarker), &br); err)
 					continue; // ignore cue chunk in case of error
 				auto start = cue.sample_start;
-				// printf_("Cue %d @%d\n", c_i, start);
+				// printf_("\nCue %d @%d\n", c_i, start);
 				// Use non-zero cues that are increasing
 				// TODO: take all non-zero cues and then sort
 				if (start > 0) {

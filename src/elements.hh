@@ -30,7 +30,7 @@ enum TrigOutElement : uint32_t { EndOutJack };
 
 // Settings:
 enum { FirmwareMajorVersion = 0 };
-enum { FirmwareMinorVersion = 2 };
+enum { FirmwareMinorVersion = 3 };
 
 enum { MaxNumBanks = 60 };
 enum { NumSamplesPerBank = 10 };

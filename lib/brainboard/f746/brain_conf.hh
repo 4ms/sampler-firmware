@@ -88,6 +88,10 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 	.priority2 = 3,
 };
 
+// Audio
+// TODO: actually measure this!
+constexpr inline float AudioGain = 1.f; // gain to apply to acheive 0db out:in
+
 // SDCard
 constexpr inline bool SdmmcWide = false;
 constexpr inline uint32_t SdmmcPeriphNum = 1;

@@ -17,3 +17,10 @@ combo:
 
 warnings: clean
 	cmake --preset gcc-warn -B $(BUILDDIR)
+
+jflash-app-f723:
+	cmake --build $(BUILDDIR) -- 723-jflash-app
+
+jflash-app-f746:
+	cmake --build $(BUILDDIR) -- 746-jflash-app
+

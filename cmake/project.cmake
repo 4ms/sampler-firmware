@@ -161,6 +161,14 @@ function(create_target target)
   # Helper for letting lsp servers know what target we're using
   add_custom_target(${target}-compdb COMMAND ln -snf ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR}/.)
 
+  add_custom_target(
+      ${target}-jflash-app
+      DEPENDS ${target}.elf
+      COMMENT "Flashing app...."
+      COMMAND JFlashExe -openprj${CMAKE_SOURCE_DIR}/lib/brainboard/scripts/${target}.jflash -open${TARGET_BASE}.hex -auto -min -hide -exit
+      USES_TERMINAL
+  )
+
 endfunction()
 
 function(create_bootloader_target target)

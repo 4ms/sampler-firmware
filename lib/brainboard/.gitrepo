@@ -4,7 +4,7 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = git@github.com:danngreen/brainboard.git
+	remote = git@github.com:4ms/brainboard.git
 	branch = main
 	commit = 627c676ecac70b576b0c924ee4b37f3e6599e51e
 	parent = 65997010e1f846769051ca43f2db6229cdb4960e

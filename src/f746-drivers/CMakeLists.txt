@@ -8,8 +8,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/project.cmake)
 
 set(root ${CMAKE_SOURCE_DIR})
 
-set(target 723)
-set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F723IETx_FLASH.ld)
+set(target 746)
+set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/lib/brainboard/f746/linker/STM32F746IEKx_FLASH.ld)
 set(ARCH_DEFINES STM32F723xx STM32F7 ARM_MATH_CM7)
 set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mthumb)
 
@@ -62,14 +62,14 @@ set(TARGET_BOOTLOADER_INCLUDES
     ${root}/lib/STM32F7xx_HAL_Driver/Inc
 )
 
-set(TARGET_BOOTLOADER_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/lib/brainboard/f746/linker/STM32F723IETx_FLASH_BOOTLOADER.ld)
+set(TARGET_BOOTLOADER_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/lib/brainboard/f746/linker/STM32F746IEKx_FLASH_BOOTLOADER.ld)
 
 set_bootloader_hal_sources(BOOTLOADER_HAL_SOURCES stm32f7)
 create_bootloader_target(${target})
 
 # Target: XXX-flash: Flashes bootloader and app to chip. Requires JFlashExe to be executable and in your $PATH
 
-# TODO: add script/723.flash
+# TODO: add script/746.flash
 add_custom_target(
   ${target}-flash
   DEPENDS ${target}-combo

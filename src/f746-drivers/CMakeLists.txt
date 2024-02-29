@@ -10,14 +10,14 @@ set(root ${CMAKE_SOURCE_DIR})
 
 set(target 746)
 set(TARGET_LINK_SCRIPT ${CMAKE_SOURCE_DIR}/linker/STM32F746IEKx_FLASH.ld)
-set(ARCH_DEFINES STM32F723xx STM32F7 ARM_MATH_CM7)
+set(ARCH_DEFINES STM32F746xx STM32F7 ARM_MATH_CM7)
 set(ARCH_FLAGS -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mthumb)
 
 set(TARGET_INCLUDES
     ${root}/src/f746-drivers/
     ${root}/lib/brainboard/f746
     ${root}/lib/mdrivlib/target/stm32f7xx
-    ${root}/lib/mdrivlib/target/stm32f723
+    ${root}/lib/mdrivlib/target/stm32f746
     ${root}/lib/CMSIS/Device/ST/STM32F7xx/Include
     ${root}/lib/STM32F7xx_HAL_Driver/Inc
 )
@@ -57,7 +57,7 @@ set(TARGET_BOOTLOADER_INCLUDES
     ${root}/src/bootloader/f746
     ${root}/lib/brainboard/f746
     ${root}/lib/mdrivlib/target/stm32f7xx
-    ${root}/lib/mdrivlib/target/stm32f723
+    ${root}/lib/mdrivlib/target/stm32f746
     ${root}/lib/CMSIS/Device/ST/STM32F7xx/Include
     ${root}/lib/STM32F7xx_HAL_Driver/Inc
 )

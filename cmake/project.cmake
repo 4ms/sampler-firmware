@@ -161,6 +161,15 @@ function(create_target target)
   # Helper for letting lsp servers know what target we're using
   add_custom_target(${target}-compdb COMMAND ln -snf ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR}/.)
 
+  set(TARGET_BASE $<TARGET_FILE_DIR:${target}.elf>/${target})
+
+  add_custom_command(
+      TARGET ${target}.elf
+      POST_BUILD
+      COMMAND arm-none-eabi-size ${TARGET_BASE}.elf
+      VERBATIM
+      )
+
   add_custom_target(
       ${target}-jflash-app
       DEPENDS ${target}.elf

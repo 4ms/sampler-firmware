@@ -236,4 +236,13 @@ function(create_bootloader_target target)
   )
   set_target_properties(${target}-combo PROPERTIES ADDITIONAL_CLEAN_FILES "${TARGET_BASE}-combo.hex")
 
+  add_custom_target(
+    ${target}-jflash-combo
+    DEPENDS ${target}-combo
+    COMMAND JFlashExe -openprj${CMAKE_SOURCE_DIR}/lib/brainboard/scripts/${target}.jflash -open${TARGET_BASE}-combo.hex -auto -min -hide -exit
+    COMMENT "Flashing app. Requires JFlashExe on your PATH"
+    USES_TERMINAL
+    VERBATIM
+  )
+
 endfunction()

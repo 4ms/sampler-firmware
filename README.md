@@ -1,2 +1,2 @@
-## Looping Delay Kit Firmware ##
+## Sampler Kit Firmware ##
 

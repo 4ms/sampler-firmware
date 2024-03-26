@@ -3,7 +3,7 @@
 namespace SamplerKit
 {
 // #define PRINT_DEBUG
-#define PRINT_LOG
+// #define PRINT_LOG
 
 #ifdef PRINT_DEBUG
 template<typename... Ts>
@@ -21,7 +21,7 @@ static void pr_log(Ts... args) {
 	printf_(args...);
 }
 #else
-static void pr_log(...) {
+[[maybe_unused]] static void pr_log(...) {
 }
 #endif
 

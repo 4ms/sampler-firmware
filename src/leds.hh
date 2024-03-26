@@ -154,12 +154,12 @@ struct Leds {
 		// Sample Slot Change
 		if (flags.take(Flag::PlaySampleChangedValid))
 			controls.play_led.flash_once_ms(Colors::white, 20);
-		if (flags.take(Flag::PlaySampleChangedValidBright))
-			controls.play_led.flash_once_ms(Colors::white, 120);
-		if (flags.take(Flag::PlaySampleChangedEmpty))
-			controls.play_led.flash_once_ms(Colors::red, 20);
-		if (flags.take(Flag::PlaySampleChangedEmptyBright))
-			controls.play_led.flash_once_ms(Colors::red, 120);
+		if (flags.take(Flag::PlaySampleChangedEmpty)) {
+			if (op_mode == OperationMode::Record)
+				controls.play_led.flash_once_ms(Colors::magenta, 100);
+			else
+				controls.play_led.flash_once_ms(Colors::red, 20);
+		}
 	}
 
 	void animate_startup() {

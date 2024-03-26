@@ -20,8 +20,6 @@ enum class Flag : uint32_t {
 	PlaySampleChanged,
 	PlaySampleChangedValid,
 	PlaySampleChangedEmpty,
-	PlaySampleChangedValidBright,
-	PlaySampleChangedEmptyBright,
 
 	RecStartedWithTrigger,
 

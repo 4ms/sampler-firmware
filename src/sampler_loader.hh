@@ -335,9 +335,7 @@ public:
 		// FixMe: Clean up this logic:
 		// no file: fadedown or remain silent
 		if (samples[params.bank][params.sample].filename[0] == 0) {
-			// Avoid dimming it if we had already set the bright flag
-			if (flags.read(Flag::PlaySampleChangedEmptyBright) == 0)
-				flags.set(Flag::PlaySampleChangedEmpty);
+			flags.set(Flag::PlaySampleChangedEmpty);
 			flags.clear(Flag::PlaySampleChangedValid);
 
 			if (params.settings.auto_stop_on_sample_change == AutoStopMode::Always ||
@@ -360,10 +358,7 @@ public:
 		}
 
 		// Sample found in this slot:
-
-		// Avoid dimming it if we had already set the bright flag
-		if (flags.read(Flag::PlaySampleChangedValidBright) == 0)
-			flags.set(Flag::PlaySampleChangedValid);
+		flags.set(Flag::PlaySampleChangedValid);
 		flags.clear(Flag::PlaySampleChangedEmpty);
 		pr_dbg("%.80s\n", samples[params.bank][params.sample].filename);
 

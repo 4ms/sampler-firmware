@@ -4,7 +4,7 @@
 
 namespace SamplerKit
 {
-enum class Flag : uint64_t {
+enum class Flag : uint32_t {
 	LatchVoltOctCV,
 	RevTrig,
 	PlayBut,
@@ -69,29 +69,34 @@ enum class Flag : uint64_t {
 };
 
 struct Flags {
-	using flag_base_t = std::underlying_type_t<Flag>;
-	constexpr inline static auto NumFlags = static_cast<flag_base_t>(Flag::NUM_FLAGS);
-	static_assert(NumFlags < sizeof(flag_base_t) * 8, "Exceeded max flags allowed");
+	using flag_base_t = uint32_t;
+	constexpr static auto NumFlags = static_cast<flag_base_t>(Flag::NUM_FLAGS);
 
-	void set(Flag flag) { _flags |= bitnum(flag); }
+private:
+	constexpr static unsigned FlagsPerGroup = sizeof(flag_base_t) * 8;
+	constexpr static unsigned NumFlagGroups = (NumFlags - 1) / FlagsPerGroup + 1;
 
-	void clear(Flag flag) {
-		if (_flags & bitnum(flag))
-			_flags &= ~bitnum(flag);
-	}
+	static constexpr flag_base_t flagnum(Flag flag) { return static_cast<flag_base_t>(flag); }
+	static constexpr unsigned groupnum(Flag flag) { return flagnum(flag) / FlagsPerGroup; }
+	static flag_base_t bit(Flag b) { return flag_base_t(1) << (flagnum(b) - (groupnum(b) * FlagsPerGroup)); }
 
-	bool read(Flag flag) { return _flags & bitnum(flag); }
+	flag_base_t &flaggroup(Flag flag) { return _flags[groupnum(flag)]; }
+
+	std::array<flag_base_t, NumFlagGroups> _flags{};
+
+public:
+	void set(Flag flag) { flaggroup(flag) |= bit(flag); }
+
+	void clear(Flag flag) { flaggroup(flag) &= ~bit(flag); }
+
+	bool read(Flag flag) { return flaggroup(flag) & bit(flag); }
 
 	bool take(Flag flag) {
-		if (_flags & bitnum(flag)) {
-			_flags &= ~bitnum(flag);
+		if (read(flag)) {
+			clear(flag);
 			return true;
 		}
 		return false;
 	}
-
-private:
-	flag_base_t _flags = 0;
-	flag_base_t bitnum(Flag b) { return static_cast<flag_base_t>(1) << static_cast<flag_base_t>(b); }
 };
 } // namespace SamplerKit

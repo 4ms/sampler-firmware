@@ -198,6 +198,13 @@ struct ButtonActionHandler {
 					flags.set(Flag::BankNext);
 				}
 			}
+
+			for (auto &pot : pot_state) {
+				if (pot.moved_while_bank_down)
+					pot.is_catching_up = true;
+				pot.moved_while_bank_down = false;
+			}
+
 			ignore_bank_release = false;
 		}
 

@@ -17,7 +17,7 @@ constexpr inline auto AdcSampTime = mdrivlib::AdcSamplingTime::_28Cycles;
 
 struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 	static constexpr auto resolution = mdrivlib::AdcResolution::Bits12;
-	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_3;
+	static constexpr auto adc_periph_num = mdrivlib::AdcPeriphNum::_2;
 	static constexpr auto oversample = DebugDisableAdcIRQ ? true : false;
 	static constexpr auto clock_div = mdrivlib::AdcClockSourceDiv::APBClk_Div4;
 
@@ -26,10 +26,10 @@ struct PotAdcConf : mdrivlib::DefaultAdcPeriphConf {
 
 	struct DmaConf : mdrivlib::DefaultAdcPeriphConf::DmaConf {
 		static constexpr auto DMAx = 2;
-		static constexpr auto StreamNum = 0;
-		static constexpr auto RequestNum = DMA_CHANNEL_2;
+		static constexpr auto StreamNum = 2;
+		static constexpr auto RequestNum = DMA_CHANNEL_1;
 		static constexpr auto dma_priority = Low;
-		static constexpr IRQn_Type IRQn = DMA2_Stream0_IRQn;
+		static constexpr IRQn_Type IRQn = DMA2_Stream2_IRQn;
 		static constexpr uint32_t pri = 0;
 		static constexpr uint32_t subpri = 0;
 	};
@@ -48,10 +48,10 @@ struct CVAdcConf : mdrivlib::DefaultAdcPeriphConf {
 
 	struct DmaConf : mdrivlib::DefaultAdcPeriphConf::DmaConf {
 		static constexpr auto DMAx = 2;
-		static constexpr auto StreamNum = 4;
+		static constexpr auto StreamNum = 0;
 		static constexpr auto RequestNum = DMA_CHANNEL_0;
 		static constexpr auto dma_priority = Low;
-		static constexpr IRQn_Type IRQn = DMA2_Stream4_IRQn;
+		static constexpr IRQn_Type IRQn = DMA2_Stream0_IRQn;
 		static constexpr uint32_t pri = 0;
 		static constexpr uint32_t subpri = 0;
 	};
@@ -88,12 +88,16 @@ const mdrivlib::TimekeeperConfig param_update_task_conf = {
 	.priority2 = 3,
 };
 
+// Audio
+// TODO: actually measure this!
+constexpr inline float AudioGain = 1.f; // gain to apply to acheive 0db out:in
+
 // SDCard
 constexpr inline bool SdmmcWide = false;
 constexpr inline uint32_t SdmmcPeriphNum = 1;
 constexpr inline uint32_t SdmmcMaxSpeed = 48'000'000;
 
 // Debug
-constexpr inline uint32_t ConsoleUartBaseAddr = UART4_BASE;
+constexpr inline uint32_t ConsoleUartBaseAddr = UART7_BASE;
 
 } // namespace Brain

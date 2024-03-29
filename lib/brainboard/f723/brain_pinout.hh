@@ -92,17 +92,13 @@ constexpr inline mdrivlib::TimChanConf D5PwmConf{
 	.channum = TimChannelNum::_4,
 };
 
-// D6?
+// no f723 D6 pwm
 
 constexpr inline mdrivlib::TimChanConf D7PwmConf{
 	.pin = {D7.gpio, D7.pin, PinAF::AltFunc3},
 	.TIM = TIM8_BASE,
 	.channum = TimChannelNum::_4,
 };
-
-// No D8 Pwm
-
-// D9
 
 constexpr inline mdrivlib::TimChanConf D10PwmConf{
 	.pin = {D10.gpio, D10.pin, PinAF::AltFunc1},
@@ -117,6 +113,11 @@ constexpr inline mdrivlib::TimChanConf D11PwmConf{
 };
 
 // D12
+constexpr inline mdrivlib::TimChanConf D12PwmConf{
+	.pin = {D12.gpio, D12.pin, PinAF::AltFunc1},
+	.TIM = TIM1_BASE,
+	.channum = TimChannelNum::_1,
+};
 // D13
 
 constexpr inline mdrivlib::TimChanConf D14PwmConf{

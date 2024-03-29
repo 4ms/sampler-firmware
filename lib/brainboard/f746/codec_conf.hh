@@ -45,9 +45,9 @@ const SaiConfig sai_conf = {
 	.dma_init_rx =
 		{
 			.DMAx = DMA2,
-			.stream = DMA2_Stream5,
-			.channel = DMA_CHANNEL_0,
-			.IRQn = DMA2_Stream5_IRQn,
+			.stream = DMA2_Stream4,
+			.channel = DMA_CHANNEL_1,
+			.IRQn = DMA2_Stream4_IRQn,
 			.pri = 2,
 			.subpri = 2,
 		},
@@ -63,7 +63,7 @@ const SaiConfig sai_conf = {
 	.LRCLK = {GPIO::E, PinNum::_4, PinAF::AltFunc6},
 	.SD_DAC = {GPIO::E, PinNum::_6, PinAF::AltFunc6},
 	.SD_ADC = {GPIO::E, PinNum::_3, PinAF::AltFunc6},
-	.reset_pin = {GPIO::C, PinNum::_12},
+	.reset_pin = {GPIO::B, PinNum::_3},
 
 	.bus_address = 0,
 

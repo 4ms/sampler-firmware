@@ -19,7 +19,8 @@ struct System {
 		SystemTarget::init();
 
 		Console::init();
-		Debug::Pin0{};
+		// Debug::Pin0{}; // is TX, so don't use
+
 		Debug::Pin1{};
 		Debug::Pin2{};
 		Debug::Pin3{};

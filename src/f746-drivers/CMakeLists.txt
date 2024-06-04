@@ -36,7 +36,7 @@ set(TARGET_SOURCES
 
 set(WAV_ENCODE_PYTHON_CMD
     # cmake-format: off
-    python3 ${CMAKE_SOURCE_DIR}/src/bootloader/stm_audio_bootloader/qpsk/encoder.py --sample_rate 48000 --baud_rate 12000 --carrier_frequency 6000 --packet_size 256 --target stm32f74 --start_sector 3 --block_size 131072 $<TARGET_FILE_DIR:${target}.elf>/${target}.bin
+    python3 ${CMAKE_SOURCE_DIR}/lib/stm-audio-bootloader/qpsk/encoder.py -v --scramble --sample_rate 48000 --baud_rate 12000 --carrier_frequency 6000 --packet_size 256 --target stm32f74 --start_sector 2 --block_size 32768 $<TARGET_FILE_DIR:${target}.elf>/${target}.bin
     # cmake-format: on
 )
 

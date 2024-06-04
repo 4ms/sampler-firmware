@@ -12,8 +12,8 @@
 
 constexpr inline uint32_t BootloaderFlashAddr = get_sector_addr(0);	  // 32k Bootloader
 constexpr inline uint32_t SettingsFlashAddr = get_sector_addr(1);	  // 32k Settings
-constexpr inline uint32_t AppFlashAddr = get_sector_addr(2);		  // 192k
-constexpr inline uint32_t BootloaderReceiveAddr = get_sector_addr(5); // 256k to receive
+constexpr inline uint32_t AppFlashAddr = get_sector_addr(2);		  // 192k+256k for app
+constexpr inline uint32_t BootloaderReceiveAddr = get_sector_addr(2); // receive at same address
 
 constexpr inline uint32_t AppStartAddr = AppFlashAddr;
 constexpr inline uint32_t BootloaderStartAddr = BootloaderFlashAddr;

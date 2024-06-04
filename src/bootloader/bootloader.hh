@@ -132,6 +132,8 @@ struct AudioBootloader {
 
 					case stm_audio_bootloader::PACKET_DECODER_STATE_OK:
 						ui_state = UI_STATE_RECEIVING;
+						// Console::write(packet_index);
+						// Console::write(" pkt\n");
 						memcpy(recv_buffer + (packet_index % kPacketsPerBlock) * stm_audio_bootloader::kPacketSize,
 							   decoder.packet_data(),
 							   stm_audio_bootloader::kPacketSize);
@@ -163,6 +165,7 @@ struct AudioBootloader {
 						// Console::write("End\n");
 						// Write out buffer if we haven't yet (which happens if we load only to RAM)
 						if (current_flash_address == kStartReceiveAddress) {
+							// Console::write("Final write\n");
 							if (!write_buffer()) {
 								ui_state = UI_STATE_ERROR;
 								rcv_err = true;
@@ -221,7 +224,7 @@ struct AudioBootloader {
 	void init_reception() {
 #ifdef USING_QPSK
 		// QPSK
-		decoder.Init((uint16_t)20000);
+		decoder.Init(BootloaderConf::OutroSyncSeconds * kModulationRate - 4000, BootloaderConf::DoScramble);
 		demodulator.Init(
 			kModulationRate / kSampleRate * 4294967296.0f, kSampleRate / kModulationRate, 2.f * kSampleRate / kBitRate);
 		demodulator.SyncCarrier(true);
@@ -239,7 +242,8 @@ struct AudioBootloader {
 	}
 
 	bool write_buffer() {
-		// Console::write("Writing\n");
+		// Console::write(current_flash_address);
+		// Console::write(" W\n");
 		if ((current_flash_address + kBlkSize) <= get_sector_addr(NumFlashSectors)) {
 			flash_write_page(recv_buffer, current_flash_address, kBlkSize);
 			current_flash_address += kBlkSize;

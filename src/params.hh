@@ -131,7 +131,7 @@ private:
 		else
 			pitch_cv = cv_state[PitchCV].cur_val;
 
-		pitch_cv = MathTools::plateau<12, 2048>(pitch_cv) + 2048;
+		pitch_cv = MathTools::plateau<20, 2048>(pitch_cv) + 2048;
 
 		uint32_t compensated_pitch_cv = TuningCalcs::apply_tracking_compensation(pitch_cv, calibration.tracking_comp);
 

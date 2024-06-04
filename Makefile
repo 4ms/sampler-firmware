@@ -11,6 +11,7 @@ clean:
 
 wav:
 	cmake --build build --target 723.wav
+	cmake --build build --target 746.wav
 
 combo:
 	cmake --build build --target 723-combo

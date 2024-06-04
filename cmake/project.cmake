@@ -69,11 +69,7 @@ function(create_target target)
 
   target_compile_options(
     ${target}_ARCH
-    INTERFACE $<$<CONFIG:Debug>:-O0
-              -g3>
-              $<$<CONFIG:Release>:-Ofast>
-              $<$<CONFIG:RelWithDebInfo>:-Ofast
-              -g3>
+    INTERFACE 
               -fdata-sections
               -ffunction-sections
               -fno-common
@@ -150,6 +146,8 @@ function(create_target target)
   )
 
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
+  target_compile_options(${target}.elf PRIVATE -Ofast -g3)
+
   target_link_script(${target} ${TARGET_LINK_SCRIPT})
   add_bin_hex_command(${target})
 
@@ -190,6 +188,7 @@ function(create_bootloader_target target)
     ${root}/src/bootloader/animation.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/packet_decoder.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/demodulator.cc
+    # ${root}/src/console.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
     ${root}/lib/mdrivlib/drivers/pin.cc
@@ -215,6 +214,8 @@ function(create_bootloader_target target)
   )
 
   target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
+  target_compile_options(${target}-bootloader.elf PRIVATE -Os)
+
   target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
   add_bin_hex_command(${target}-bootloader)
 

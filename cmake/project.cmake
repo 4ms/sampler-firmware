@@ -69,11 +69,7 @@ function(create_target target)
 
   target_compile_options(
     ${target}_ARCH
-    INTERFACE $<$<CONFIG:Debug>:-O0
-              -g3>
-              $<$<CONFIG:Release>:-Ofast>
-              $<$<CONFIG:RelWithDebInfo>:-Ofast
-              -g3>
+    INTERFACE 
               -fdata-sections
               -ffunction-sections
               -fno-common
@@ -150,6 +146,8 @@ function(create_target target)
   )
 
   target_link_libraries(${target}.elf PRIVATE ${target}_ARCH)
+  target_compile_options(${target}.elf PRIVATE -Ofast -g3)
+
   target_link_script(${target} ${TARGET_LINK_SCRIPT})
   add_bin_hex_command(${target})
 
@@ -160,6 +158,23 @@ function(create_target target)
 
   # Helper for letting lsp servers know what target we're using
   add_custom_target(${target}-compdb COMMAND ln -snf ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR}/.)
+
+  set(TARGET_BASE $<TARGET_FILE_DIR:${target}.elf>/${target})
+
+  add_custom_command(
+      TARGET ${target}.elf
+      POST_BUILD
+      COMMAND arm-none-eabi-size ${TARGET_BASE}.elf
+      VERBATIM
+      )
+
+  add_custom_target(
+      ${target}-jflash-app
+      DEPENDS ${target}.elf
+      COMMENT "Flashing app...."
+      COMMAND JFlashExe -openprj${CMAKE_SOURCE_DIR}/lib/brainboard/scripts/${target}.jflash -open${TARGET_BASE}.hex -auto -min -hide -exit
+      USES_TERMINAL
+  )
 
 endfunction()
 
@@ -173,6 +188,7 @@ function(create_bootloader_target target)
     ${root}/src/bootloader/animation.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/packet_decoder.cc
     ${root}/src/bootloader/stm_audio_bootloader/qpsk/demodulator.cc
+    # ${root}/src/console.cc
     ${root}/src/libc_stub.c
     ${root}/src/libcpp_stub.cc
     ${root}/lib/mdrivlib/drivers/pin.cc
@@ -198,6 +214,8 @@ function(create_bootloader_target target)
   )
 
   target_link_libraries(${target}-bootloader.elf PRIVATE ${target}_ARCH)
+  target_compile_options(${target}-bootloader.elf PRIVATE -Os)
+
   target_link_script(${target}-bootloader ${TARGET_BOOTLOADER_LINK_SCRIPT})
   add_bin_hex_command(${target}-bootloader)
 
@@ -218,5 +236,14 @@ function(create_bootloader_target target)
             ${TARGET_BASE}-combo.hex
   )
   set_target_properties(${target}-combo PROPERTIES ADDITIONAL_CLEAN_FILES "${TARGET_BASE}-combo.hex")
+
+  add_custom_target(
+    ${target}-jflash-combo
+    DEPENDS ${target}-combo
+    COMMAND JFlashExe -openprj${CMAKE_SOURCE_DIR}/lib/brainboard/scripts/${target}.jflash -open${TARGET_BASE}-combo.hex -auto -min -hide -exit
+    COMMENT "Flashing app. Requires JFlashExe on your PATH"
+    USES_TERMINAL
+    VERBATIM
+  )
 
 endfunction()

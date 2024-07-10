@@ -19,8 +19,6 @@ struct Console {
 	static void putchar(char c);
 	Console() { console.init(); }
 	static void init() { console.init(); }
-	static void write(const char *s) {
-		while (*s)
-			putchar(*s++);
-	}
+	static void write(const char *s) { console.write(s); }
+	static void write(uint32_t val) { console.write(val); }
 };

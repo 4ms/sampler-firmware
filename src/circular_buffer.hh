@@ -29,6 +29,9 @@
 #include <cstdint>
 #include <span>
 
+namespace SamplerKit
+{
+
 struct CircularBuffer {
 	uint32_t in;
 	uint32_t out;
@@ -323,3 +326,5 @@ struct CircularBuffer {
 		}
 	}
 };
+
+} // namespace SamplerKit

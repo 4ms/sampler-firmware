@@ -209,9 +209,25 @@ void run(Controls &controls, CalibrationStorage &cal_storage) {
 	printf_("Hardware Test Complete.\n");
 
 	printf_("Please reboot\n"); //, or system will automatically reboot in 5 seconds\n.");
-	all_lights_off();
 
-	while (true)
-		;
+	std::array animation = {Colors::white,
+							Colors::red,
+							Colors::orange,
+							Colors::yellow,
+							Colors::green,
+							Colors::cyan,
+							Colors::blue,
+							Colors::purple};
+	unsigned i = 0;
+	while (true) {
+		auto color = animation[i];
+		if (++i >= animation.size())
+			i = 0;
+		Board::PlayLED{}.set_color(color);
+		Board::RevLED{}.set_color(color);
+		Board::BankLED{}.set_color(color);
+
+		HAL_Delay(100);
+	}
 }
 } // namespace SamplerKit::HWTests

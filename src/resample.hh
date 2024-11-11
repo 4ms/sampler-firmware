@@ -111,6 +111,9 @@ void resample_read(float rs, CircularBuffer *buf, std::span<int32_t> outbuf, boo
 			inc_play_addr<BlockAlign>(buf, rev);
 			out[outpos] = get_sample<Chan>(buf->out);
 		}
+		x0 = out[buff_len - 3];
+		x1 = out[buff_len - 2];
+		x2 = out[buff_len - 1];
 		return;
 	}
 

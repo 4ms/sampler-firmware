@@ -120,7 +120,7 @@ struct Params {
 private:
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
-		auto potval = std::clamp(pot.cur_val + (int16_t)calibration.pitch_pot_detent_offset, 0, 4095);
+		auto potval = std::clamp(pot.cur_val + calibration.pitch_pot_detent_offset, 0, 4095);
 
 		// Flag::LatchVoltOctCV is set after a Play Trig happens
 		// and the current CV value is stored into voct_latch_value.
@@ -129,7 +129,7 @@ private:
 		if (flags.read(Flag::LatchVoltOctCV))
 			pitch_cv = voct_latch_value;
 		else
-			pitch_cv = cv_state[PitchCV].cur_val + 10;
+			pitch_cv = cv_state[PitchCV].cur_val;
 
 		pitch_cv = MathTools::plateau<30, 2048>(pitch_cv) + 2048;
 

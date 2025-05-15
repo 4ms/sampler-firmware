@@ -151,8 +151,59 @@ void run(Controls &controls, CalibrationStorage &cal_storage) {
 	controls.play_button.clear_events();
 
 	//////////////////////////////
-	print_test_name("Pot and CV jack Test");
+	print_test_name("Pitch Pot Center Detent Calibration\n");
+	printf_("Move the Pitch pot to the center position, and tap the Bank button.\n");
+	printf_("When you wiggle the knob within the detent, the light should stay white.\n");
+	printf_("If not, find the center again and tap the Bank button again.\n");
+	printf_("Press the Play button when done.\n");
+
+	printf_("\nOffset value read from flash = %d\n", cal_storage.cal_data.pitch_pot_detent_offset);
+
+	Board::PlayLED{}.set_color(Colors::off);
+
 	controls.start();
+
+	int32_t cur_val = 2048;
+	int32_t offset = cal_storage.cal_data.pitch_pot_detent_offset;
+	while (true) {
+		int32_t raw = controls.read_pot(PotAdcElement::PitchPot);
+		cur_val = raw + offset;
+
+		Color color;
+		if (cur_val > 2152 || cur_val < 1957) {
+			color = Colors::red; // red: out of pitch=1.0 range
+		} else if (cur_val > 2102 || cur_val < 2007) {
+			color = Colors::yellow; // yellow: warning, close to edge
+		} else if (cur_val > 2068 || cur_val < 2028) {
+			color = Colors::green; // green: ok: more than 20 from center
+		} else {
+			color = Colors::white; // white: within 20 of center
+		}
+
+		Board::BankLED{}.set_color(color);
+
+		if (Board::BankButton::PinT::read()) {
+			offset = 2048 - raw;
+			HAL_Delay(100);
+			printf_("Offset = %d\n", offset);
+			Board::PlayLED{}.set_color(Colors::green);
+		}
+
+		if (Util::main_button_pressed())
+			break;
+
+		HAL_Delay(10);
+	}
+
+	Util::pause_until_button_released();
+
+	printf_("\n\nSaving calibration:\n");
+	printf_("Pitch knob offset = %d\n", offset);
+	cal_storage.cal_data.pitch_pot_detent_offset = offset;
+	cal_storage.save_flash_params();
+
+	//////////////////////////////
+	print_test_name("Pot and CV jack Test");
 
 	printf_("Turn each pot from low to high to center\n");
 	printf_("After the pots, patch Out L into Pitch CV (bi-polar CV)\n");
@@ -163,8 +214,8 @@ void run(Controls &controls, CalibrationStorage &cal_storage) {
 	// est center -2'350'000 = 2.5V
 	// 100'000 = ADC 10, ~190mV
 	// -4'600'000 > ADC 4095, ~4.97V
-	CenterFlatRamp test_waveform_0_5{1., 0.3, -4'600'000, 100'000, 0, 48000};
-	CenterFlatRamp test_waveform_n5_5{1., 0.3, 4'600'000, -4'600'000, 0, 48000};
+	CenterFlatRamp test_waveform_0_5{0.5f, 0.3, -5'000'000, 000'000, 0, 48000};
+	CenterFlatRamp test_waveform_n5_5{0.5f, 0.3, 4'600'000, -4'600'000, 0, 48000};
 	audio.set_callback([&](const AudioStreamConf::AudioInBlock &in, AudioStreamConf::AudioOutBlock &out) {
 		for (auto &o : out) {
 			o.chan[0] = test_waveform_0_5.update();	 // R

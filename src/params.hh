@@ -120,7 +120,7 @@ struct Params {
 private:
 	void update_pitch() {
 		auto &pot = pot_state[PitchPot];
-		auto potval = std::clamp(pot.cur_val + calibration.pitch_pot_detent_offset, 0, 4095);
+		auto potval = std::clamp<int32_t>(pot.cur_val + calibration.pitch_pot_detent_offset, 0, 4095);
 
 		// Flag::LatchVoltOctCV is set after a Play Trig happens
 		// and the current CV value is stored into voct_latch_value.

@@ -29,8 +29,9 @@ enum TrigInJackElement : uint32_t { PlayRecJack, RevJack };
 enum TrigOutElement : uint32_t { EndOutJack };
 
 // Settings:
-enum { FirmwareMajorVersion = 0 };
-enum { FirmwareMinorVersion = 3 };
+enum { FirmwareMajorVersion = 1 };
+enum { FirmwareMinorVersion = 0 };
+enum { FirmwarRevisionVersion = 2 };
 
 enum { MaxNumBanks = 60 };
 enum { NumSamplesPerBank = 10 };

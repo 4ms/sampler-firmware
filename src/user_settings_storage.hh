@@ -422,7 +422,7 @@ struct UserSettingsStorage {
 				cur_setting_found = NoSetting; // back to looking for headers
 			}
 			if (cur_setting_found == StartUpBank_ch2) {
-				settings.startup_bank = str_xt_int(read_buffer);
+				// settings.startup_bank = str_xt_int(read_buffer);
 
 				cur_setting_found = NoSetting; // back to looking for headers
 			}

@@ -78,9 +78,15 @@ struct UserSettingsStorage {
 
 		// Write the header
 		f_printf(&settings_file, "##\n");
-		f_printf(&settings_file, "## 4ms Stereo Triggered Sampler\n");
+		f_printf(&settings_file, "## 4ms Stereo Triggered Sampler and Sampler\n");
 		f_printf(&settings_file, "## Settings File\n");
-		f_printf(&settings_file, "## http://www.4mscompany.com/sts.php\n");
+		f_printf(&settings_file,
+				 "## 4ms Sampler Firmware Version: v%d.%d.%d\n",
+				 FirmwareMajorVersion,
+				 FirmwareMinorVersion,
+				 FirmwarRevisionVersion);
+		f_printf(&settings_file, "##\n");
+		f_printf(&settings_file, "## http://www.4mscompany.com/\n");
 		f_printf(&settings_file, "##\n");
 		f_printf(&settings_file, "## [STEREO MODE] can be \"stereo\" or \"mono\" (default)\n");
 		f_printf(&settings_file, "## [RECORD SAMPLE BITS] can be 24 or 16 (default)\n");
